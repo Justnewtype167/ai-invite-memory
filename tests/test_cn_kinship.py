@@ -23,13 +23,12 @@ class TestKinshipData(unittest.TestCase):
         self.lexicon = _entries("kinship.json")
         self.labels = _entries("kinship_labels.json")
 
-    def test_3_5_overlap_below_threshold(self) -> None:
-        """C1: labels must not be a copy of the lexicon."""
+    def test_3_5_label_size_and_overlap_is_recorded_only(self) -> None:
+        """C1: labels >= 180; overlap with the lexicon is recorded, not a gate (v0.2)."""
         label_terms = {row["term"] for row in self.labels}
         lex_terms = set(lexicon_terms())
-        overlap = len(label_terms & lex_terms)
-        self.assertLessEqual(overlap / len(label_terms), 0.70)
         self.assertGreaterEqual(len(label_terms), 180)
+        self.overlap = len(label_terms & lex_terms)
 
     def test_3_5_composites_and_variants(self) -> None:
         """C1: enough 的-composites and spoken/dialect variants."""
@@ -38,11 +37,14 @@ class TestKinshipData(unittest.TestCase):
         self.assertGreaterEqual(len(composites), 40)
         self.assertGreaterEqual(len(variants), 14)
 
-    def test_candidate_match_rate(self) -> None:
-        """C1: exact candidate-set match on the label set must reach 0.90."""
+    def test_3_6_scoring_set_excludes_lexicon(self) -> None:
+        """C1: only terms absent from the lexicon are scored, and they must reach 0.90."""
+        lex_terms = set(lexicon_terms())
+        scored = [r for r in self.labels if r["term"] not in lex_terms]
+        self.assertGreaterEqual(len(scored), 60)
         matched = 0
         misses: list[str] = []
-        for row in self.labels:
+        for row in scored:
             try:
                 got = set(parse_kinship(row["term"]).candidates)
             except CnError:
@@ -51,8 +53,17 @@ class TestKinshipData(unittest.TestCase):
                 matched += 1
             else:
                 misses.append(row["term"])
-        rate = matched / len(self.labels)
+        rate = matched / len(scored)
         self.assertGreaterEqual(rate, 0.90, f"misses: {misses}")
+
+    def test_same_source_entries_are_smoke_only(self) -> None:
+        """C1: same-source rows are smoke-tested and are not part of the score."""
+        lex_terms = set(lexicon_terms())
+        same_source = [r for r in self.labels if r["term"] in lex_terms]
+        for row in same_source:
+            with self.subTest(term=row["term"]):
+                self.assertEqual(set(parse_kinship(row["term"]).candidates),
+                                 set(row["candidates"]))
 
     def test_data_integrity(self) -> None:
         """C1: kind, ambiguity and edge names in both data files."""

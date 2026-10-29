@@ -10,6 +10,39 @@ from jian_cn.errors import CnError, E_CN_BAD_ANCHOR, E_CN_PARSE
 from jian_cn.timex import parse_time
 
 DATA = pathlib.Path(__file__).resolve().parents[1] / "jian_cn" / "data"
+ANCHOR = "2026-10-29T10:00:00+08:00"
+
+# Spec 4.6 holdout: given by the spec owner, never stored in any data file.
+HOLDOUT: tuple[dict[str, str], ...] = (
+    {"expr": "大前年", "start": "2023-01-01", "end": "2023-12-31",
+     "granularity": "year", "certainty": "range"},
+    {"expr": "两年前", "start": "2024-10-29", "end": "2024-10-29",
+     "granularity": "day", "certainty": "exact"},
+    {"expr": "前年这时候", "start": "2024-10-29", "end": "2024-10-29",
+     "granularity": "day", "certainty": "exact"},
+    {"expr": "下下周", "start": "2026-11-09", "end": "2026-11-15",
+     "granularity": "week", "certainty": "range"},
+    {"expr": "下下个月", "start": "2026-12-01", "end": "2026-12-31",
+     "granularity": "month", "certainty": "range"},
+    {"expr": "一个月后", "start": "2026-11-29", "end": "2026-11-29",
+     "granularity": "day", "certainty": "exact"},
+    {"expr": "十天后", "start": "2026-11-08", "end": "2026-11-08",
+     "granularity": "day", "certainty": "exact"},
+    {"expr": "半年后", "start": "2027-04-29", "end": "2027-04-29",
+     "granularity": "day", "certainty": "exact"},
+    {"expr": "明年初", "start": "2027-01-01", "end": "2027-04-30",
+     "granularity": "year", "certainty": "range"},
+    {"expr": "明年底", "start": "2027-10-01", "end": "2027-12-31",
+     "granularity": "year", "certainty": "range"},
+    {"expr": "上季度末", "start": "2026-09-01", "end": "2026-09-30",
+     "granularity": "month", "certainty": "range"},
+    {"expr": "大后天", "start": "2026-11-01", "end": "2026-11-01",
+     "granularity": "day", "certainty": "exact"},
+    {"expr": "后年", "start": "2028-01-01", "end": "2028-12-31",
+     "granularity": "year", "certainty": "range"},
+    {"expr": "这个季度末", "start": "2026-12-01", "end": "2026-12-31",
+     "granularity": "month", "certainty": "range"},
+)
 
 
 def _labels() -> dict:
@@ -56,12 +89,33 @@ class TestTimex(unittest.TestCase):
                 self.assertIn("农历", ctx.exception.message)
 
     def test_malformed_never_crashes(self) -> None:
-        """C2: all 50 malformed inputs raise a coded CnError, never an arbitrary one."""
+        """C2: all 50 malformed inputs raise the exact code named by their own row."""
         for row in self.data["malformed"]:
             with self.subTest(expr=row["expr"], error=row["error"]):
+                self.assertIn(row["error"], {E_CN_PARSE, E_CN_BAD_ANCHOR})
                 with self.assertRaises(CnError) as ctx:
                     parse_time(row["expr"], row["anchor"])
                 self.assertEqual(ctx.exception.code, row["error"])
+
+    def test_malformed_entries_do_not_overlap_valid_rows(self) -> None:
+        """Spec 4.8: conflict check keys on (expr, anchor), not on expr alone."""
+        keys = {(row["expr"], row["anchor"]) for row in self.data["malformed"]}
+        for row in self.data["A"]:
+            with self.subTest(expr=row["expr"], anchor=row["anchor"]):
+                self.assertNotIn((row["expr"], row["anchor"]), keys)
+
+    def test_4_6_holdout_composition(self) -> None:
+        """C2: the 14 spec holdout expressions must reach 0.90 with one fixed anchor."""
+        matched = 0
+        misses: list[str] = []
+        for row in HOLDOUT:
+            span = parse_time(row["expr"], ANCHOR).to_dict()
+            if all(span[key] == row[key]
+                   for key in ("start", "end", "granularity", "certainty")):
+                matched += 1
+            else:
+                misses.append(f"{row['expr']}={span}")
+        self.assertGreaterEqual(matched / len(HOLDOUT), 0.90, f"misses: {misses}")
 
     def test_anchor_requires_timezone(self) -> None:
         """Spec 7: missing or naive anchors raise E_CN_BAD_ANCHOR."""
