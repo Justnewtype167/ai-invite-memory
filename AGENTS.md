@@ -7,17 +7,22 @@
 
 交付物是「格式 + 参考实现 + 一致性套件 + 论文」，不是聊天产品。
 
-## 1. 当前阶段：M4（人格内核与漂移门控）
+## 1. 当前阶段：M4.1（补最后三公里）
 
-**三个已封版模块**：`jian/`（v0.1-m1）、`jian_cn/`（v0.2-m2）、`jian_recall/`（v0.3-m3），共 104 个测试。
-**这三个包从此冻结**：M4 不许改动其中任何一行。
+**四个已封版模块**：`jian/`（v0.1-m1）、`jian_cn/`（v0.2-m2）、`jian_recall/`（v0.3-m3）、`jian_kernel/`（v0.4-m4），共 131 个测试。
 
-M4 只做：`jian_kernel/` —— 确定性编译 / 漂移门控 / 历史与回滚 / 全量溯源。
-规格见 `docs/TASK-04-kernel.md`。**写之前先过一遍 `docs/SPEC-CHECKLIST.md` 的十问。**
+端到端演示暴露三件事：事件类型写不进证据层、去重没定义、检索单字命中即入选。
+'M4.1 只做这三件，**并且一次性放开冻结**，但**只放开这几个文件**：
 
-**M4 不接模型**：只实现 Proposer 协议与 `NullProposer`。LLM 提案留到 M5。
+| 可改 | 不可改 |
+|---|---|
+| `jian/event.py`、`jian/capsule.py`、`jian/cli.py` | `jian_cn/` 全部 |
+| `jian_recall/retrieve.py`、`jian_recall/assemble.py` | `jian_kernel/` 全部 |
+| | 事件哈希算法、canonical 规则 |
 
-M4 的唯一目标：**同一份证据，无论今天编译、明天编译、删掉重编译，得到的是同一个人格，一个字节都不差。**
+规格见 `docs/TASK-05-events-dedupe-coverage.md`。**写之前先过一遍 `docs/SPEC-CHECKLIST.md` 的十问。**
+
+M4.1 的唯一目标：**五类事件能进可校验链路、同一句话在上下文里只出现一次、金句进 top-5。**
 越界视为任务失败，即使代码能跑。
 
 ## 2. 十二条不可协商约束
