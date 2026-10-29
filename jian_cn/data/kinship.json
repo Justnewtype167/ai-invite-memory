@@ -1275,6 +1275,267 @@
    "kind": "social",
    "role": "boss",
    "note": "社会称谓"
+  },
+  {
+   "term": "哥",
+   "candidates": [
+    "OB"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "口语，兄"
+  },
+  {
+   "term": "哥哥",
+   "candidates": [
+    "OB"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "同胞兄弟，年长"
+  },
+  {
+   "term": "弟",
+   "candidates": [
+    "YB"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "口语，弟"
+  },
+  {
+   "term": "弟弟",
+   "candidates": [
+    "YB"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "同胞兄弟，年幼"
+  },
+  {
+   "term": "姐",
+   "candidates": [
+    "OS"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "口语，姐"
+  },
+  {
+   "term": "姐姐",
+   "candidates": [
+    "OS"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "同胞姐妹，年长"
+  },
+  {
+   "term": "妹",
+   "candidates": [
+    "YS"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "口语，妹"
+  },
+  {
+   "term": "妹妹",
+   "candidates": [
+    "YS"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "同胞姐妹，年幼"
+  },
+  {
+   "term": "俺爹",
+   "candidates": [
+    "F"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "口语/方言变体"
+  },
+  {
+   "term": "俺妈",
+   "candidates": [
+    "M"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "口语/方言变体"
+  },
+  {
+   "term": "俺爷",
+   "candidates": [
+    "F.F"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "口语/方言变体"
+  },
+  {
+   "term": "俺奶",
+   "candidates": [
+    "F.M"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "口语/方言变体"
+  },
+  {
+   "term": "俺姥爷",
+   "candidates": [
+    "M.F"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "口语/方言变体"
+  },
+  {
+   "term": "俺姥姥",
+   "candidates": [
+    "M.M"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "口语/方言变体"
+  },
+  {
+   "term": "爹地",
+   "candidates": [
+    "F"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "口语/方言变体"
+  },
+  {
+   "term": "妈咪",
+   "candidates": [
+    "M"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "口语/方言变体"
+  },
+  {
+   "term": "娘亲",
+   "candidates": [
+    "M"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "口语/方言变体"
+  },
+  {
+   "term": "老头子",
+   "candidates": [
+    "H"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "多指丈夫"
+  },
+  {
+   "term": "老伴",
+   "candidates": [
+    "H",
+    "W"
+   ],
+   "age": null,
+   "ambiguous": true,
+   "kind": "kin",
+   "note": "可指夫或妻"
+  },
+  {
+   "term": "娃他爹",
+   "candidates": [
+    "H"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "口语/方言变体"
+  },
+  {
+   "term": "娃他娘",
+   "candidates": [
+    "W"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "口语/方言变体"
+  },
+  {
+   "term": "细佬",
+   "candidates": [
+    "YB"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "粤语弟弟"
+  },
+  {
+   "term": "细妹",
+   "candidates": [
+    "YS"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "粤语妹妹"
+  },
+  {
+   "term": "阿婆",
+   "candidates": [
+    "M.M"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "方言祖母"
+  },
+  {
+   "term": "阿爷",
+   "candidates": [
+    "F.F"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "粤语祖父"
+  },
+  {
+   "term": "俺哥",
+   "candidates": [
+    "OB"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "口语/方言变体"
   }
  ]
 }
