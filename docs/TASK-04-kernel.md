@@ -86,10 +86,26 @@ META.generation = 0 恒成立
 ## 3. 记录与门控（唯一允许改内核的入口）
 
 ```python
-def record_kernel(store: Path, policy: Policy | None = None) -> RecordResult
+def record_kernel(
+    store: Path, policy: Policy | None = None, force: bool = False
+) -> RecordResult
 ```
 
-流程：编译 → 与 `HISTORY` 中最近一版比对 → **四条门控** → 通过则追加历史，不通过则抛错且**不写任何文件**。
+流程：**盘上篡改检测** → 编译 → 与 `HISTORY` 中最近一版比对 → **四条门控** → 通过则追加历史，不通过则抛错且**不写任何文件**。
+
+### 3.0 盘上篡改检测（与 G1 是两件事）
+
+`record` 之前先把 `kernel/` 里的 `self.md`、`canon.md`、`state.json`、`graph.json`
+重新哈希成 kid，与 `HISTORY` 最后一版的 kid 比对：
+
+| 情况 | 行为 |
+|---|---|
+| 一致 | 正常记录 |
+| 不一致（含文件缺失/不可解析） | 拒绝，`E_KN_STALE`，提示「内核被手改过，确认请加 --force」 |
+| 不一致 + `--force` | 按证据重写内核，并在 `HISTORY.jsonl` 追加一行 `{"event":"tamper_healed", ...}` |
+
+G1 管的是**证据驱动的变更**；3.0 管的是**盘上被外力改动**。两者不得合并：篡改检测失败时
+G1 根本不会执行，`--force` 只覆盖盘上字节，不改变任何门控阈值。
 
 ### 3.1 四条门控
 
@@ -110,8 +126,16 @@ def record_kernel(store: Path, policy: Policy | None = None) -> RecordResult
 
 ## 4. 历史与回滚
 
+版本行：
+
 ```json
 {"version":3,"kid":"ab12...","head":"ev_000412","at":"2026-10-29T08:00:00Z","delta":{"added":2,"changed":1,"removed":0}}
+```
+
+审计行（只在 `--force` 修复篡改时追加，不是版本，不参与 `history()`）：
+
+```json
+{"at":"...","event":"tamper_healed","found":"<盘上 kid>","head":"ev_000412","kid":"<修复后 kid>","version":3}
 ```
 
 ```python
@@ -143,7 +167,7 @@ def restore(store, version: int) -> Kernel            # 只重建对象，不写
 
 ```
 python -m jian_kernel.cli compile <store> --now ISO8601
-python -m jian_kernel.cli record  <store> --now ISO8601
+python -m jian_kernel.cli record  <store> --now ISO8601 [--force]
 python -m jian_kernel.cli history <store>
 python -m jian_kernel.cli diff    <store> --a 1 --b 2
 python -m jian_kernel.cli verify  <store>
@@ -159,7 +183,7 @@ python -m jian_kernel.cli verify  <store>
 |---|---|---|
 | K1 | `test_kn_compile` | 同一 store 编译 **100 次，字节一致率 100%**；各条目含 evidence 且 id 存在 |
 | K2 | `test_kn_determinism` | 删掉 `kernel/` 后重新 record，**kid 与 version 不变**；`restore(1)` 的 kid 等于历史记录 |
-| K3 | `test_kn_gate` | ①手改 canon 后 record → `E_KN_GATE_CANON`；②注入一次大变更 → `E_KN_GATE_DELTA`；③state 跳变 500 → `E_KN_GATE_STATE`；④三种失败后 `kernel/` 目录**字节未变** |
+| K3 | `test_kn_gate` | ①手改 canon 后 record → `E_KN_STALE`（篡改检测），证据新增承诺但无新指令 → `E_KN_GATE_CANON`（canon 门控），`--force` 重写并追加 `tamper_healed`；②注入一次大变更 → `E_KN_GATE_DELTA`；③state 跳变 500 → `E_KN_GATE_STATE`；④各失败后 `kernel/` 目录**字节未变** |
 | K4 | `test_kn_history` | HISTORY 只追加；`diff` 逐条正确；`restore` 不写盘 |
 | K5 | `test_kn_sources` | 构造一条无 evidence 的条目 → `E_KN_UNSOURCED`；evidence 指向不存在事件 → 同样报错 |
 | K6 | `test_kn_regression` | M1+M2+M3 的 **104 个测试仍全绿**；`jian/`、`jian_cn/`、`jian_recall/` 零 diff |
