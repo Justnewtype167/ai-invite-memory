@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.aiem
+!docs/demo/memory.aiem
+build/
+dist/
+*.egg-info/
+.venv/
+.idea/
+.DS_Store
+

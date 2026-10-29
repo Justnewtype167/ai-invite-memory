@@ -1,0 +1,203 @@
+"""Event model, field validation and event hashing."""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import re
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from typing import Any
+
+from .canonical import _encode_string, dumps
+from .errors import E_SCHEMA, JianError
+
+SEGMENT_MAX_EVENTS = 100
+TEXT_MAX_CHARS = 8000
+GENESIS_PREV = "0" * 64
+
+ID_RE = re.compile(r"^ev_[0-9]{6}$")
+SEG_RE = re.compile(r"^seg-[0-9]{4}$")
+HEX_RE = re.compile(r"^[0-9a-f]{64}$")
+TIME_RE = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$")
+
+ROLES = ("user", "assistant")
+EVENT_TYPES = ("turn",)
+FIELDS = ("v", "id", "ep", "t", "type", "role", "text", "prev", "hash")
+
+
+@dataclass(frozen=True)
+class Event:
+    """One immutable evidence event."""
+
+    v: int
+    id: str
+    ep: str
+    t: str
+    type: str
+    role: str
+    text: str
+    prev: str
+    hash: str
+
+    def body(self) -> dict[str, object]:
+        """Return the hashed view of this event; the ``hash`` field is excluded."""
+        return {
+            "v": self.v,
+            "id": self.id,
+            "ep": self.ep,
+            "t": self.t,
+            "type": self.type,
+            "role": self.role,
+            "text": self.text,
+            "prev": self.prev,
+        }
+
+    def as_dict(self) -> dict[str, object]:
+        """Return the full serialized view of this event, including ``hash``."""
+        data = self.body()
+        data["hash"] = self.hash
+        return data
+
+    def to_line(self) -> bytes:
+        """Serialize this event as one canonical JSONL line ending with a newline."""
+        return dumps(self.as_dict()) + b"\n"
+
+
+def utc_now() -> str:
+    """Return the current UTC time in the canonical ``...Z`` form."""
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def body_bytes(event: Event) -> bytes:
+    """Serialize the hashed body of an event with canonical rules.
+
+    Only ``text`` may contain characters that need escaping; every other
+    field is validated ASCII, so this is byte-identical to
+    ``canonical.dumps(event.body())`` while avoiding generic encoding work.
+    """
+    escaped = _encode_string(event.text)
+    joined = (
+        '{"ep":"' + event.ep
+        + '","id":"' + event.id
+        + '","prev":"' + event.prev
+        + '","role":"' + event.role
+        + '","t":"' + event.t
+        + '","text":' + escaped
+        + ',"type":"' + event.type
+        + '","v":' + str(event.v)
+        + "}"
+    )
+    return joined.encode("utf-8")
+
+
+def event_digest(event: Event) -> str:
+    """Return the chain hash of an event using the canonical body."""
+    payload = event.prev.encode("ascii") + b"\n" + body_bytes(event)
+    return hashlib.sha256(payload).hexdigest()
+
+
+def normalize_time(value: str) -> str:
+    """Convert a timezone-aware ISO 8601 string to ``YYYY-MM-DDTHH:MM:SSZ``."""
+    if not isinstance(value, str):
+        raise JianError(E_SCHEMA, "t 必须是字符串")
+    try:
+        parsed = datetime.fromisoformat(value)
+    except ValueError as exc:
+        raise JianError(E_SCHEMA, f"t 不是合法的 ISO 8601：{value}") from exc
+    if parsed.tzinfo is None:
+        raise JianError(E_SCHEMA, "t 必须带时区")
+    return parsed.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def format_id(seq: int) -> str:
+    """Return the canonical event id for a 1-based global sequence number."""
+    if seq < 1 or seq > 999999:
+        raise JianError(E_SCHEMA, "事件序号超出 6 位十进制范围")
+    return f"ev_{seq:06d}"
+
+
+def compute_hash(prev: str, body: dict[str, object]) -> str:
+    """Hash one event body using the previous hash as chain input."""
+    if not HEX_RE.match(prev):
+        raise JianError(E_SCHEMA, "prev 必须是 64 位小写十六进制")
+    payload = prev.encode("ascii") + b"\n" + dumps(body)
+    return hashlib.sha256(payload).hexdigest()
+
+
+def new_event(seq: int, ep: str, stamp: str, role: str, text: str, prev: str) -> Event:
+    """Build and hash a new event after validating every field."""
+    if not isinstance(text, str) or not 1 <= len(text) <= TEXT_MAX_CHARS:
+        raise JianError(E_SCHEMA, "text 长度必须是 1-8000 字符")
+    if role not in ROLES:
+        raise JianError(E_SCHEMA, "role 只能是 user 或 assistant")
+    if not SEG_RE.match(ep):
+        raise JianError(E_SCHEMA, f"非法段名：{ep}")
+    if not HEX_RE.match(prev):
+        raise JianError(E_SCHEMA, "prev 必须是 64 位小写十六进制")
+    normalized = normalize_time(stamp)
+    event_id = format_id(seq)
+    body: dict[str, object] = {
+        "v": 1,
+        "id": event_id,
+        "ep": ep,
+        "t": normalized,
+        "type": "turn",
+        "role": role,
+        "text": text,
+        "prev": prev,
+    }
+    digest = compute_hash(prev, body)
+    return Event(1, event_id, ep, normalized, "turn", role, text, prev, digest)
+
+
+def parse_event(data: object) -> Event:
+    """Validate a decoded JSON object and return an :class:`Event`."""
+    if not isinstance(data, dict):
+        raise JianError(E_SCHEMA, "事件必须是 JSON 对象")
+    if set(data) != set(FIELDS):
+        raise JianError(E_SCHEMA, "事件字段缺失或多余")
+    version = data["v"]
+    if isinstance(version, bool) or not isinstance(version, int) or version != 1:
+        raise JianError(E_SCHEMA, "v 必须为整数 1")
+    event_id = _string_field(data, "id")
+    if not ID_RE.match(event_id):
+        raise JianError(E_SCHEMA, f"非法事件 id：{event_id}", event_id)
+    segment = _string_field(data, "ep")
+    if not SEG_RE.match(segment):
+        raise JianError(E_SCHEMA, f"事件 {event_id} 的段名非法", event_id)
+    stamp = _string_field(data, "t")
+    if not TIME_RE.match(stamp):
+        raise JianError(E_SCHEMA, f"事件 {event_id} 的时间格式非法", event_id)
+    event_type = _string_field(data, "type")
+    if event_type != "turn":
+        raise JianError(E_SCHEMA, f"事件 {event_id} 的 type 只能是 turn", event_id)
+    role = _string_field(data, "role")
+    if role not in ROLES:
+        raise JianError(E_SCHEMA, f"事件 {event_id} 的 role 非法", event_id)
+    text = _string_field(data, "text")
+    if not 1 <= len(text) <= TEXT_MAX_CHARS:
+        raise JianError(E_SCHEMA, f"事件 {event_id} 的 text 长度越界", event_id)
+    prev = _string_field(data, "prev")
+    if not HEX_RE.match(prev):
+        raise JianError(E_SCHEMA, f"事件 {event_id} 的 prev 非法", event_id)
+    digest = _string_field(data, "hash")
+    if not HEX_RE.match(digest):
+        raise JianError(E_SCHEMA, f"事件 {event_id} 的 hash 非法", event_id)
+    return Event(1, event_id, segment, stamp, event_type, role, text, prev, digest)
+
+
+def parse_line(line: str) -> Event:
+    """Parse and validate one JSONL line (without its trailing newline)."""
+    try:
+        data: Any = json.loads(line)
+    except json.JSONDecodeError as exc:
+        raise JianError(E_SCHEMA, "证据行不是合法 JSON") from exc
+    return parse_event(data)
+
+
+def _string_field(data: dict[str, object], name: str) -> str:
+    value = data[name]
+    if not isinstance(value, str):
+        raise JianError(E_SCHEMA, f"{name} 必须是字符串")
+    return value

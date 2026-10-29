@@ -1,0 +1,13 @@
+[project]
+name = "jian"
+version = "0.0.1"
+description = "Jian: portable memory kernel for AI companions"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.scripts]
+jian = "jian.cli:main"
+
+[tool.setuptools]
+packages = ["jian"]
+
