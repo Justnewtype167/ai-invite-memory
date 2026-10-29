@@ -1,0 +1,1622 @@
+{
+ "version": 1,
+ "note": "window rule: calendar granularity split into thirds; vague/unknown carry no interval",
+ "A": [
+  {
+   "expr": "今天",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": "2026-10-29",
+   "end": "2026-10-29",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "昨天",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": "2026-10-28",
+   "end": "2026-10-28",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "前天",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": "2026-10-27",
+   "end": "2026-10-27",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "大前天",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": "2026-10-26",
+   "end": "2026-10-26",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "明天",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": "2026-10-30",
+   "end": "2026-10-30",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "后天",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": "2026-10-31",
+   "end": "2026-10-31",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "今晚",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": "2026-10-29",
+   "end": "2026-10-29",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "昨晚",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": "2026-10-28",
+   "end": "2026-10-28",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "今早",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": "2026-10-29",
+   "end": "2026-10-29",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "这周",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": "2026-10-26",
+   "end": "2026-11-01",
+   "granularity": "week",
+   "certainty": "range"
+  },
+  {
+   "expr": "上周",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": "2026-10-19",
+   "end": "2026-10-25",
+   "granularity": "week",
+   "certainty": "range"
+  },
+  {
+   "expr": "上上周",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": "2026-10-12",
+   "end": "2026-10-18",
+   "granularity": "week",
+   "certainty": "range"
+  },
+  {
+   "expr": "下周",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": "2026-11-02",
+   "end": "2026-11-08",
+   "granularity": "week",
+   "certainty": "range"
+  },
+  {
+   "expr": "月初",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": "2026-10-01",
+   "end": "2026-10-10",
+   "granularity": "month",
+   "certainty": "range"
+  },
+  {
+   "expr": "月中",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": "2026-10-11",
+   "end": "2026-10-20",
+   "granularity": "month",
+   "certainty": "range"
+  },
+  {
+   "expr": "月底",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": "2026-10-21",
+   "end": "2026-10-31",
+   "granularity": "month",
+   "certainty": "range"
+  },
+  {
+   "expr": "月初一",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": "2026-10-01",
+   "end": "2026-10-01",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "这个月",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": "2026-10-01",
+   "end": "2026-10-31",
+   "granularity": "month",
+   "certainty": "range"
+  },
+  {
+   "expr": "上个月",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": "2026-09-01",
+   "end": "2026-09-30",
+   "granularity": "month",
+   "certainty": "range"
+  },
+  {
+   "expr": "上上个月",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": "2026-08-01",
+   "end": "2026-08-31",
+   "granularity": "month",
+   "certainty": "range"
+  },
+  {
+   "expr": "下个月",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": "2026-11-01",
+   "end": "2026-11-30",
+   "granularity": "month",
+   "certainty": "range"
+  },
+  {
+   "expr": "季度末",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": "2026-12-01",
+   "end": "2026-12-31",
+   "granularity": "month",
+   "certainty": "range"
+  },
+  {
+   "expr": "季初",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": "2026-10-01",
+   "end": "2026-10-31",
+   "granularity": "month",
+   "certainty": "range"
+  },
+  {
+   "expr": "季中",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": "2026-11-01",
+   "end": "2026-11-30",
+   "granularity": "month",
+   "certainty": "range"
+  },
+  {
+   "expr": "年初",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": "2026-01-01",
+   "end": "2026-04-30",
+   "granularity": "year",
+   "certainty": "range"
+  },
+  {
+   "expr": "年末",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": "2026-09-01",
+   "end": "2026-12-31",
+   "granularity": "year",
+   "certainty": "range"
+  },
+  {
+   "expr": "今年",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": "2026-01-01",
+   "end": "2026-12-31",
+   "granularity": "year",
+   "certainty": "range"
+  },
+  {
+   "expr": "去年",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": "2025-01-01",
+   "end": "2025-12-31",
+   "granularity": "year",
+   "certainty": "range"
+  },
+  {
+   "expr": "前年",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": "2024-01-01",
+   "end": "2024-12-31",
+   "granularity": "year",
+   "certainty": "range"
+  },
+  {
+   "expr": "明年",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": "2027-01-01",
+   "end": "2027-12-31",
+   "granularity": "year",
+   "certainty": "range"
+  },
+  {
+   "expr": "去年这时候",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": "2025-10-29",
+   "end": "2025-10-29",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "三天前",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": "2026-10-26",
+   "end": "2026-10-26",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "半个月前",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": "2026-10-14",
+   "end": "2026-10-14",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "半年前",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": "2026-04-29",
+   "end": "2026-04-29",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "三年前",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": "2023-10-29",
+   "end": "2023-10-29",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "十年前",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": "2016-10-29",
+   "end": "2016-10-29",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "去年10月",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": "2025-10-01",
+   "end": "2025-10-31",
+   "granularity": "month",
+   "certainty": "range"
+  },
+  {
+   "expr": "前年10月",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": "2024-10-01",
+   "end": "2024-10-31",
+   "granularity": "month",
+   "certainty": "range"
+  },
+  {
+   "expr": "今年10月29日",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": "2026-10-29",
+   "end": "2026-10-29",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "元旦",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": "2026-01-01",
+   "end": "2026-01-01",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "劳动节",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": "2026-05-01",
+   "end": "2026-05-01",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "国庆",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": "2026-10-01",
+   "end": "2026-10-01",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "儿童节",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": "2026-06-01",
+   "end": "2026-06-01",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "今天",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": "2026-03-15",
+   "end": "2026-03-15",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "昨天",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": "2026-03-14",
+   "end": "2026-03-14",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "前天",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": "2026-03-13",
+   "end": "2026-03-13",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "大前天",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": "2026-03-12",
+   "end": "2026-03-12",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "明天",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": "2026-03-16",
+   "end": "2026-03-16",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "后天",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": "2026-03-17",
+   "end": "2026-03-17",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "今晚",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": "2026-03-15",
+   "end": "2026-03-15",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "昨晚",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": "2026-03-14",
+   "end": "2026-03-14",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "今早",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": "2026-03-15",
+   "end": "2026-03-15",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "这周",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": "2026-03-09",
+   "end": "2026-03-15",
+   "granularity": "week",
+   "certainty": "range"
+  },
+  {
+   "expr": "上周",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": "2026-03-02",
+   "end": "2026-03-08",
+   "granularity": "week",
+   "certainty": "range"
+  },
+  {
+   "expr": "上上周",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": "2026-02-23",
+   "end": "2026-03-01",
+   "granularity": "week",
+   "certainty": "range"
+  },
+  {
+   "expr": "下周",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": "2026-03-16",
+   "end": "2026-03-22",
+   "granularity": "week",
+   "certainty": "range"
+  },
+  {
+   "expr": "月初",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": "2026-03-01",
+   "end": "2026-03-10",
+   "granularity": "month",
+   "certainty": "range"
+  },
+  {
+   "expr": "月中",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": "2026-03-11",
+   "end": "2026-03-20",
+   "granularity": "month",
+   "certainty": "range"
+  },
+  {
+   "expr": "月底",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": "2026-03-21",
+   "end": "2026-03-31",
+   "granularity": "month",
+   "certainty": "range"
+  },
+  {
+   "expr": "月初一",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": "2026-03-01",
+   "end": "2026-03-01",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "这个月",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": "2026-03-01",
+   "end": "2026-03-31",
+   "granularity": "month",
+   "certainty": "range"
+  },
+  {
+   "expr": "上个月",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": "2026-02-01",
+   "end": "2026-02-28",
+   "granularity": "month",
+   "certainty": "range"
+  },
+  {
+   "expr": "上上个月",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": "2026-01-01",
+   "end": "2026-01-31",
+   "granularity": "month",
+   "certainty": "range"
+  },
+  {
+   "expr": "下个月",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": "2026-04-01",
+   "end": "2026-04-30",
+   "granularity": "month",
+   "certainty": "range"
+  },
+  {
+   "expr": "季度末",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": "2026-03-01",
+   "end": "2026-03-31",
+   "granularity": "month",
+   "certainty": "range"
+  },
+  {
+   "expr": "季初",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": "2026-01-01",
+   "end": "2026-01-31",
+   "granularity": "month",
+   "certainty": "range"
+  },
+  {
+   "expr": "季中",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": "2026-02-01",
+   "end": "2026-02-28",
+   "granularity": "month",
+   "certainty": "range"
+  },
+  {
+   "expr": "年初",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": "2026-01-01",
+   "end": "2026-04-30",
+   "granularity": "year",
+   "certainty": "range"
+  },
+  {
+   "expr": "年末",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": "2026-09-01",
+   "end": "2026-12-31",
+   "granularity": "year",
+   "certainty": "range"
+  },
+  {
+   "expr": "今年",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": "2026-01-01",
+   "end": "2026-12-31",
+   "granularity": "year",
+   "certainty": "range"
+  },
+  {
+   "expr": "去年",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": "2025-01-01",
+   "end": "2025-12-31",
+   "granularity": "year",
+   "certainty": "range"
+  },
+  {
+   "expr": "前年",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": "2024-01-01",
+   "end": "2024-12-31",
+   "granularity": "year",
+   "certainty": "range"
+  },
+  {
+   "expr": "明年",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": "2027-01-01",
+   "end": "2027-12-31",
+   "granularity": "year",
+   "certainty": "range"
+  },
+  {
+   "expr": "去年这时候",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": "2025-03-15",
+   "end": "2025-03-15",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "三天前",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": "2026-03-12",
+   "end": "2026-03-12",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "半个月前",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": "2026-02-28",
+   "end": "2026-02-28",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "半年前",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": "2025-09-15",
+   "end": "2025-09-15",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "三年前",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": "2023-03-15",
+   "end": "2023-03-15",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "十年前",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": "2016-03-15",
+   "end": "2016-03-15",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "去年10月",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": "2025-10-01",
+   "end": "2025-10-31",
+   "granularity": "month",
+   "certainty": "range"
+  },
+  {
+   "expr": "前年10月",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": "2024-10-01",
+   "end": "2024-10-31",
+   "granularity": "month",
+   "certainty": "range"
+  },
+  {
+   "expr": "今年10月29日",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": "2026-10-29",
+   "end": "2026-10-29",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "元旦",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": "2026-01-01",
+   "end": "2026-01-01",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "劳动节",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": "2026-05-01",
+   "end": "2026-05-01",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "国庆",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": "2026-10-01",
+   "end": "2026-10-01",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "儿童节",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": "2026-06-01",
+   "end": "2026-06-01",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "今天",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": "2026-01-01",
+   "end": "2026-01-01",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "昨天",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": "2025-12-31",
+   "end": "2025-12-31",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "前天",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": "2025-12-30",
+   "end": "2025-12-30",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "大前天",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": "2025-12-29",
+   "end": "2025-12-29",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "明天",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": "2026-01-02",
+   "end": "2026-01-02",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "后天",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": "2026-01-03",
+   "end": "2026-01-03",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "今晚",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": "2026-01-01",
+   "end": "2026-01-01",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "昨晚",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": "2025-12-31",
+   "end": "2025-12-31",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "今早",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": "2026-01-01",
+   "end": "2026-01-01",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "这周",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": "2025-12-29",
+   "end": "2026-01-04",
+   "granularity": "week",
+   "certainty": "range"
+  },
+  {
+   "expr": "上周",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": "2025-12-22",
+   "end": "2025-12-28",
+   "granularity": "week",
+   "certainty": "range"
+  },
+  {
+   "expr": "上上周",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": "2025-12-15",
+   "end": "2025-12-21",
+   "granularity": "week",
+   "certainty": "range"
+  },
+  {
+   "expr": "下周",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": "2026-01-05",
+   "end": "2026-01-11",
+   "granularity": "week",
+   "certainty": "range"
+  },
+  {
+   "expr": "月初",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": "2026-01-01",
+   "end": "2026-01-10",
+   "granularity": "month",
+   "certainty": "range"
+  },
+  {
+   "expr": "月中",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": "2026-01-11",
+   "end": "2026-01-20",
+   "granularity": "month",
+   "certainty": "range"
+  },
+  {
+   "expr": "月底",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": "2026-01-21",
+   "end": "2026-01-31",
+   "granularity": "month",
+   "certainty": "range"
+  },
+  {
+   "expr": "月初一",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": "2026-01-01",
+   "end": "2026-01-01",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "这个月",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": "2026-01-01",
+   "end": "2026-01-31",
+   "granularity": "month",
+   "certainty": "range"
+  },
+  {
+   "expr": "上个月",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": "2025-12-01",
+   "end": "2025-12-31",
+   "granularity": "month",
+   "certainty": "range"
+  },
+  {
+   "expr": "上上个月",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": "2025-11-01",
+   "end": "2025-11-30",
+   "granularity": "month",
+   "certainty": "range"
+  },
+  {
+   "expr": "下个月",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": "2026-02-01",
+   "end": "2026-02-28",
+   "granularity": "month",
+   "certainty": "range"
+  },
+  {
+   "expr": "季度末",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": "2026-03-01",
+   "end": "2026-03-31",
+   "granularity": "month",
+   "certainty": "range"
+  },
+  {
+   "expr": "季初",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": "2026-01-01",
+   "end": "2026-01-31",
+   "granularity": "month",
+   "certainty": "range"
+  },
+  {
+   "expr": "季中",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": "2026-02-01",
+   "end": "2026-02-28",
+   "granularity": "month",
+   "certainty": "range"
+  },
+  {
+   "expr": "年初",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": "2026-01-01",
+   "end": "2026-04-30",
+   "granularity": "year",
+   "certainty": "range"
+  },
+  {
+   "expr": "年末",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": "2026-09-01",
+   "end": "2026-12-31",
+   "granularity": "year",
+   "certainty": "range"
+  },
+  {
+   "expr": "今年",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": "2026-01-01",
+   "end": "2026-12-31",
+   "granularity": "year",
+   "certainty": "range"
+  },
+  {
+   "expr": "去年",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": "2025-01-01",
+   "end": "2025-12-31",
+   "granularity": "year",
+   "certainty": "range"
+  },
+  {
+   "expr": "前年",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": "2024-01-01",
+   "end": "2024-12-31",
+   "granularity": "year",
+   "certainty": "range"
+  },
+  {
+   "expr": "明年",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": "2027-01-01",
+   "end": "2027-12-31",
+   "granularity": "year",
+   "certainty": "range"
+  },
+  {
+   "expr": "去年这时候",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": "2025-01-01",
+   "end": "2025-01-01",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "三天前",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": "2025-12-29",
+   "end": "2025-12-29",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "半个月前",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": "2025-12-17",
+   "end": "2025-12-17",
+   "granularity": "day",
+   "certainty": "exact"
+  },
+  {
+   "expr": "半年前",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": "2025-07-01",
+   "end": "2025-07-01",
+   "granularity": "day",
+   "certainty": "exact"
+  }
+ ],
+ "B": [
+  {
+   "expr": "春节前",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": null,
+   "end": null,
+   "granularity": "season",
+   "certainty": "vague"
+  },
+  {
+   "expr": "春节后",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": null,
+   "end": null,
+   "granularity": "season",
+   "certainty": "vague"
+  },
+  {
+   "expr": "秋收后",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": null,
+   "end": null,
+   "granularity": "season",
+   "certainty": "vague"
+  },
+  {
+   "expr": "入冬前",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": null,
+   "end": null,
+   "granularity": "season",
+   "certainty": "vague"
+  },
+  {
+   "expr": "过了年",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": null,
+   "end": null,
+   "granularity": "year",
+   "certainty": "vague"
+  },
+  {
+   "expr": "年底前",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": null,
+   "end": null,
+   "granularity": "year",
+   "certainty": "vague"
+  },
+  {
+   "expr": "最近",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": null,
+   "end": null,
+   "granularity": "day",
+   "certainty": "vague"
+  },
+  {
+   "expr": "那阵子",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": null,
+   "end": null,
+   "granularity": "day",
+   "certainty": "vague"
+  },
+  {
+   "expr": "前几天",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": null,
+   "end": null,
+   "granularity": "day",
+   "certainty": "vague"
+  },
+  {
+   "expr": "过几天",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": null,
+   "end": null,
+   "granularity": "day",
+   "certainty": "vague"
+  },
+  {
+   "expr": "等孩子高考完",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": null,
+   "end": null,
+   "granularity": "event",
+   "certainty": "unknown"
+  },
+  {
+   "expr": "等我出院",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": null,
+   "end": null,
+   "granularity": "event",
+   "certainty": "unknown"
+  },
+  {
+   "expr": "等我退伍",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "start": null,
+   "end": null,
+   "granularity": "event",
+   "certainty": "unknown"
+  },
+  {
+   "expr": "春节前",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": null,
+   "end": null,
+   "granularity": "season",
+   "certainty": "vague"
+  },
+  {
+   "expr": "春节后",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": null,
+   "end": null,
+   "granularity": "season",
+   "certainty": "vague"
+  },
+  {
+   "expr": "秋收后",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": null,
+   "end": null,
+   "granularity": "season",
+   "certainty": "vague"
+  },
+  {
+   "expr": "入冬前",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": null,
+   "end": null,
+   "granularity": "season",
+   "certainty": "vague"
+  },
+  {
+   "expr": "过了年",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": null,
+   "end": null,
+   "granularity": "year",
+   "certainty": "vague"
+  },
+  {
+   "expr": "年底前",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": null,
+   "end": null,
+   "granularity": "year",
+   "certainty": "vague"
+  },
+  {
+   "expr": "最近",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": null,
+   "end": null,
+   "granularity": "day",
+   "certainty": "vague"
+  },
+  {
+   "expr": "那阵子",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": null,
+   "end": null,
+   "granularity": "day",
+   "certainty": "vague"
+  },
+  {
+   "expr": "前几天",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": null,
+   "end": null,
+   "granularity": "day",
+   "certainty": "vague"
+  },
+  {
+   "expr": "过几天",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": null,
+   "end": null,
+   "granularity": "day",
+   "certainty": "vague"
+  },
+  {
+   "expr": "等孩子高考完",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": null,
+   "end": null,
+   "granularity": "event",
+   "certainty": "unknown"
+  },
+  {
+   "expr": "等我出院",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": null,
+   "end": null,
+   "granularity": "event",
+   "certainty": "unknown"
+  },
+  {
+   "expr": "等我退伍",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": null,
+   "end": null,
+   "granularity": "event",
+   "certainty": "unknown"
+  },
+  {
+   "expr": "春节前",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": null,
+   "end": null,
+   "granularity": "season",
+   "certainty": "vague"
+  },
+  {
+   "expr": "春节后",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": null,
+   "end": null,
+   "granularity": "season",
+   "certainty": "vague"
+  },
+  {
+   "expr": "秋收后",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": null,
+   "end": null,
+   "granularity": "season",
+   "certainty": "vague"
+  },
+  {
+   "expr": "入冬前",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": null,
+   "end": null,
+   "granularity": "season",
+   "certainty": "vague"
+  },
+  {
+   "expr": "过了年",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": null,
+   "end": null,
+   "granularity": "year",
+   "certainty": "vague"
+  },
+  {
+   "expr": "年底前",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": null,
+   "end": null,
+   "granularity": "year",
+   "certainty": "vague"
+  },
+  {
+   "expr": "最近",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": null,
+   "end": null,
+   "granularity": "day",
+   "certainty": "vague"
+  },
+  {
+   "expr": "那阵子",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": null,
+   "end": null,
+   "granularity": "day",
+   "certainty": "vague"
+  },
+  {
+   "expr": "前几天",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": null,
+   "end": null,
+   "granularity": "day",
+   "certainty": "vague"
+  },
+  {
+   "expr": "过几天",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": null,
+   "end": null,
+   "granularity": "day",
+   "certainty": "vague"
+  },
+  {
+   "expr": "等孩子高考完",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": null,
+   "end": null,
+   "granularity": "event",
+   "certainty": "unknown"
+  },
+  {
+   "expr": "等我出院",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": null,
+   "end": null,
+   "granularity": "event",
+   "certainty": "unknown"
+  },
+  {
+   "expr": "等我退伍",
+   "anchor": "2026-01-01T00:15:00+08:00",
+   "start": null,
+   "end": null,
+   "granularity": "event",
+   "certainty": "unknown"
+  },
+  {
+   "expr": "等我出院",
+   "anchor": "2026-03-15T23:30:00+08:00",
+   "start": null,
+   "end": null,
+   "granularity": "event",
+   "certainty": "unknown"
+  }
+ ],
+ "C": [
+  {
+   "expr": "春节",
+   "anchor": "2026-10-29T10:00:00+08:00"
+  },
+  {
+   "expr": "元宵",
+   "anchor": "2026-10-29T10:00:00+08:00"
+  },
+  {
+   "expr": "端午",
+   "anchor": "2026-10-29T10:00:00+08:00"
+  },
+  {
+   "expr": "中秋",
+   "anchor": "2026-10-29T10:00:00+08:00"
+  },
+  {
+   "expr": "重阳",
+   "anchor": "2026-10-29T10:00:00+08:00"
+  },
+  {
+   "expr": "清明",
+   "anchor": "2026-10-29T10:00:00+08:00"
+  },
+  {
+   "expr": "春节",
+   "anchor": "2026-03-15T23:30:00+08:00"
+  },
+  {
+   "expr": "元宵",
+   "anchor": "2026-03-15T23:30:00+08:00"
+  },
+  {
+   "expr": "端午",
+   "anchor": "2026-03-15T23:30:00+08:00"
+  },
+  {
+   "expr": "中秋",
+   "anchor": "2026-03-15T23:30:00+08:00"
+  },
+  {
+   "expr": "重阳",
+   "anchor": "2026-03-15T23:30:00+08:00"
+  },
+  {
+   "expr": "清明",
+   "anchor": "2026-03-15T23:30:00+08:00"
+  },
+  {
+   "expr": "春节",
+   "anchor": "2026-01-01T00:15:00+08:00"
+  },
+  {
+   "expr": "元宵",
+   "anchor": "2026-01-01T00:15:00+08:00"
+  },
+  {
+   "expr": "端午",
+   "anchor": "2026-01-01T00:15:00+08:00"
+  },
+  {
+   "expr": "中秋",
+   "anchor": "2026-01-01T00:15:00+08:00"
+  },
+  {
+   "expr": "重阳",
+   "anchor": "2026-01-01T00:15:00+08:00"
+  },
+  {
+   "expr": "清明",
+   "anchor": "2026-01-01T00:15:00+08:00"
+  },
+  {
+   "expr": "春节",
+   "anchor": "2026-10-29T10:00:00+08:00"
+  },
+  {
+   "expr": "中秋",
+   "anchor": "2026-03-15T23:30:00+08:00"
+  }
+ ],
+ "malformed": [
+  {
+   "expr": "",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "error": "E_CN_PARSE"
+  },
+  {
+   "expr": "   ",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "error": "E_CN_PARSE"
+  },
+  {
+   "expr": "!!!",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "error": "E_CN_PARSE"
+  },
+  {
+   "expr": "###",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "error": "E_CN_PARSE"
+  },
+  {
+   "expr": "？？？",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "error": "E_CN_PARSE"
+  },
+  {
+   "expr": "12345",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "error": "E_CN_PARSE"
+  },
+  {
+   "expr": "2026",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "error": "E_CN_PARSE"
+  },
+  {
+   "expr": "2026年13月",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "error": "E_CN_PARSE"
+  },
+  {
+   "expr": "昨天明天",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "error": "E_CN_PARSE"
+  },
+  {
+   "expr": "今天昨天",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "error": "E_CN_PARSE"
+  },
+  {
+   "expr": "啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "error": "E_CN_PARSE"
+  },
+  {
+   "expr": "三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三三天前",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "error": "E_CN_PARSE"
+  },
+  {
+   "expr": "上上上上周",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "error": "E_CN_PARSE"
+  },
+  {
+   "expr": "这个那个月",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "error": "E_CN_PARSE"
+  },
+  {
+   "expr": "月初中",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "error": "E_CN_PARSE"
+  },
+  {
+   "expr": "前后",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "error": "E_CN_PARSE"
+  },
+  {
+   "expr": "…",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "error": "E_CN_PARSE"
+  },
+  {
+   "expr": "😀",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "error": "E_CN_PARSE"
+  },
+  {
+   "expr": "戊戌年",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "error": "E_CN_PARSE"
+  },
+  {
+   "expr": "甲午日",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "error": "E_CN_PARSE"
+  },
+  {
+   "expr": "20月",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "error": "E_CN_PARSE"
+  },
+  {
+   "expr": "32日",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "error": "E_CN_PARSE"
+  },
+  {
+   "expr": "2026-02-30",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "error": "E_CN_PARSE"
+  },
+  {
+   "expr": "下午",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "error": "E_CN_PARSE"
+  },
+  {
+   "expr": "昨天前天",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "error": "E_CN_PARSE"
+  },
+  {
+   "expr": "大后后天",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "error": "E_CN_PARSE"
+  },
+  {
+   "expr": "礼拜八",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "error": "E_CN_PARSE"
+  },
+  {
+   "expr": "季度",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "error": "E_CN_PARSE"
+  },
+  {
+   "expr": "半年",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "error": "E_CN_PARSE"
+  },
+  {
+   "expr": "两三天",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "error": "E_CN_PARSE"
+  },
+  {
+   "expr": "三五天",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "error": "E_CN_PARSE"
+  },
+  {
+   "expr": "十来天",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "error": "E_CN_PARSE"
+  },
+  {
+   "expr": "前些日子",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "error": "E_CN_PARSE"
+  },
+  {
+   "expr": "上上上上个月",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "error": "E_CN_PARSE"
+  },
+  {
+   "expr": "下下个月",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "error": "E_CN_PARSE"
+  },
+  {
+   "expr": "年初末",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "error": "E_CN_PARSE"
+  },
+  {
+   "expr": "月中底",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "error": "E_CN_PARSE"
+  },
+  {
+   "expr": "今晚明早",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "error": "E_CN_PARSE"
+  },
+  {
+   "expr": "今早今晚",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "error": "E_CN_PARSE"
+  },
+  {
+   "expr": "去年去年这时候",
+   "anchor": "2026-10-29T10:00:00+08:00",
+   "error": "E_CN_PARSE"
+  },
+  {
+   "expr": "今天",
+   "anchor": null,
+   "error": "E_CN_BAD_ANCHOR"
+  },
+  {
+   "expr": "昨天",
+   "anchor": null,
+   "error": "E_CN_BAD_ANCHOR"
+  },
+  {
+   "expr": "这周",
+   "anchor": null,
+   "error": "E_CN_BAD_ANCHOR"
+  },
+  {
+   "expr": "月初",
+   "anchor": null,
+   "error": "E_CN_BAD_ANCHOR"
+  },
+  {
+   "expr": "三年前",
+   "anchor": null,
+   "error": "E_CN_BAD_ANCHOR"
+  },
+  {
+   "expr": "国庆",
+   "anchor": null,
+   "error": "E_CN_BAD_ANCHOR"
+  },
+  {
+   "expr": "今天",
+   "anchor": "2026-10-29T10:00:00",
+   "error": "E_CN_BAD_ANCHOR"
+  },
+  {
+   "expr": "昨天",
+   "anchor": "2026-10-29T10:00:00",
+   "error": "E_CN_BAD_ANCHOR"
+  },
+  {
+   "expr": "这周",
+   "anchor": "2026-10-29T10:00:00",
+   "error": "E_CN_BAD_ANCHOR"
+  },
+  {
+   "expr": "今年",
+   "anchor": "2026-10-29T10:00:00",
+   "error": "E_CN_BAD_ANCHOR"
+  }
+ ]
+}

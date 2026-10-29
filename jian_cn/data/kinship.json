@@ -1,0 +1,1277 @@
+{
+ "version": 1,
+ "note": "kinship lexicon; edge grammar is in docs/TASK-02-chinese.md 3.1",
+ "entries": [
+  {
+   "term": "父亲",
+   "candidates": [
+    "F"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "直系"
+  },
+  {
+   "term": "爸爸",
+   "candidates": [
+    "F"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "口语变体"
+  },
+  {
+   "term": "爸",
+   "candidates": [
+    "F"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "单字变体"
+  },
+  {
+   "term": "老爸",
+   "candidates": [
+    "F"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "口语变体"
+  },
+  {
+   "term": "爹",
+   "candidates": [
+    "F"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "方言/旧称"
+  },
+  {
+   "term": "爹爹",
+   "candidates": [
+    "F"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "方言/旧称"
+  },
+  {
+   "term": "阿爸",
+   "candidates": [
+    "F"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "方言变体"
+  },
+  {
+   "term": "家父",
+   "candidates": [
+    "F"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "书面谦称"
+  },
+  {
+   "term": "老汉儿",
+   "candidates": [
+    "F"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "川渝方言"
+  },
+  {
+   "term": "母亲",
+   "candidates": [
+    "M"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "直系"
+  },
+  {
+   "term": "妈妈",
+   "candidates": [
+    "M"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "口语变体"
+  },
+  {
+   "term": "妈",
+   "candidates": [
+    "M"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "单字变体"
+  },
+  {
+   "term": "老妈",
+   "candidates": [
+    "M"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "口语变体"
+  },
+  {
+   "term": "母亲大人",
+   "candidates": [
+    "M"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "戏称/敬称"
+  },
+  {
+   "term": "娘",
+   "candidates": [
+    "M"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "方言/旧称"
+  },
+  {
+   "term": "阿妈",
+   "candidates": [
+    "M"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "粤语方言"
+  },
+  {
+   "term": "阿娘",
+   "candidates": [
+    "M"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "方言变体"
+  },
+  {
+   "term": "爷爷",
+   "candidates": [
+    "F.F"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "父之父"
+  },
+  {
+   "term": "祖父",
+   "candidates": [
+    "F.F"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "书面"
+  },
+  {
+   "term": "阿公",
+   "candidates": [
+    "F.F"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "粤语/闽语方言"
+  },
+  {
+   "term": "奶奶",
+   "candidates": [
+    "F.M"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "父之母"
+  },
+  {
+   "term": "祖母",
+   "candidates": [
+    "F.M"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "书面"
+  },
+  {
+   "term": "阿嬷",
+   "candidates": [
+    "F.M"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "闽语/粤语方言"
+  },
+  {
+   "term": "外公",
+   "candidates": [
+    "M.F"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "母之父"
+  },
+  {
+   "term": "姥爷",
+   "candidates": [
+    "M.F"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "北方口语"
+  },
+  {
+   "term": "外祖父",
+   "candidates": [
+    "M.F"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "书面"
+  },
+  {
+   "term": "外婆",
+   "candidates": [
+    "M.M"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "母之母"
+  },
+  {
+   "term": "姥姥",
+   "candidates": [
+    "M.M"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "北方口语"
+  },
+  {
+   "term": "外祖母",
+   "candidates": [
+    "M.M"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "书面"
+  },
+  {
+   "term": "儿子",
+   "candidates": [
+    "s"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "子"
+  },
+  {
+   "term": "女儿",
+   "candidates": [
+    "d"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "女"
+  },
+  {
+   "term": "闺女",
+   "candidates": [
+    "d"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "口语"
+  },
+  {
+   "term": "孙子",
+   "candidates": [
+    "s.s"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "子之子"
+  },
+  {
+   "term": "孙女",
+   "candidates": [
+    "s.d"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "子之女"
+  },
+  {
+   "term": "外孙",
+   "candidates": [
+    "d.s"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "女之子"
+  },
+  {
+   "term": "外孙女",
+   "candidates": [
+    "d.d"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "女之女"
+  },
+  {
+   "term": "曾孙",
+   "candidates": [
+    "s.s.s"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "孙之子"
+  },
+  {
+   "term": "曾孙女",
+   "candidates": [
+    "s.s.d"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "孙之女"
+  },
+  {
+   "term": "伯父",
+   "candidates": [
+    "F.OB"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "父之兄"
+  },
+  {
+   "term": "伯伯",
+   "candidates": [
+    "F.OB"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "口语"
+  },
+  {
+   "term": "大伯",
+   "candidates": [
+    "F.OB"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "排行称呼"
+  },
+  {
+   "term": "伯母",
+   "candidates": [
+    "F.OB.W"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "伯父之妻"
+  },
+  {
+   "term": "大伯母",
+   "candidates": [
+    "F.OB.W"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "排行称呼"
+  },
+  {
+   "term": "叔叔",
+   "candidates": [
+    "F.YB"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "父之弟"
+  },
+  {
+   "term": "叔父",
+   "candidates": [
+    "F.YB"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "书面"
+  },
+  {
+   "term": "小叔",
+   "candidates": [
+    "F.YB"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "排行称呼"
+  },
+  {
+   "term": "婶婶",
+   "candidates": [
+    "F.YB.W"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "叔父之妻"
+  },
+  {
+   "term": "婶母",
+   "candidates": [
+    "F.YB.W"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "书面"
+  },
+  {
+   "term": "姑妈",
+   "candidates": [
+    "F.S"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "父之姐妹"
+  },
+  {
+   "term": "姑姑",
+   "candidates": [
+    "F.S"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "口语"
+  },
+  {
+   "term": "姑母",
+   "candidates": [
+    "F.S"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "书面"
+  },
+  {
+   "term": "姑父",
+   "candidates": [
+    "F.S.H"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "姑母之夫"
+  },
+  {
+   "term": "姑丈",
+   "candidates": [
+    "F.S.H"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "方言/旧称"
+  },
+  {
+   "term": "舅舅",
+   "candidates": [
+    "M.B"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "母之兄弟"
+  },
+  {
+   "term": "舅父",
+   "candidates": [
+    "M.B"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "书面"
+  },
+  {
+   "term": "舅妈",
+   "candidates": [
+    "M.B.W"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "舅父之妻"
+  },
+  {
+   "term": "舅母",
+   "candidates": [
+    "M.B.W"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "书面"
+  },
+  {
+   "term": "姨妈",
+   "candidates": [
+    "M.S"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "母之姐妹"
+  },
+  {
+   "term": "姨母",
+   "candidates": [
+    "M.S"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "书面"
+  },
+  {
+   "term": "阿姨",
+   "candidates": [
+    "M.S"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "may_be_social": true,
+   "note": "血亲指母亲姐妹；亦常作社会泛称"
+  },
+  {
+   "term": "姨父",
+   "candidates": [
+    "M.S.H"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "姨母之夫"
+  },
+  {
+   "term": "姨丈",
+   "candidates": [
+    "M.S.H"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "方言/旧称"
+  },
+  {
+   "term": "堂哥",
+   "candidates": [
+    "F.OB.s"
+   ],
+   "age": "older",
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "父之兄之子，年长"
+  },
+  {
+   "term": "堂兄",
+   "candidates": [
+    "F.OB.s"
+   ],
+   "age": "older",
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "书面，年长"
+  },
+  {
+   "term": "堂弟",
+   "candidates": [
+    "F.YB.s"
+   ],
+   "age": "younger",
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "父之弟之子，年幼"
+  },
+  {
+   "term": "堂姐",
+   "candidates": [
+    "F.OB.d"
+   ],
+   "age": "older",
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "父之兄之女，年长"
+  },
+  {
+   "term": "堂妹",
+   "candidates": [
+    "F.YB.d"
+   ],
+   "age": "younger",
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "父之弟之女，年幼"
+  },
+  {
+   "term": "堂兄弟",
+   "candidates": [
+    "F.OB.s",
+    "F.YB.s"
+   ],
+   "age": null,
+   "ambiguous": true,
+   "kind": "kin",
+   "note": "父系兄弟之子"
+  },
+  {
+   "term": "堂姐妹",
+   "candidates": [
+    "F.OB.d",
+    "F.YB.d"
+   ],
+   "age": null,
+   "ambiguous": true,
+   "kind": "kin",
+   "note": "父系兄弟之女"
+  },
+  {
+   "term": "表哥",
+   "candidates": [
+    "M.S.s",
+    "M.B.s",
+    "F.S.s"
+   ],
+   "age": "older",
+   "ambiguous": true,
+   "kind": "kin",
+   "note": "非父系兄弟之子"
+  },
+  {
+   "term": "表兄",
+   "candidates": [
+    "M.S.s",
+    "M.B.s",
+    "F.S.s"
+   ],
+   "age": "older",
+   "ambiguous": true,
+   "kind": "kin",
+   "note": "书面，年长"
+  },
+  {
+   "term": "表弟",
+   "candidates": [
+    "M.S.s",
+    "M.B.s",
+    "F.S.s"
+   ],
+   "age": "younger",
+   "ambiguous": true,
+   "kind": "kin",
+   "note": "非父系兄弟之子，年幼"
+  },
+  {
+   "term": "表姐",
+   "candidates": [
+    "M.S.d",
+    "M.B.d",
+    "F.S.d"
+   ],
+   "age": "older",
+   "ambiguous": true,
+   "kind": "kin",
+   "note": "非父系兄弟之女，年长"
+  },
+  {
+   "term": "表妹",
+   "candidates": [
+    "M.S.d",
+    "M.B.d",
+    "F.S.d"
+   ],
+   "age": "younger",
+   "ambiguous": true,
+   "kind": "kin",
+   "note": "非父系兄弟之女，年幼"
+  },
+  {
+   "term": "表兄弟",
+   "candidates": [
+    "M.S.s",
+    "M.B.s",
+    "F.S.s"
+   ],
+   "age": null,
+   "ambiguous": true,
+   "kind": "kin",
+   "note": "姑姨舅之子"
+  },
+  {
+   "term": "表姐妹",
+   "candidates": [
+    "M.S.d",
+    "M.B.d",
+    "F.S.d"
+   ],
+   "age": null,
+   "ambiguous": true,
+   "kind": "kin",
+   "note": "姑姨舅之女"
+  },
+  {
+   "term": "侄子",
+   "candidates": [
+    "OB.s"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "兄之子"
+  },
+  {
+   "term": "侄儿",
+   "candidates": [
+    "OB.s"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "口语"
+  },
+  {
+   "term": "侄女",
+   "candidates": [
+    "OB.d"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "兄之女"
+  },
+  {
+   "term": "外甥",
+   "candidates": [
+    "OS.s",
+    "YS.s"
+   ],
+   "age": null,
+   "ambiguous": true,
+   "kind": "kin",
+   "note": "姐妹之子"
+  },
+  {
+   "term": "外甥女",
+   "candidates": [
+    "OS.d",
+    "YS.d"
+   ],
+   "age": null,
+   "ambiguous": true,
+   "kind": "kin",
+   "note": "姐妹之女"
+  },
+  {
+   "term": "丈夫",
+   "candidates": [
+    "H"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "配偶"
+  },
+  {
+   "term": "老公",
+   "candidates": [
+    "H"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "口语"
+  },
+  {
+   "term": "先生",
+   "candidates": [
+    "H"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "可指丈夫，亦为泛称"
+  },
+  {
+   "term": "妻子",
+   "candidates": [
+    "W"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "配偶"
+  },
+  {
+   "term": "老婆",
+   "candidates": [
+    "W"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "口语"
+  },
+  {
+   "term": "太太",
+   "candidates": [
+    "W"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "旧称/敬称"
+  },
+  {
+   "term": "爱人",
+   "candidates": [
+    "H",
+    "W"
+   ],
+   "age": null,
+   "ambiguous": true,
+   "kind": "kin",
+   "note": "可指夫或妻"
+  },
+  {
+   "term": "公公",
+   "candidates": [
+    "H.F"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "夫之父"
+  },
+  {
+   "term": "婆婆",
+   "candidates": [
+    "H.M"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "夫之母"
+  },
+  {
+   "term": "岳父",
+   "candidates": [
+    "W.F"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "妻之父"
+  },
+  {
+   "term": "岳母",
+   "candidates": [
+    "W.M"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "妻之母"
+  },
+  {
+   "term": "丈人",
+   "candidates": [
+    "W.F"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "口语/旧称"
+  },
+  {
+   "term": "丈母娘",
+   "candidates": [
+    "W.M"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "口语"
+  },
+  {
+   "term": "岳丈",
+   "candidates": [
+    "W.F"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "书面"
+  },
+  {
+   "term": "嫂子",
+   "candidates": [
+    "OB.W"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "兄之妻"
+  },
+  {
+   "term": "嫂嫂",
+   "candidates": [
+    "OB.W"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "口语"
+  },
+  {
+   "term": "弟媳",
+   "candidates": [
+    "YB.W"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "弟之妻"
+  },
+  {
+   "term": "弟妹",
+   "candidates": [
+    "YB.W"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "弟之妻，亦为排行泛称"
+  },
+  {
+   "term": "姐夫",
+   "candidates": [
+    "OS.H"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "姐之夫"
+  },
+  {
+   "term": "妹夫",
+   "candidates": [
+    "YS.H"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "妹之夫"
+  },
+  {
+   "term": "小舅子",
+   "candidates": [
+    "W.YB"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "妻之弟"
+  },
+  {
+   "term": "大舅子",
+   "candidates": [
+    "W.OB"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "妻之兄"
+  },
+  {
+   "term": "小姨子",
+   "candidates": [
+    "W.YS"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "妻之妹"
+  },
+  {
+   "term": "大姨子",
+   "candidates": [
+    "W.OS"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "妻之姐"
+  },
+  {
+   "term": "儿媳",
+   "candidates": [
+    "s.W"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "子之妻"
+  },
+  {
+   "term": "媳妇",
+   "candidates": [
+    "s.W",
+    "W"
+   ],
+   "age": null,
+   "ambiguous": true,
+   "kind": "kin",
+   "note": "北方多指妻子，也可指儿媳"
+  },
+  {
+   "term": "女婿",
+   "candidates": [
+    "d.H"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "女之夫"
+  },
+  {
+   "term": "继父",
+   "candidates": [
+    "F"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "法律拟制，抚养关系"
+  },
+  {
+   "term": "继母",
+   "candidates": [
+    "M"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "法律拟制，抚养关系"
+  },
+  {
+   "term": "后爸",
+   "candidates": [
+    "F"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "口语，继父"
+  },
+  {
+   "term": "后妈",
+   "candidates": [
+    "M"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "口语，继母"
+  },
+  {
+   "term": "养父",
+   "candidates": [
+    "F"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "收养关系"
+  },
+  {
+   "term": "养母",
+   "candidates": [
+    "M"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "收养关系"
+  },
+  {
+   "term": "义父",
+   "candidates": [
+    "F"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "结义关系"
+  },
+  {
+   "term": "义母",
+   "candidates": [
+    "M"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "结义关系"
+  },
+  {
+   "term": "干爹",
+   "candidates": [],
+   "age": null,
+   "ambiguous": false,
+   "kind": "fictive",
+   "role": "father_figure",
+   "note": "拟制亲属，不映射血缘边"
+  },
+  {
+   "term": "干爸",
+   "candidates": [],
+   "age": null,
+   "ambiguous": false,
+   "kind": "fictive",
+   "role": "father_figure",
+   "note": "拟制亲属，不映射血缘边"
+  },
+  {
+   "term": "干妈",
+   "candidates": [],
+   "age": null,
+   "ambiguous": false,
+   "kind": "fictive",
+   "role": "mother_figure",
+   "note": "拟制亲属，不映射血缘边"
+  },
+  {
+   "term": "干娘",
+   "candidates": [],
+   "age": null,
+   "ambiguous": false,
+   "kind": "fictive",
+   "role": "mother_figure",
+   "note": "拟制亲属，不映射血缘边"
+  },
+  {
+   "term": "干哥",
+   "candidates": [],
+   "age": null,
+   "ambiguous": false,
+   "kind": "fictive",
+   "role": "sibling_figure",
+   "note": "拟制亲属，不映射血缘边"
+  },
+  {
+   "term": "干姐",
+   "candidates": [],
+   "age": null,
+   "ambiguous": false,
+   "kind": "fictive",
+   "role": "sibling_figure",
+   "note": "拟制亲属，不映射血缘边"
+  },
+  {
+   "term": "师傅",
+   "candidates": [],
+   "age": null,
+   "ambiguous": false,
+   "kind": "social",
+   "role": "service_or_mentor",
+   "note": "社会称谓，语义依语境"
+  },
+  {
+   "term": "师父",
+   "candidates": [],
+   "age": null,
+   "ambiguous": false,
+   "kind": "social",
+   "role": "service_or_mentor",
+   "note": "社会称谓，语义依语境"
+  },
+  {
+   "term": "老师",
+   "candidates": [],
+   "age": null,
+   "ambiguous": false,
+   "kind": "social",
+   "role": "teacher",
+   "note": "社会称谓"
+  },
+  {
+   "term": "老板",
+   "candidates": [],
+   "age": null,
+   "ambiguous": false,
+   "kind": "social",
+   "role": "boss",
+   "note": "社会称谓"
+  }
+ ]
+}
