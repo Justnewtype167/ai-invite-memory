@@ -1539,7 +1539,7 @@
    "error": "E_CN_PARSE"
   },
   {
-   "expr": "下下个月",
+   "expr": "下下下个月",
    "anchor": "2026-10-29T10:00:00+08:00",
    "error": "E_CN_PARSE"
   },

@@ -1536,6 +1536,26 @@
    "ambiguous": false,
    "kind": "kin",
    "note": "口语/方言变体"
+  },
+  {
+   "term": "家母",
+   "candidates": [
+    "M"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "书面谦称"
+  },
+  {
+   "term": "家严",
+   "candidates": [
+    "F"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "书面谦称"
   }
  ]
 }
