@@ -782,32 +782,35 @@
   {
    "term": "侄子",
    "candidates": [
-    "OB.s"
+    "OB.s",
+    "YB.s"
    ],
    "age": null,
-   "ambiguous": false,
+   "ambiguous": true,
    "kind": "kin",
-   "note": "兄之子"
+   "note": "兄弟之子"
   },
   {
    "term": "侄儿",
    "candidates": [
-    "OB.s"
+    "OB.s",
+    "YB.s"
    ],
    "age": null,
-   "ambiguous": false,
+   "ambiguous": true,
    "kind": "kin",
-   "note": "口语"
+   "note": "口语，兄弟之子"
   },
   {
    "term": "侄女",
    "candidates": [
-    "OB.d"
+    "OB.d",
+    "YB.d"
    ],
    "age": null,
-   "ambiguous": false,
+   "ambiguous": true,
    "kind": "kin",
-   "note": "兄之女"
+   "note": "兄弟之女"
   },
   {
    "term": "外甥",
@@ -1151,7 +1154,7 @@
    "age": null,
    "ambiguous": false,
    "kind": "kin",
-   "note": "收养关系"
+   "note": "拟制血亲，收养关系"
   },
   {
    "term": "养母",
@@ -1161,7 +1164,7 @@
    "age": null,
    "ambiguous": false,
    "kind": "kin",
-   "note": "收养关系"
+   "note": "拟制血亲，收养关系"
   },
   {
    "term": "义父",
