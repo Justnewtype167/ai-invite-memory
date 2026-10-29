@@ -138,6 +138,45 @@ kind != kin   ⇒   candidates 必须为空数组
 
 `kinship_labels.json` 至少 **120 条**，主指标 = **候选集合完全匹配率 ≥ 0.90**，副指标 micro-F1。
 
+
+### 3.5 标注集不得与词表同源（硬规则）
+
+`kinship.json` 是**实现词表**，`kinship_labels.json` 是**评测集**。两者不得是同一份数据。
+
+```
+overlap = |labels 的 term ∩ lexicon 的 term| / |labels 的 term|
+
+要求四条同时满足：
+  overlap ≤ 0.70
+  labels 总数 ≥ 180
+  labels 中「含『的』的组合式」≥ 40 条
+  labels 中「口语/方言变体」≥ 14 条
+
+不满足 ⇒ C1 直接判 FAIL，不论匹配率多少。
+```
+
+理由：若标注集里每个词都在词表中，实现只要查表就能拿 100%——
+**这个分数不能证明任何事，它只证明文件被复制了一份。**
+
+组合式示例（这些不在词表里，必须靠「的」分段 + 逐段查表 + 边串接）：
+
+```
+我爸的哥哥          F.OB
+母亲的姐姐          M.OS
+我老公的妈妈        H.M
+我爸的弟弟的女儿    F.YB.d
+我姐的女儿          OS.d
+```
+
+口语 / 方言变体示例：
+
+```
+俺爹     F
+老汉儿   F（川渝）
+阿妈     M（粤）
+干妈     M 位（kind=fictive，candidates 为空）
+```
+
 另加**数据完整性检查**（不占分数，但必须全过）：
 
 1. 所有 `kind != kin` 的条目，`candidates` 必须是 `[]`
@@ -303,7 +342,7 @@ python -m jian_cn.cli norm "臺灣裏面"
 
 | # | 测试 | 断言 |
 |---|---|---|
-| C1 | `test_cn_kinship` | 120 条标注，候选集合完全匹配率 **≥ 0.90**；未收录词抛 `E_CN_UNKNOWN_TERM` |
+| C1 | `test_cn_kinship` | **先过 §3.5 同源检查**（overlap ≤ 0.70、总数 ≥180、组合式 ≥40、变体 ≥14），再看匹配率 **≥ 0.90**；未收录词抛 `E_CN_UNKNOWN_TERM` |
 | C2 | `test_cn_timex` | A 类 120 条区间完全一致率 **≥ 0.95**；B 类 40 条 certainty/granularity **≥ 0.90**（不看区间）；C 类 20 条必须抛 `E_CN_PARSE` 且含「农历」；50 条畸形输入 100% 不崩溃 |
 | C3 | `test_cn_slang` | 留出集 usable 判定准确率 **≥ 0.90**；peak 后单调不增；`confidence<60` 不参与判定 |
 | C4 | `test_cn_normalize` | 200 字覆盖 ≥ 0.99；幂等；简/ASCII 输入零改动；**反向转换不存在** |
