@@ -42,3 +42,58 @@
 仓库还没有 `git init`。**M1 的代码只在本地文件系统里，没有历史。**
 下一步：`git init` → 首次提交 → 打 tag `v0.1-m1`。
 
+
+---
+
+## 8. 附：封版时发现的一次「静默毁库」事件（已修）
+
+> 严重程度：**高**。它不会报错，只会让所有 Windows 克隆悄悄失效。
+
+### 现象
+
+提交并打 tag 之后，我在干净目录里 `git clone`，然后跑：
+
+```
+verify docs/demo/store  →  FAIL E_NOT_CANONICAL 事件 ev_000001 不是规范字节
+```
+
+同一份内容在本地仓库里 verify 是通过的。**本地通过，克隆失败。**
+
+### 根因（三段）
+
+1. 这台机器的 `git config --system core.autocrlf` 是 **true**（Git for Windows 安装器默认开启）
+2. 仓库里**没有 `.gitattributes`**，所以签出时 git 把 `\n` 改写成了 `\r\n`
+3. 上一轮新增的 §4.2「字节必须等于规范序列化」把这个改写变成了硬失败
+
+更隐蔽的是：我执行过 `git add --renormalize .`，但**它不会把新建的 `.gitattributes` 加进索引**，
+所以属性文件没进那次提交——本地看一切正常，克隆出去属性根本没生效。
+
+### 修复
+
+```
+.gitattributes
+  * text=auto eol=lf
+  *.jsonl text eol=lf
+  *.aiem binary
+```
+
+重新 `git add .gitattributes` + `--renormalize` + `--amend`，再克隆复验。
+
+### 复验结果（干净克隆）
+
+```
+attrs        eol=lf
+CR counts    [0, 0]
+verify store    OK events=3 segments=1 head=61a5d726 state=sealed
+verify capsule  OK events=3 segments=1 head=61a5d726 state=sealed
+tests           Ran 31 tests, OK
+```
+
+**head 与本地完全一致**，证明字节被原样保留了。
+
+### 教训（已写进 AGENTS.md）
+
+> 对字节级格式，**本地验过不算数**。必须在 `git clone` 出来的干净目录里复验一次。
+
+这条教训比这次 bug 本身值钱：它解释了为什么很多「可复现格式」在别人机器上从来跑不通。
+

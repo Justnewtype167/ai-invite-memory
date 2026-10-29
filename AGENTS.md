@@ -101,3 +101,11 @@ OPEN:   不确定的地方、与规范冲突的地方、我没做的事
 
 **不许在 TEST 里写「应该通过」。必须贴真实输出。**
 
+
+## 8. 字节资产纪律（血换来的）
+
+1. **`.gitattributes` 必须在第一次提交里**：`* text=auto eol=lf`、`*.jsonl text eol=lf`、`*.aiem binary`
+2. **本地验过不算数**：任何影响字节的改动，必须在 `git clone` 出的干净目录里复验 `verify`
+3. Windows 上 `core.autocrlf` 默认可能是 true —— 属性文件是唯一可携带的保护
+4. 不要用 `git add --renormalize` 来「顺便加入新文件」，它只重规范化已跟踪的文件
+
