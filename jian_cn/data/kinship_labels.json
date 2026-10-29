@@ -1,6 +1,6 @@
 {
  "version": 1,
- "note": "labeled expected outputs; frozen after commit",
+ "note": "labeled expected outputs; frozen after commit; includes 的-composites and spoken/dialect variants per 3.5",
  "entries": [
   {
    "term": "父亲",
@@ -1272,6 +1272,833 @@
    "kind": "social",
    "role": "boss",
    "note": "社会称谓"
+  },
+  {
+   "term": "我爸的哥哥",
+   "candidates": [
+    "F.OB"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "母亲的姐姐",
+   "candidates": [
+    "M.OS"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我老公的妈妈",
+   "candidates": [
+    "H.M"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我爸的弟弟的女儿",
+   "candidates": [
+    "F.YB.d"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我姐的女儿",
+   "candidates": [
+    "OS.d"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我妈妈的哥哥",
+   "candidates": [
+    "M.OB"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我爸爸的姐姐",
+   "candidates": [
+    "F.OS"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我爸爸的妹妹",
+   "candidates": [
+    "F.YS"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我哥哥的老婆",
+   "candidates": [
+    "OB.W"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我弟弟的老婆",
+   "candidates": [
+    "YB.W"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我妹妹的丈夫",
+   "candidates": [
+    "YS.H"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我姐姐的丈夫",
+   "candidates": [
+    "OS.H"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我儿子的妻子",
+   "candidates": [
+    "s.W"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我女儿的儿子",
+   "candidates": [
+    "d.s"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我女儿的女儿",
+   "candidates": [
+    "d.d"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我儿子的儿子",
+   "candidates": [
+    "s.s"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我孙子的儿子",
+   "candidates": [
+    "s.s.s"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我爷爷的哥哥",
+   "candidates": [
+    "F.F.OB"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我奶奶的妹妹",
+   "candidates": [
+    "F.M.YS"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我外公的弟弟",
+   "candidates": [
+    "M.F.YB"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我外婆的姐姐",
+   "candidates": [
+    "M.M.OS"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我爸爸的爸爸",
+   "candidates": [
+    "F.F"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我妈妈的妈妈",
+   "candidates": [
+    "M.M"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我爸爸的妈妈",
+   "candidates": [
+    "F.M"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我妈妈的爸爸",
+   "candidates": [
+    "M.F"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我老婆的爸爸",
+   "candidates": [
+    "W.F"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我老婆的妈妈",
+   "candidates": [
+    "W.M"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我丈夫的弟弟",
+   "candidates": [
+    "H.YB"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我丈夫的姐姐",
+   "candidates": [
+    "H.OS"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我妻子的哥哥",
+   "candidates": [
+    "W.OB"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我妻子的妹妹",
+   "candidates": [
+    "W.YS"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我舅舅的女儿",
+   "candidates": [
+    "M.B.d"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我舅舅的儿子",
+   "candidates": [
+    "M.B.s"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我姑妈的儿子",
+   "candidates": [
+    "F.S.s"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我姑妈的女儿",
+   "candidates": [
+    "F.S.d"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我姨妈的女儿",
+   "candidates": [
+    "M.S.d"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我姨妈的儿子",
+   "candidates": [
+    "M.S.s"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我侄子的儿子",
+   "candidates": [
+    "OB.s.s"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我侄女的女儿",
+   "candidates": [
+    "OB.d.d"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我外甥的儿子",
+   "candidates": [
+    "OS.s.s",
+    "YS.s.s"
+   ],
+   "age": null,
+   "ambiguous": true,
+   "kind": "kin",
+   "note": "组合式，姐妹的长幼未知"
+  },
+  {
+   "term": "我外甥的女儿",
+   "candidates": [
+    "OS.s.d",
+    "YS.s.d"
+   ],
+   "age": null,
+   "ambiguous": true,
+   "kind": "kin",
+   "note": "组合式，姐妹的长幼未知"
+  },
+  {
+   "term": "我嫂子的儿子",
+   "candidates": [
+    "OB.W.s"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我女婿的爸爸",
+   "candidates": [
+    "d.H.F"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我儿媳的妈妈",
+   "candidates": [
+    "s.W.M"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我岳父的哥哥",
+   "candidates": [
+    "W.F.OB"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我婆婆的妹妹",
+   "candidates": [
+    "H.M.YS"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我表姐的儿子",
+   "candidates": [
+    "M.S.d.s",
+    "M.B.d.s",
+    "F.S.d.s"
+   ],
+   "age": null,
+   "ambiguous": true,
+   "kind": "kin",
+   "note": "组合式，表亲来源不明"
+  },
+  {
+   "term": "我表哥的女儿",
+   "candidates": [
+    "M.S.s.d",
+    "M.B.s.d",
+    "F.S.s.d"
+   ],
+   "age": null,
+   "ambiguous": true,
+   "kind": "kin",
+   "note": "组合式，表亲来源不明"
+  },
+  {
+   "term": "我爸的哥哥的儿子的女儿",
+   "candidates": [
+    "F.OB.s.d"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我老公的妈妈的姐姐",
+   "candidates": [
+    "H.M.OS"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我妈妈的姐姐的女儿",
+   "candidates": [
+    "M.OS.d"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我爸爸的弟弟的老婆",
+   "candidates": [
+    "F.YB.W"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我舅舅的妻子的儿子",
+   "candidates": [
+    "M.B.W.s"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我姐夫的儿子",
+   "candidates": [
+    "OS.H.s"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我弟媳的爸爸",
+   "candidates": [
+    "YB.W.F"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我嫂子的妈妈",
+   "candidates": [
+    "OB.W.M"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我孙女的儿子",
+   "candidates": [
+    "s.d.s"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我外孙的女儿",
+   "candidates": [
+    "d.s.d"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式"
+  },
+  {
+   "term": "我继父的哥哥",
+   "candidates": [
+    "F.OB"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式，继父按父边"
+  },
+  {
+   "term": "我养母的妹妹",
+   "candidates": [
+    "M.YS"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "note": "组合式，养母按母边"
+  },
+  {
+   "term": "俺爹",
+   "candidates": [
+    "F"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "variant": "dialect",
+   "note": "口语/方言变体"
+  },
+  {
+   "term": "俺妈",
+   "candidates": [
+    "M"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "variant": "dialect",
+   "note": "口语/方言变体"
+  },
+  {
+   "term": "俺爷",
+   "candidates": [
+    "F.F"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "variant": "dialect",
+   "note": "口语/方言变体"
+  },
+  {
+   "term": "俺奶",
+   "candidates": [
+    "F.M"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "variant": "dialect",
+   "note": "口语/方言变体"
+  },
+  {
+   "term": "俺姥爷",
+   "candidates": [
+    "M.F"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "variant": "dialect",
+   "note": "口语/方言变体"
+  },
+  {
+   "term": "俺姥姥",
+   "candidates": [
+    "M.M"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "variant": "dialect",
+   "note": "口语/方言变体"
+  },
+  {
+   "term": "爹地",
+   "candidates": [
+    "F"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "variant": "spoken",
+   "note": "口语/方言变体"
+  },
+  {
+   "term": "妈咪",
+   "candidates": [
+    "M"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "variant": "spoken",
+   "note": "口语/方言变体"
+  },
+  {
+   "term": "娘亲",
+   "candidates": [
+    "M"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "variant": "spoken",
+   "note": "口语/方言变体"
+  },
+  {
+   "term": "家母",
+   "candidates": [
+    "M"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "variant": "written",
+   "note": "书面变体"
+  },
+  {
+   "term": "家严",
+   "candidates": [
+    "F"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "variant": "written",
+   "note": "书面变体"
+  },
+  {
+   "term": "老头子",
+   "candidates": [
+    "H"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "variant": "spoken",
+   "note": "多指丈夫"
+  },
+  {
+   "term": "老伴",
+   "candidates": [
+    "H",
+    "W"
+   ],
+   "age": null,
+   "ambiguous": true,
+   "kind": "kin",
+   "variant": "spoken",
+   "note": "可指夫或妻"
+  },
+  {
+   "term": "娃他爹",
+   "candidates": [
+    "H"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "variant": "dialect",
+   "note": "口语/方言变体"
+  },
+  {
+   "term": "娃他娘",
+   "candidates": [
+    "W"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "variant": "dialect",
+   "note": "口语/方言变体"
+  },
+  {
+   "term": "细佬",
+   "candidates": [
+    "YB"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "variant": "dialect",
+   "note": "粤语弟弟"
+  },
+  {
+   "term": "细妹",
+   "candidates": [
+    "YS"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "variant": "dialect",
+   "note": "粤语妹妹"
+  },
+  {
+   "term": "阿婆",
+   "candidates": [
+    "M.M"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "variant": "dialect",
+   "note": "方言祖母"
+  },
+  {
+   "term": "阿爷",
+   "candidates": [
+    "F.F"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "variant": "dialect",
+   "note": "粤语祖父"
+  },
+  {
+   "term": "俺哥",
+   "candidates": [
+    "OB"
+   ],
+   "age": null,
+   "ambiguous": false,
+   "kind": "kin",
+   "variant": "dialect",
+   "note": "口语/方言变体"
   }
  ]
 }
