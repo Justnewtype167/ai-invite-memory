@@ -13,14 +13,15 @@ Usage:
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import sys
 import urllib.request
 
 ENDPOINT = "http://127.0.0.1:11434/api/generate"
-MODEL = "qwen3.5:9b"
-QUANT = "Q4_K_M"
+DEFAULT_MODEL = "qwen3.5:9b"
+DEFAULT_QUANT = ""
 TEMP_MILLI = 0
 SEED = 42
 TIMEOUT = 180
@@ -52,16 +53,16 @@ def build_prompt(target: str, evidence: str) -> str:
     )
 
 
-def call_ollama(prompt: str) -> str:
+def call_ollama(prompt: str, model: str, temp_milli: int, seed: int) -> str:
     """POST one non-streaming /api/generate request and return its text."""
     body = json.dumps({
         "keep_alive": KEEP_ALIVE,
-        "model": MODEL,
+        "model": model,
         "options": {
             "num_ctx": NUM_CTX,
             "num_predict": NUM_PREDICT,
-            "seed": SEED,
-            "temperature": TEMP_MILLI / 1000,
+            "seed": seed,
+            "temperature": temp_milli / 1000,
         },
         "prompt": prompt,
         "stream": False,
@@ -78,24 +79,38 @@ def call_ollama(prompt: str) -> str:
     return text.strip()[:500]
 
 
-def _reply(target: str, evidence: str) -> dict[str, object]:
-    text = call_ollama(build_prompt(target, evidence))
+def _reply(
+    target: str,
+    evidence: str,
+    model: str,
+    quant: str,
+    temp_milli: int,
+    seed: int,
+) -> dict[str, object]:
+    text = call_ollama(build_prompt(target, evidence), model, temp_milli, seed)
     reply: dict[str, object] = {
-        "model": MODEL,
+        "model": model,
         "ok": True,
-        "quant": QUANT,
-        "seed": SEED,
-        "temp_milli": TEMP_MILLI,
+        "seed": seed,
+        "temp_milli": temp_milli,
         "text": text,
     }
+    if quant:
+        reply["quant"] = quant
     weights_sha = os.environ.get("JIAN_WEIGHTS_SHA", "")
     if weights_sha:
         reply["weights_sha"] = weights_sha
     return reply
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     """Read one request line, run one proposal, print one reply line."""
+    parser = argparse.ArgumentParser(prog="proposer_ollama")
+    parser.add_argument("--model", default=DEFAULT_MODEL)
+    parser.add_argument("--quant", default=DEFAULT_QUANT)
+    parser.add_argument("--temp-milli", type=int, default=TEMP_MILLI)
+    parser.add_argument("--seed", type=int, default=SEED)
+    args = parser.parse_args(argv)
     try:
         request = json.loads(sys.stdin.buffer.readline().decode("utf-8"))
         if not isinstance(request, dict):
@@ -104,7 +119,12 @@ def main() -> int:
         evidence = request.get("evidence")
         if not isinstance(target, str) or not isinstance(evidence, str):
             raise ValueError("request needs string target and evidence")
-        reply = _reply(target, evidence)
+        model = request.get("model") or args.model
+        if not isinstance(model, str) or not model:
+            raise ValueError("model must be a non-empty string")
+        reply = _reply(
+            target, evidence, model, args.quant, args.temp_milli, args.seed
+        )
     except Exception as exc:
         reply = {"code": "E_PROPOSER_FAILED", "message": str(exc), "ok": False}
     sys.stdout.buffer.write(
