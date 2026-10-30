@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from jian_kernel.errors import (
+    E_KN_BAD_PROPOSAL,
+    E_KN_BAD_TARGET,
     E_KN_GATE_CANON,
     E_KN_GATE_DELTA,
     E_KN_GATE_STATE,
@@ -13,6 +15,7 @@ from jian_kernel.errors import (
 )
 from jian_kernel.kernel import (
     STATE_STEP_LIMIT,
+    STYLE_TARGETS,
     CanonEntry,
     Diff,
     EvidenceEvent,
@@ -61,6 +64,27 @@ def diff_canon(
 def _order(entry: CanonEntry) -> tuple[str, str, str]:
     first = entry.evidence[0] if entry.evidence else ""
     return (entry.kind, first, entry.text)
+
+
+def check_proposals(events: list[EvidenceEvent]) -> None:
+    """Apply G5a and G5b: a proposal must name an allowed target and a source.
+
+    G5a and G5b are hard failures, not silent rejections: a bad target or a
+    missing model means the writer is buggy or probing, so compilation stops.
+    """
+    for event in events:
+        if event.type != "proposal":
+            continue
+        if event.target not in STYLE_TARGETS:
+            raise KernelError(
+                E_KN_BAD_TARGET,
+                f"提案 target 不在白名单：{event.target}（允许 {STYLE_TARGETS}）",
+            )
+        if not event.model or not event.prompt_sha:
+            raise KernelError(
+                E_KN_BAD_PROPOSAL,
+                f"提案缺少 model 或 prompt_sha：{event.event_id}",
+            )
 
 
 def check_gates(

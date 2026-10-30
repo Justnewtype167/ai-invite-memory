@@ -18,16 +18,23 @@ from .errors import E_SCHEMA, JianError
 
 SEGMENT_MAX_EVENTS = 100
 TEXT_MAX_CHARS = 8000
+PROPOSAL_TEXT_MAX_CHARS = 500
+MODEL_MAX_CHARS = 64
+PROMPT_SHA_MAX_CHARS = 64
 GENESIS_PREV = "0" * 64
 
 ID_RE = re.compile(r"^ev_[0-9]{6}$")
 SEG_RE = re.compile(r"^seg-[0-9]{4}$")
 HEX_RE = re.compile(r"^[0-9a-f]{64}$")
+PROMPT_SHA_RE = re.compile(r"^[0-9a-fA-F]{1,64}$")
 TIME_RE = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$")
 
 ROLES = ("user", "assistant")
-EVENT_TYPES = ("turn", "feedback", "directive", "milestone", "checkpoint")
-FIELDS = ("v", "id", "ep", "t", "type", "role", "text", "prev", "hash", "kind", "target")
+EVENT_TYPES = ("turn", "feedback", "directive", "milestone", "checkpoint", "proposal")
+FIELDS = (
+    "v", "id", "ep", "t", "type", "role", "text", "prev", "hash", "kind",
+    "target", "model", "prompt_sha",
+)
 
 COMMON_FIELDS = frozenset({"v", "id", "ep", "t", "type", "text", "prev", "hash"})
 _TYPE_FIELDS: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
@@ -36,6 +43,7 @@ _TYPE_FIELDS: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
     "directive": (("kind",), ()),
     "milestone": ((), ()),
     "checkpoint": ((), ()),
+    "proposal": (("target", "model", "prompt_sha"), ()),
 }
 KIND_VALUES: dict[str, tuple[str, ...]] = {
     "feedback": ("praise", "correction"),
@@ -58,6 +66,8 @@ class Event:
     hash: str
     kind: str | None = None
     target: str | None = None
+    model: str | None = None
+    prompt_sha: str | None = None
 
     def body(self) -> dict[str, object]:
         """Return the hashed view of this event; the ``hash`` field is excluded."""
@@ -76,6 +86,10 @@ class Event:
             body["kind"] = self.kind
         if self.target is not None:
             body["target"] = self.target
+        if self.model is not None:
+            body["model"] = self.model
+        if self.prompt_sha is not None:
+            body["prompt_sha"] = self.prompt_sha
         return body
 
     def as_dict(self) -> dict[str, object]:
@@ -144,9 +158,13 @@ def new_event(
     type: str = "turn",
     kind: str | None = None,
     target: str | None = None,
+    model: str | None = None,
+    prompt_sha: str | None = None,
 ) -> Event:
     """Build and hash a new event after validating every field."""
-    event_type, role, kind, target = _validate_fields(type, role, text, kind, target)
+    event_type, role, kind, target, model, prompt_sha = _validate_fields(
+        type, role, text, kind, target, model, prompt_sha
+    )
     if not SEG_RE.match(ep):
         raise JianError(E_SCHEMA, f"非法段名：{ep}")
     if not HEX_RE.match(prev):
@@ -168,9 +186,14 @@ def new_event(
         body["kind"] = kind
     if target is not None:
         body["target"] = target
+    if model is not None:
+        body["model"] = model
+    if prompt_sha is not None:
+        body["prompt_sha"] = prompt_sha
     digest = compute_hash(prev, body)
     return Event(
-        1, event_id, ep, normalized, event_type, role, text, prev, digest, kind, target
+        1, event_id, ep, normalized, event_type, role, text, prev, digest, kind,
+        target, model, prompt_sha,
     )
 
 
@@ -203,6 +226,8 @@ def parse_event(data: object) -> Event:
     text = _string_field(data, "text")
     if not 1 <= len(text) <= TEXT_MAX_CHARS:
         raise JianError(E_SCHEMA, f"事件 {event_id} 的 text 长度越界", event_id)
+    if event_type == "proposal" and len(text) > PROPOSAL_TEXT_MAX_CHARS:
+        raise JianError(E_SCHEMA, f"事件 {event_id} 的 text 超过提案上限", event_id)
     prev = _string_field(data, "prev")
     if not HEX_RE.match(prev):
         raise JianError(E_SCHEMA, f"事件 {event_id} 的 prev 非法", event_id)
@@ -211,9 +236,15 @@ def parse_event(data: object) -> Event:
         raise JianError(E_SCHEMA, f"事件 {event_id} 的 hash 非法", event_id)
     role = _optional_role(data, event_id)
     kind = _optional_kind(data, event_type, event_id)
-    target = _optional_target(data, event_id)
+    if event_type == "proposal":
+        target, model, prompt_sha = _proposal_fields(data, event_id)
+    else:
+        target = _optional_target(data, event_id)
+        model = None
+        prompt_sha = None
     return Event(
-        1, event_id, segment, stamp, event_type, role, text, prev, digest, kind, target
+        1, event_id, segment, stamp, event_type, role, text, prev, digest, kind,
+        target, model, prompt_sha,
     )
 
 
@@ -227,14 +258,24 @@ def parse_line(line: str) -> Event:
 
 
 def _validate_fields(
-    event_type: Any, role: Any, text: Any, kind: Any, target: Any
-) -> tuple[str, str | None, str | None, str | None]:
+    event_type: Any,
+    role: Any,
+    text: Any,
+    kind: Any,
+    target: Any,
+    model: Any,
+    prompt_sha: Any,
+) -> tuple[str, str | None, str | None, str | None, str | None, str | None]:
     if not isinstance(event_type, str) or event_type not in EVENT_TYPES:
         raise JianError(E_SCHEMA, f"未知事件类型：{event_type}")
     required, optional = _TYPE_FIELDS[event_type]
-    if not isinstance(text, str) or not 1 <= len(text) <= TEXT_MAX_CHARS:
-        raise JianError(E_SCHEMA, "text 长度必须是 1-8000 字符")
-    for name, value in (("role", role), ("kind", kind), ("target", target)):
+    limit = PROPOSAL_TEXT_MAX_CHARS if event_type == "proposal" else TEXT_MAX_CHARS
+    if not isinstance(text, str) or not 1 <= len(text) <= limit:
+        raise JianError(E_SCHEMA, f"text 长度必须是 1-{limit} 字符")
+    for name, value in (
+        ("role", role), ("kind", kind), ("target", target),
+        ("model", model), ("prompt_sha", prompt_sha),
+    ):
         if value is not None and name not in required and name not in optional:
             raise JianError(E_SCHEMA, f"{event_type} 事件不允许字段 {name}")
     if "role" in required and role not in ROLES:
@@ -242,9 +283,48 @@ def _validate_fields(
     if "kind" in required:
         if kind not in KIND_VALUES[event_type]:
             raise JianError(E_SCHEMA, f"{event_type} 事件的 kind 非法")
+    if event_type == "proposal":
+        return (
+            event_type,
+            role,
+            kind,
+            *_checked_proposal_fields(target, model, prompt_sha),
+        )
     if target is not None and not ID_RE.match(str(target)):
         raise JianError(E_SCHEMA, f"target 必须是事件 id：{target}")
-    return event_type, role, kind, target
+    return event_type, role, kind, target, None, None
+
+
+def _checked_proposal_fields(
+    target: object, model: object, prompt_sha: object
+) -> tuple[str, str, str]:
+    """Return the validated proposal fields; the target whitelist is a gate."""
+    for name, value in (("target", target), ("model", model), ("prompt_sha", prompt_sha)):
+        if not isinstance(value, str) or not value:
+            raise JianError(E_SCHEMA, f"proposal 事件的 {name} 必须是非空字符串")
+    if len(str(target)) > MODEL_MAX_CHARS:
+        raise JianError(E_SCHEMA, "proposal 事件的 target 过长")
+    if len(str(model)) > MODEL_MAX_CHARS:
+        raise JianError(E_SCHEMA, "proposal 事件的 model 过长")
+    if not PROMPT_SHA_RE.match(str(prompt_sha)):
+        raise JianError(E_SCHEMA, "proposal 事件的 prompt_sha 必须是十六进制")
+    return str(target), str(model), str(prompt_sha)
+
+
+def _proposal_fields(
+    data: dict[str, object], event_id: str
+) -> tuple[str, str, str]:
+    """Read the proposal fields; empty strings stay valid for the G5 gate."""
+    target = _string_field(data, "target")
+    model = _string_field(data, "model")
+    prompt_sha = _string_field(data, "prompt_sha")
+    if len(target) > MODEL_MAX_CHARS or len(model) > MODEL_MAX_CHARS:
+        raise JianError(E_SCHEMA, f"事件 {event_id} 的提案字段过长", event_id)
+    if len(prompt_sha) > PROMPT_SHA_MAX_CHARS:
+        raise JianError(E_SCHEMA, f"事件 {event_id} 的 prompt_sha 过长", event_id)
+    if prompt_sha and not PROMPT_SHA_RE.match(prompt_sha):
+        raise JianError(E_SCHEMA, f"事件 {event_id} 的 prompt_sha 非十六进制", event_id)
+    return target, model, prompt_sha
 
 
 def _optional_role(data: dict[str, object], event_id: str) -> str | None:

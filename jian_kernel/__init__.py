@@ -24,7 +24,14 @@ from jian_kernel.kernel import (
     Kernel,
     Policy,
 )
-from jian_kernel.proposer import NullProposer, Proposal, Proposer, ReplayProposer
+from jian_kernel.proposer import (
+    NullProposer,
+    Proposal,
+    Proposer,
+    ReplayProposer,
+    StyleProposal,
+    record_proposal,
+)
 
 __all__ = [
     "Anchor",
@@ -42,12 +49,14 @@ __all__ = [
     "Proposer",
     "RecordResult",
     "ReplayProposer",
+    "StyleProposal",
     "VerifyReport",
     "compile_kernel",
     "diff_versions",
     "history",
     "read_evidence",
     "record_kernel",
+    "record_proposal",
     "restore",
     "verify_kernel",
 ]

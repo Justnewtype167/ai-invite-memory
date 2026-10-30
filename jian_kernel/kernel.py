@@ -28,6 +28,17 @@ HISTORY_FILE = "HISTORY.jsonl"
 META_FILE = "META.json"
 EVIDENCE_DIR = "evidence"
 
+STYLE_TARGET = "self.style"
+STYLE_TARGETS = (STYLE_TARGET,)
+STYLE_TEXT_MAX = 120
+STYLE_TOTAL_MAX = 800
+STYLE_MAX_PER_TARGET = 8
+
+ORIGIN_RULE_ONLY = "rule_only"
+ORIGIN_WITH_PROPOSALS = "with_proposals"
+ORIGIN_RULE_FALLBACK = "rule_fallback"
+ORIGINS = (ORIGIN_RULE_ONLY, ORIGIN_WITH_PROPOSALS, ORIGIN_RULE_FALLBACK)
+
 
 def parse_stamp(value: str) -> datetime:
     """Parse a timezone-aware ISO 8601 string into a UTC datetime."""
@@ -51,6 +62,8 @@ class Policy:
 
     now: str | None = None
     delta_limit: int = DEFAULT_DELTA_LIMIT
+    require_proposals: bool = False
+    allow_fallback: bool = False
 
     def resolved_now(self, fallback: str) -> datetime:
         """Return the policy clock, falling back to the latest evidence stamp."""
@@ -74,6 +87,9 @@ class EvidenceEvent:
     type: str
     kind: str | None
     text: str
+    target: str | None = None
+    model: str | None = None
+    prompt_sha: str | None = None
 
 
 @dataclass(frozen=True)
@@ -192,6 +208,7 @@ class HistoryEntry:
     head: str
     at: str
     delta: Delta
+    origin: str = ORIGIN_RULE_ONLY
 
     def to_payload(self) -> dict[str, object]:
         """Return the JSON-ready view of this history line."""
@@ -200,6 +217,7 @@ class HistoryEntry:
             "delta": self.delta.to_payload(),
             "head": self.head,
             "kid": self.kid,
+            "origin": self.origin,
             "version": self.version,
         }
 
@@ -223,6 +241,9 @@ class Kernel:
     policy_hash: str
     compiler_version: str = COMPILER_VERSION
     generation: int = GENERATION
+    origin: str = ORIGIN_RULE_ONLY
+    style: tuple[str, ...] = ()
+    rejected: int = 0
 
     def graph_payload(self) -> dict[str, object]:
         """Return the canonical graph view."""
@@ -238,6 +259,7 @@ class Kernel:
             "generation": self.generation,
             "head": self.head,
             "kid": self.kid,
+            "origin": self.origin,
             "policy_hash": self.policy_hash,
             "version": version,
         }
@@ -288,11 +310,17 @@ def parse_canon(text: str) -> tuple[CanonEntry, ...]:
 
 
 def kernel_kid(self_md: str, canon_md: str, state: dict[str, int],
-               graph: dict[str, object]) -> str:
-    """Return the content identity of a kernel; version is never included."""
+               graph: dict[str, object], origin: str) -> str:
+    """Return the content identity of a kernel; version is never included.
+
+    ``origin`` records whether a model-shaped source contributed (or the
+    rules had to fall back), so a change of input source always changes the
+    kid.
+    """
     payload = {
         "canon": canon_md,
         "graph": graph,
+        "origin": origin,
         "self": self_md,
         "state": dict(state),
     }

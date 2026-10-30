@@ -16,11 +16,18 @@ from jian_cn.kinship import Kinship, lexicon_terms, parse_kinship
 from jian_cn.timex import parse_time
 from jian_recall.index import is_promise
 
-from jian_kernel.errors import E_KN_IO, E_KN_UNSOURCED, KernelError
+from jian_kernel.errors import E_KN_IO, E_KN_NO_PROPOSAL, E_KN_UNSOURCED, KernelError
+from jian_kernel.gate import check_proposals
 from jian_kernel.kernel import (
     INITIAL_STATE,
+    ORIGIN_RULE_FALLBACK,
+    ORIGIN_RULE_ONLY,
+    ORIGIN_WITH_PROPOSALS,
     STATE_MAX,
     STATE_MIN,
+    STYLE_MAX_PER_TARGET,
+    STYLE_TEXT_MAX,
+    STYLE_TOTAL_MAX,
     Anchor,
     CanonEntry,
     EvidenceEvent,
@@ -32,9 +39,9 @@ from jian_kernel.kernel import (
     render_canon,
     stamp_text,
 )
-from jian_kernel.proposer import NullProposer, Proposal, Proposer
+from jian_kernel.proposer import Proposal, Proposer, ReplayProposer
 
-EVENT_TYPES = ("turn", "directive", "milestone", "feedback")
+EVENT_TYPES = ("turn", "directive", "milestone", "feedback", "proposal")
 PROMISE_DONE = ("已完成", "已办", "做到了")
 FEEDBACK_TRUST = {"correction": -50, "praise": 20}
 FIRST_DAY_INTIMACY = 5
@@ -80,21 +87,25 @@ def _compile(
     proposer: Proposer | None,
 ) -> Kernel:
     chosen = policy if policy is not None else Policy()
-    source = proposer if proposer is not None else NullProposer()
+    source = proposer if proposer is not None else ReplayProposer()
     if not events:
         raise KernelError(E_KN_IO, "证据目录为空")
     moment = chosen.resolved_now(events[-1].stamp)
+    check_proposals(events)
+    style, rejected = _select_style(events)
+    origin = _resolve_origin(chosen, style)
     proposals = source.propose(store, chosen)
-    canon = _build_canon(events, proposals)
-    state = _compute_state(events)
-    edges, anchors = _build_graph(events)
-    self_md = _render_self(events, moment, edges)
+    content = [event for event in events if event.type != "proposal"]
+    canon = _build_canon(content, proposals)
+    state = _compute_state(content)
+    edges, anchors = _build_graph(content)
+    self_md = _render_self(content, moment, edges, style)
     canon_md = render_canon(canon)
     graph = {
         "anchors": [anchor.to_payload() for anchor in anchors],
         "edges": [edge.to_payload() for edge in edges],
     }
-    kid = kernel_kid(self_md, canon_md, state, graph)
+    kid = kernel_kid(self_md, canon_md, state, graph, origin)
     return Kernel(
         kid=kid,
         head=events[-1].event_id,
@@ -105,6 +116,9 @@ def _compile(
         self_md=self_md,
         canon_md=canon_md,
         policy_hash=chosen.hash(moment),
+        origin=origin,
+        style=style,
+        rejected=rejected,
     )
 
 
@@ -144,6 +158,9 @@ def _parse_event(line: str, path: Path) -> EvidenceEvent:
     text = data.get("text")
     event_type = data.get("type", "turn")
     kind = data.get("kind")
+    target = data.get("target")
+    model = data.get("model")
+    prompt_sha = data.get("prompt_sha")
     if not isinstance(event_id, str) or not isinstance(stamp, str) \
             or not isinstance(text, str):
         raise KernelError(E_KN_IO, f"证据字段缺失：{path}")
@@ -151,8 +168,57 @@ def _parse_event(line: str, path: Path) -> EvidenceEvent:
         raise KernelError(E_KN_IO, f"未知事件类型 {event_type}：{path}")
     if kind is not None and not isinstance(kind, str):
         raise KernelError(E_KN_IO, f"证据 kind 不是字符串：{path}")
+    if target is not None and not isinstance(target, str):
+        raise KernelError(E_KN_IO, f"证据 target 不是字符串：{path}")
+    if model is not None and not isinstance(model, str):
+        raise KernelError(E_KN_IO, f"证据 model 不是字符串：{path}")
+    if prompt_sha is not None and not isinstance(prompt_sha, str):
+        raise KernelError(E_KN_IO, f"证据 prompt_sha 不是字符串：{path}")
     return EvidenceEvent(event_id, stamp_text(parse_stamp(stamp)),
-                         str(event_type), kind, text)
+                         str(event_type), kind, text, target, model, prompt_sha)
+
+
+def _select_style(events: list[EvidenceEvent]) -> tuple[tuple[str, ...], int]:
+    """Return the accepted style lines and the per-target quota rejects.
+
+    Lines follow numeric event order, each is cut to ``STYLE_TEXT_MAX`` and
+    the section stops once ``STYLE_TOTAL_MAX`` characters are used.
+    """
+    proposals = ReplayProposer().style(events)
+    accepted: list[str] = []
+    rejected = 0
+    used = 0
+    counts: dict[str, int] = {}
+    for proposal in proposals:
+        if counts.get(proposal.target, 0) >= STYLE_MAX_PER_TARGET:
+            rejected += 1
+            continue
+        text = proposal.text[:STYLE_TEXT_MAX]
+        cost = len(text) + (1 if accepted else 0)
+        if used + cost > STYLE_TOTAL_MAX:
+            break
+        used += cost
+        accepted.append(text)
+        counts[proposal.target] = counts.get(proposal.target, 0) + 1
+    return tuple(accepted), rejected
+
+
+def _resolve_origin(policy: Policy, style: tuple[str, ...]) -> str:
+    """Return ``rule_only`` / ``with_proposals`` / ``rule_fallback``.
+
+    A policy that requires proposals must not fall back silently: without
+    ``allow_fallback`` the compile fails with ``E_KN_NO_PROPOSAL``.
+    """
+    if style:
+        return ORIGIN_WITH_PROPOSALS
+    if policy.require_proposals:
+        if policy.allow_fallback:
+            return ORIGIN_RULE_FALLBACK
+        raise KernelError(
+            E_KN_NO_PROPOSAL,
+            "策略要求提案但证据里没有；确认允许规则兜底请加 --allow-fallback",
+        )
+    return ORIGIN_RULE_ONLY
 
 
 def _build_canon(
@@ -286,27 +352,46 @@ def _cues_in(text: str) -> list[str]:
 
 
 def _render_self(
-    events: list[EvidenceEvent], moment: datetime, edges: tuple[GraphEdge, ...]
+    events: list[EvidenceEvent],
+    moment: datetime,
+    edges: tuple[GraphEdge, ...],
+    style: tuple[str, ...],
 ) -> str:
-    """Render ``self.md`` from a fixed template plus statistics."""
-    first = parse_stamp(events[0].stamp)
-    days = max(0, (moment.date() - first.date()).days)
-    months = len({event.stamp[:7] for event in events})
-    counts: dict[str, int] = {}
-    for edge in edges:
-        counts[edge.term] = counts.get(edge.term, 0) + 1
-    top = "-"
-    if counts:
-        top = sorted(counts, key=lambda term: (-counts[term], term))[0]
-    milestones = [event for event in events if event.type == "milestone"]
-    latest = milestones[-1].text if milestones else "-"
+    """Render ``self.md`` from a fixed template plus statistics and style."""
     lines = [
         "# Self",
         "",
-        f"- known_days: {days}",
+        f"- known_days: {_known_days(events, moment)}",
         f"- events: {len(events)}",
-        f"- active_months: {months}",
-        f"- top_kinship: {top}",
-        f"- latest_milestone: {latest}",
+        f"- active_months: {len({event.stamp[:7] for event in events})}",
+        f"- top_kinship: {_top_kinship(edges)}",
+        f"- latest_milestone: {_latest_milestone(events)}",
     ]
+    if style:
+        lines.extend(["", "## Style", ""])
+        lines.extend(f"- {text}" for text in style)
     return "\n".join(lines) + "\n"
+
+
+def _known_days(events: list[EvidenceEvent], moment: datetime) -> int:
+    """Return the integer days between the first event and the policy clock."""
+    if not events:
+        return 0
+    first = parse_stamp(events[0].stamp)
+    return max(0, (moment.date() - first.date()).days)
+
+
+def _top_kinship(edges: tuple[GraphEdge, ...]) -> str:
+    """Return the most frequent kinship term, or ``-`` when there is none."""
+    counts: dict[str, int] = {}
+    for edge in edges:
+        counts[edge.term] = counts.get(edge.term, 0) + 1
+    if not counts:
+        return "-"
+    return sorted(counts, key=lambda term: (-counts[term], term))[0]
+
+
+def _latest_milestone(events: list[EvidenceEvent]) -> str:
+    """Return the text of the last milestone, or ``-`` when there is none."""
+    milestones = [event for event in events if event.type == "milestone"]
+    return milestones[-1].text if milestones else "-"
