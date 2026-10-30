@@ -82,6 +82,10 @@ C_final(m) = 最终轮仍遵守的探针比例
 
 标定结果要写进报告，作为探针集的一个属性。
 
+**标定口径**：针对 `probes_hard.jsonl` 这 18 条**单独**计算，不与 M6 的 30 条混合。
+混合后的 `C` 会被 M6 那些「全过」的探针抬高，看不出新探针的难度。
+
+
 ---
 
 ## 4. 探针 schema 扩展
@@ -100,6 +104,19 @@ C_final(m) = 最终轮仍遵守的探针比例
 | `expect_final` | 对最终轮回复的判定条件 |
 
 **兼容**：M6 的 30 条探针不改，缺 `kind` 视为 `single_turn`。
+
+### 4.1 文件布局（避免撞坏 M6 的测试）
+
+```
+jian_pcs/data/probes.jsonl        M6 的 30 条，一字不动
+jian_pcs/data/probes_hard.jsonl   本轮新增的 18 条
+```
+
+`load_probes()` 保持原签名（只读 M6 文件），新增 `load_hard_probes()`；
+另加 `load_all_probes()` 供 CLI 合并使用。
+
+**理由**：`PROBE_COUNT = 30` 被 M6 的测试断言着，合并进同一文件会直接撞红。
+
 
 ---
 
