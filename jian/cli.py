@@ -15,7 +15,7 @@ from .capsule import (
     seal_store,
     verify_path,
 )
-from .errors import E_ARG, E_IO, JianError
+from .errors import E_ARG, E_IO, E_SCHEMA, JianError
 
 
 class _Parser(argparse.ArgumentParser):
@@ -37,7 +37,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_append = sub.add_parser("append", help="append one evidence event")
     p_append.add_argument("dir")
-    p_append.add_argument("--role", required=True, choices=["user", "assistant"])
+    p_append.add_argument("--role", default=None, choices=["user", "assistant"])
+    p_append.add_argument("--type", default=None)
+    p_append.add_argument("--kind", default=None)
     p_append.add_argument("--text", required=True)
     p_append.add_argument("--t", default=None)
     p_append.set_defaults(handler=_cmd_append)
@@ -89,8 +91,16 @@ def _cmd_init(args: argparse.Namespace) -> int:
 
 
 def _cmd_append(args: argparse.Namespace) -> int:
-    event = append_event(Path(args.dir), args.role, args.text, args.t)
-    print(f"OK append {event.id} seg={event.ep}")
+    if args.type is None:
+        if args.role is None:
+            raise JianError(E_SCHEMA, "旧签名需要 --role")
+        event = append_event(Path(args.dir), args.role, args.text, args.t)
+    else:
+        event = append_event(
+            Path(args.dir), args.role, args.text, args.t,
+            type=args.type, kind=args.kind,
+        )
+    print(f"OK append {event.id} seg={event.ep} type={event.type}")
     return 0
 
 

@@ -113,11 +113,24 @@ def init_store(store: Path) -> None:
     _write_bytes(store / CHAIN_PATH, dumps(chain_document(None, [])))
 
 
-def append_event(store: Path, role: str, text: str, t: str | None = None) -> Event:
+def append_event(
+    store: Path,
+    role: str | None = None,
+    text: str | None = None,
+    t: str | None = None,
+    *,
+    type: str | None = None,
+    kind: str | None = None,
+    target: str | None = None,
+) -> Event:
     """Append one event to the open segment and reset ``sealed_at``.
 
     A sealed store starts a new segment; otherwise the last segment is used
     until it reaches 100 events.
+
+    The M1 call form ``append_event(store, role, text, t)`` still works and
+    writes a ``turn``. The typed form passes ``type`` (and ``kind``/
+    ``target`` where the type allows them) as keywords.
     """
     if not store.is_dir() or not (store / EVIDENCE_DIR).is_dir():
         raise JianError(E_IO, f"存储目录未初始化：{store}")
@@ -139,7 +152,13 @@ def append_event(store: Path, role: str, text: str, t: str | None = None) -> Eve
         new_segment = False
     previous = str(last["last"]) if last else GENESIS_PREV
     stamp = t if t is not None else utc_now()
-    event = new_event(total + 1, episode, stamp, role, text, previous)
+    if text is None:
+        raise JianError(E_SCHEMA, "text 不能为空")
+    event_type = type if type is not None else "turn"
+    event = new_event(
+        total + 1, episode, stamp, role, text, previous,
+        type=event_type, kind=kind, target=target,
+    )
     _append_bytes(store / EVIDENCE_DIR / f"{episode}.jsonl", event.to_line())
     if new_segment:
         rows.append({
@@ -582,8 +601,10 @@ def _render_revival(count: int, segments: Sequence[Segment], head: str,
         "- id: ev_ + six decimal digits, globally increasing",
         "- ep: segment name such as seg-0001",
         "- t: UTC timestamp YYYY-MM-DDTHH:MM:SSZ",
-        "- type: turn",
-        "- role: user or assistant",
+        "- type: turn, feedback, directive, milestone or checkpoint",
+        "- role: user or assistant (turn only; forbidden for other types)",
+        "- kind: praise or correction (feedback), lock/unlock/rule (directive)",
+        "- target: optional event id, feedback only",
         "- text: 1-8000 characters",
         "- prev: hash of the previous event; 64 zeros for the first event",
         "- hash: sha256(prev_ascii + LF + canonical_json_without_hash)",

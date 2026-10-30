@@ -1,4 +1,8 @@
-"""Event model, field validation and event hashing."""
+"""Event model, field validation and event hashing.
+
+``turn`` keeps its M1 shape exactly. Four further types share the same
+canonical body and hash rule, so old capsules keep verifying byte for byte.
+"""
 
 from __future__ import annotations
 
@@ -9,7 +13,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
 
-from .canonical import _encode_string, dumps
+from .canonical import dumps
 from .errors import E_SCHEMA, JianError
 
 SEGMENT_MAX_EVENTS = 100
@@ -22,8 +26,21 @@ HEX_RE = re.compile(r"^[0-9a-f]{64}$")
 TIME_RE = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$")
 
 ROLES = ("user", "assistant")
-EVENT_TYPES = ("turn",)
-FIELDS = ("v", "id", "ep", "t", "type", "role", "text", "prev", "hash")
+EVENT_TYPES = ("turn", "feedback", "directive", "milestone", "checkpoint")
+FIELDS = ("v", "id", "ep", "t", "type", "role", "text", "prev", "hash", "kind", "target")
+
+COMMON_FIELDS = frozenset({"v", "id", "ep", "t", "type", "text", "prev", "hash"})
+_TYPE_FIELDS: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
+    "turn": (("role",), ()),
+    "feedback": (("kind",), ("target",)),
+    "directive": (("kind",), ()),
+    "milestone": ((), ()),
+    "checkpoint": ((), ()),
+}
+KIND_VALUES: dict[str, tuple[str, ...]] = {
+    "feedback": ("praise", "correction"),
+    "directive": ("lock", "unlock", "rule"),
+}
 
 
 @dataclass(frozen=True)
@@ -35,23 +52,31 @@ class Event:
     ep: str
     t: str
     type: str
-    role: str
+    role: str | None
     text: str
     prev: str
     hash: str
+    kind: str | None = None
+    target: str | None = None
 
     def body(self) -> dict[str, object]:
         """Return the hashed view of this event; the ``hash`` field is excluded."""
-        return {
+        body: dict[str, object] = {
             "v": self.v,
             "id": self.id,
             "ep": self.ep,
             "t": self.t,
             "type": self.type,
-            "role": self.role,
             "text": self.text,
             "prev": self.prev,
         }
+        if self.role is not None:
+            body["role"] = self.role
+        if self.kind is not None:
+            body["kind"] = self.kind
+        if self.target is not None:
+            body["target"] = self.target
+        return body
 
     def as_dict(self) -> dict[str, object]:
         """Return the full serialized view of this event, including ``hash``."""
@@ -70,25 +95,8 @@ def utc_now() -> str:
 
 
 def body_bytes(event: Event) -> bytes:
-    """Serialize the hashed body of an event with canonical rules.
-
-    Only ``text`` may contain characters that need escaping; every other
-    field is validated ASCII, so this is byte-identical to
-    ``canonical.dumps(event.body())`` while avoiding generic encoding work.
-    """
-    escaped = _encode_string(event.text)
-    joined = (
-        '{"ep":"' + event.ep
-        + '","id":"' + event.id
-        + '","prev":"' + event.prev
-        + '","role":"' + event.role
-        + '","t":"' + event.t
-        + '","text":' + escaped
-        + ',"type":"' + event.type
-        + '","v":' + str(event.v)
-        + "}"
-    )
-    return joined.encode("utf-8")
+    """Serialize the hashed body of an event with canonical rules."""
+    return dumps(event.body())
 
 
 def event_digest(event: Event) -> str:
@@ -125,12 +133,20 @@ def compute_hash(prev: str, body: dict[str, object]) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
-def new_event(seq: int, ep: str, stamp: str, role: str, text: str, prev: str) -> Event:
+def new_event(
+    seq: int,
+    ep: str,
+    stamp: str,
+    role: str | None,
+    text: str,
+    prev: str,
+    *,
+    type: str = "turn",
+    kind: str | None = None,
+    target: str | None = None,
+) -> Event:
     """Build and hash a new event after validating every field."""
-    if not isinstance(text, str) or not 1 <= len(text) <= TEXT_MAX_CHARS:
-        raise JianError(E_SCHEMA, "text 长度必须是 1-8000 字符")
-    if role not in ROLES:
-        raise JianError(E_SCHEMA, "role 只能是 user 或 assistant")
+    event_type, role, kind, target = _validate_fields(type, role, text, kind, target)
     if not SEG_RE.match(ep):
         raise JianError(E_SCHEMA, f"非法段名：{ep}")
     if not HEX_RE.match(prev):
@@ -142,21 +158,36 @@ def new_event(seq: int, ep: str, stamp: str, role: str, text: str, prev: str) ->
         "id": event_id,
         "ep": ep,
         "t": normalized,
-        "type": "turn",
-        "role": role,
+        "type": event_type,
         "text": text,
         "prev": prev,
     }
+    if role is not None:
+        body["role"] = role
+    if kind is not None:
+        body["kind"] = kind
+    if target is not None:
+        body["target"] = target
     digest = compute_hash(prev, body)
-    return Event(1, event_id, ep, normalized, "turn", role, text, prev, digest)
+    return Event(
+        1, event_id, ep, normalized, event_type, role, text, prev, digest, kind, target
+    )
 
 
 def parse_event(data: object) -> Event:
     """Validate a decoded JSON object and return an :class:`Event`."""
     if not isinstance(data, dict):
         raise JianError(E_SCHEMA, "事件必须是 JSON 对象")
-    if set(data) != set(FIELDS):
-        raise JianError(E_SCHEMA, "事件字段缺失或多余")
+    event_type = data.get("type")
+    if not isinstance(event_type, str) or event_type not in EVENT_TYPES:
+        raise JianError(E_SCHEMA, f"未知事件类型：{event_type}")
+    required, optional = _TYPE_FIELDS[event_type]
+    allowed = COMMON_FIELDS | set(required) | set(optional)
+    if not set(data) <= allowed or not COMMON_FIELDS <= set(data):
+        raise JianError(E_SCHEMA, f"{event_type} 事件字段缺失或多余")
+    missing = [name for name in required if name not in data]
+    if missing:
+        raise JianError(E_SCHEMA, f"{event_type} 事件缺少字段 {missing[0]}")
     version = data["v"]
     if isinstance(version, bool) or not isinstance(version, int) or version != 1:
         raise JianError(E_SCHEMA, "v 必须为整数 1")
@@ -169,12 +200,6 @@ def parse_event(data: object) -> Event:
     stamp = _string_field(data, "t")
     if not TIME_RE.match(stamp):
         raise JianError(E_SCHEMA, f"事件 {event_id} 的时间格式非法", event_id)
-    event_type = _string_field(data, "type")
-    if event_type != "turn":
-        raise JianError(E_SCHEMA, f"事件 {event_id} 的 type 只能是 turn", event_id)
-    role = _string_field(data, "role")
-    if role not in ROLES:
-        raise JianError(E_SCHEMA, f"事件 {event_id} 的 role 非法", event_id)
     text = _string_field(data, "text")
     if not 1 <= len(text) <= TEXT_MAX_CHARS:
         raise JianError(E_SCHEMA, f"事件 {event_id} 的 text 长度越界", event_id)
@@ -184,7 +209,12 @@ def parse_event(data: object) -> Event:
     digest = _string_field(data, "hash")
     if not HEX_RE.match(digest):
         raise JianError(E_SCHEMA, f"事件 {event_id} 的 hash 非法", event_id)
-    return Event(1, event_id, segment, stamp, event_type, role, text, prev, digest)
+    role = _optional_role(data, event_id)
+    kind = _optional_kind(data, event_type, event_id)
+    target = _optional_target(data, event_id)
+    return Event(
+        1, event_id, segment, stamp, event_type, role, text, prev, digest, kind, target
+    )
 
 
 def parse_line(line: str) -> Event:
@@ -194,6 +224,54 @@ def parse_line(line: str) -> Event:
     except json.JSONDecodeError as exc:
         raise JianError(E_SCHEMA, "证据行不是合法 JSON") from exc
     return parse_event(data)
+
+
+def _validate_fields(
+    event_type: Any, role: Any, text: Any, kind: Any, target: Any
+) -> tuple[str, str | None, str | None, str | None]:
+    if not isinstance(event_type, str) or event_type not in EVENT_TYPES:
+        raise JianError(E_SCHEMA, f"未知事件类型：{event_type}")
+    required, optional = _TYPE_FIELDS[event_type]
+    if not isinstance(text, str) or not 1 <= len(text) <= TEXT_MAX_CHARS:
+        raise JianError(E_SCHEMA, "text 长度必须是 1-8000 字符")
+    for name, value in (("role", role), ("kind", kind), ("target", target)):
+        if value is not None and name not in required and name not in optional:
+            raise JianError(E_SCHEMA, f"{event_type} 事件不允许字段 {name}")
+    if "role" in required and role not in ROLES:
+        raise JianError(E_SCHEMA, "role 只能是 user 或 assistant")
+    if "kind" in required:
+        if kind not in KIND_VALUES[event_type]:
+            raise JianError(E_SCHEMA, f"{event_type} 事件的 kind 非法")
+    if target is not None and not ID_RE.match(str(target)):
+        raise JianError(E_SCHEMA, f"target 必须是事件 id：{target}")
+    return event_type, role, kind, target
+
+
+def _optional_role(data: dict[str, object], event_id: str) -> str | None:
+    if "role" not in data:
+        return None
+    role = _string_field(data, "role")
+    if role not in ROLES:
+        raise JianError(E_SCHEMA, f"事件 {event_id} 的 role 非法", event_id)
+    return role
+
+
+def _optional_kind(data: dict[str, object], event_type: str, event_id: str) -> str | None:
+    if "kind" not in data:
+        return None
+    kind = _string_field(data, "kind")
+    if kind not in KIND_VALUES.get(event_type, ()):
+        raise JianError(E_SCHEMA, f"事件 {event_id} 的 kind 非法", event_id)
+    return kind
+
+
+def _optional_target(data: dict[str, object], event_id: str) -> str | None:
+    if "target" not in data:
+        return None
+    target = _string_field(data, "target")
+    if not ID_RE.match(target):
+        raise JianError(E_SCHEMA, f"事件 {event_id} 的 target 非法", event_id)
+    return target
 
 
 def _string_field(data: dict[str, object], name: str) -> str:
