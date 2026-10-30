@@ -114,3 +114,72 @@ num_ctx 固定 2048、num_predict ≤ 200、keep_alive 设长（避免重载）
 | 建议 | `self.md` 标题改中文 |
 | 建议 | adapter 写死 num_ctx / num_predict |
 
+
+---
+
+# M5 第二步终验（功能全过，但测试在本机不是全绿）
+
+> 复核 tag `v0.7-m5`（`f94aaca`），工作区干净。
+> **结论：降级机制完全正确，但 180 个测试里有 1 个在本机报错——tag 需要重打。**
+
+## 1. 降级机制：5 项全对
+
+| 项 | 断言 | 实测 |
+|---|---|---|
+| `ingest_live` 失败 | 不抛，计失败数 | `failed=2 recorded=0 errors=2` |
+| `strict=True` | 抛 `E_PROPOSER_FAILED` | 正确 |
+| `force_fallback` | `origin=rule_fallback` | 正确 |
+| 成功路径 | `origin=with_proposals` | `models=('fake',)` |
+| **CLI 端到端** | 失败的提案器下 **exit 0** 且降级 | `rc=0`，stderr 打 `proposer fallback:` |
+
+**设计比我写的规格更好**：我把 try/except 写进了 `compile_kernel`，实现把它放在了 `ingest_live`（进程边界），
+`compile_kernel` 保持纯函数。这才是对的——**容错属于边界，不属于纯函数**。已按实现修正规格。
+
+## 2. `META` 干净
+
+```
+keys: compiler_version / generation / head / kid / models / origin / policy_hash / proposals / version
+含 failed ? False      ← 按约定，失败计数只进 RecordResult 与日志
+```
+
+## 3. 阻塞项：`test_cli_downgrades_by_default` 报错
+
+```
+Ran 180 tests
+FAILED (errors=1)
+  test_cli_downgrades_by_default → UnicodeDecodeError: 'gbk' codec can't decode byte 0xa1
+```
+
+**根因**：`tests/test_kn_live_fallback.py:122` 用 `subprocess.run(..., text=True)` 但没指定 `encoding`，
+Windows 默认按 GBK 解码，而子进程输出的是 UTF-8 中文（`proposer fallback: …外部提案器无法启动…`）。
+
+**讽刺之处**：崩的正是刚做好的降级路径——因为它第一次在 stderr 上输出中文。
+
+### 修法
+
+```python
+subprocess.run(command, cwd=ROOT, capture_output=True, text=True,
+              encoding="utf-8", errors="replace", timeout=120,
+              env={**os.environ, "PYTHONUTF8": "1"})
+```
+
+同样要改 `tests/test_kn_proposal_determinism.py:55`——它现在能过，只因为子进程只打印 ASCII 的 kid。
+
+### 该记进规则的一条
+
+> **Windows 上，凡是起子进程并读输出，一律显式 `encoding="utf-8"`，并给子进程 `PYTHONUTF8=1`。**
+>
+> 这条不改，以后每加一个带中文 stderr 的子进程都会踩一次。
+
+## 4. 其余待办（不阻塞）
+
+| 项 | 状态 |
+|---|---|
+| adapter 加固（num_ctx 2048 / num_predict 200 / keep_alive 1h） | ✅ 已做 |
+| `self.md` 标题中文 | ⬜ 仍是 `## Style` / `## Conduct` |
+
+## 5. 结论
+
+功能层面 M5 第二步成立，而且真机三行证明已经跑过。
+但 **tag `v0.7-m5` 是在一个本机会红的测试树上打的**，必须修完重打。
+
