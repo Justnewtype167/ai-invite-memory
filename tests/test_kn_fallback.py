@@ -28,6 +28,7 @@ STAMP = "2026-10-29T02:00:00Z"
 EVENTS = [
     ("2026-01-01T09:00:00Z", "今天天气不错", "turn", None),
     ("2026-01-02T09:00:00Z", "以后不许半夜打电话", "directive", "lock"),
+    *kn_fixtures.chat_turns(9),
 ]
 
 

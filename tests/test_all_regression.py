@@ -1,4 +1,4 @@
-"""S6: all 147 frozen M1-M4.1 tests stay green after M5, and two packages stay byte-identical."""
+"""S6: all 161 frozen M1-M5.1 tests stay green after M5.2, and two packages stay byte-identical."""
 
 from __future__ import annotations
 
@@ -38,8 +38,14 @@ MODULES = (
     "test_kn_history",
     "test_kn_sources",
     "test_kn_regression",
+    "test_kn_proposal_event",
+    "test_kn_proposal_effect",
+    "test_kn_proposal_required",
+    "test_kn_fallback",
+    "test_kn_gate5",
+    "test_kn_proposal_determinism",
 )
-FROZEN_COUNT = 147
+FROZEN_COUNT = 161
 
 # sha256 of every source file in the two frozen packages; any edit breaks M5.
 FROZEN_DIGESTS = {
@@ -73,7 +79,7 @@ def _load(name: str):
 
 class TestAllRegression(unittest.TestCase):
     def test_frozen_suites_are_green(self) -> None:
-        """S6: all 147 frozen M1-M4.1 tests pass with zero skips."""
+        """S6: all 161 frozen M1-M5.1 tests pass with zero skips."""
         loader = unittest.TestLoader()
         suite = unittest.TestSuite()
         for name in MODULES:

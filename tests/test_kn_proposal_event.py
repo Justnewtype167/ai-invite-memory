@@ -26,6 +26,7 @@ class TestProposalEvent(unittest.TestCase):
         self.addCleanup(shutil.rmtree, self.root, True)
         kn_fixtures.write_store(self.root, [
             ("2026-01-01T09:00:00Z", "今天天气不错", "turn", None),
+            *kn_fixtures.chat_turns(9),
         ])
 
     def _last_line(self) -> dict[str, object]:
@@ -44,7 +45,7 @@ class TestProposalEvent(unittest.TestCase):
             f"P1 id={event.event_id} type={parsed.type} target={parsed.target} "
             f"model={parsed.model} prompt_sha={parsed.prompt_sha}"
         )
-        self.assertEqual(event.event_id, "ev_000002")
+        self.assertEqual(event.event_id, "ev_000011")
         self.assertEqual(parsed.type, "proposal")
         self.assertEqual(parsed.target, "self.style")
         self.assertEqual(parsed.model, "deepseek-v4")

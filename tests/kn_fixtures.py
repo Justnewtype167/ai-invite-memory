@@ -101,3 +101,12 @@ def directives(count: int, start: str = "2026-01-01T08:00:00Z") -> list[Spec]:
              "directive", "lock")
         )
     return result
+
+
+def chat_turns(count: int, start_day: int = 1) -> list[Spec]:
+    """Return ``count`` neutral turns one day apart (no cue words)."""
+    return [
+        (f"2026-02-{start_day + index:02d}T09:00:00Z", f"第{index + 1}天随便聊聊",
+         "turn", None)
+        for index in range(count)
+    ]

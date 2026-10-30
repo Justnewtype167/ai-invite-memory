@@ -35,6 +35,7 @@ class TestProposalDeterminism(unittest.TestCase):
         kn_fixtures.write_store(self.root, [
             ("2026-01-01T09:00:00Z", "今天天气不错", "turn", None),
             ("2026-01-02T09:00:00Z", "以后不许半夜打电话", "directive", "lock"),
+            *kn_fixtures.chat_turns(9),
         ])
         record_proposal(
             self.root, "self.style", "说话时偶尔停顿", "deepseek-v4", "ab12cd34",

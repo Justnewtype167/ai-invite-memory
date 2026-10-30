@@ -30,6 +30,7 @@ class TestGateFive(unittest.TestCase):
         self.addCleanup(shutil.rmtree, self.root, True)
         kn_fixtures.write_store(self.root, [
             ("2026-01-01T09:00:00Z", "今天天气不错", "turn", None),
+            *kn_fixtures.chat_turns(9),
         ])
 
     def _raw(self, target: str, text: str, model: str, prompt_sha: str) -> None:
