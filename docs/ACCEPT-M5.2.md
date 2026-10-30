@@ -183,3 +183,55 @@ subprocess.run(command, cwd=ROOT, capture_output=True, text=True,
 功能层面 M5 第二步成立，而且真机三行证明已经跑过。
 但 **tag `v0.7-m5` 是在一个本机会红的测试树上打的**，必须修完重打。
 
+
+---
+
+# M5 第二步终验（通过，v0.7-m5 重打）
+
+> tag `v0.7-m5` → `8856b36`（重打后指向修复提交），工作区干净。
+> **180 测试全绿，干净克隆复验通过。**
+
+## 1. 编码修复已落实
+
+```
+tests/test_kn_live_fallback.py:125   encoding="utf-8", errors="replace"
+tests/test_kn_live_fallback.py:126   env={**os.environ, "PYTHONUTF8": "1"}
+tests/test_kn_proposal_determinism.py:55  env["PYTHONUTF8"] = "1"
+tests/test_kn_proposal_determinism.py:59  encoding="utf-8", errors="replace"
+```
+
+并升格为约束 **C13**（AGENTS.md:48）：
+
+> Windows 上凡是起子进程并读输出，一律显式 `encoding="utf-8"` + `errors="replace"`，并给子进程设 `PYTHONUTF8=1`
+
+## 2. 复验结果
+
+```
+本机     Ran 180 tests, OK, 0 skipped
+干净克隆 tag v0.7-m5 · Ran 180 tests, OK
+         M1 verify OK head=61a5d726
+         M4 CLI compile/propose/record/history/verify/diff
+```
+
+## 3. M5 两步的完整结论
+
+| 能力 | 状态 |
+|---|---|
+| 提案进证据（第 6 种事件） | ✅ |
+| 三态 origin，且进 kid | ✅ |
+| 提案在→kid 变，提案走→kid 回来 | ✅ 真机验证 |
+| 提案随胶囊搬家，设备 B 重算一致 | ✅ |
+| 本地模型真机接入（qwen3.5:9b） | ✅ 1.3s/条 |
+| 两个作用面（style / conduct）互不污染 | ✅ |
+| 证据不足 → 拒绝（阈值 10） | ✅ |
+| 提案器失败 → 降级不打死编译 | ✅ CLI rc=0 |
+| 核心库零依赖零网络 | ✅ 网络只在 tools/ |
+
+## 4. 下一步
+
+```
+⬜ PCS：换模型后「像不像同一个人」的度量
+⬜ 继承与哀悼协议（M6）
+⬜ self.md 标题中文化（低优先级）
+```
+
