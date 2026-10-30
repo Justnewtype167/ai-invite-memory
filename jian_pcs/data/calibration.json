@@ -1,0 +1,10 @@
+{
+ "model": "qwen3.5:9b",
+ "temp_milli": 0,
+ "seed": 42,
+ "probes": 18,
+ "c_final": 0.89,
+ "r": 0.17,
+ "d": 0.8,
+ "first_rule": "收到负面经历时先复述对方说的内容，再回应"
+}

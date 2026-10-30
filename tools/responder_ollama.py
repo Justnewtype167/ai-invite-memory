@@ -1,6 +1,8 @@
 """Reference external responder: local Ollama, stdlib only.
 
 Sends every probe to the model and writes one reply JSONL line per probe.
+With ``--multi`` each turn is sent through /api/chat and every intermediate
+reply is kept in ``turns_replied`` so the collapse depth ``D`` can be scored.
 Network access lives here and only here; ``jian_pcs`` never imports urllib.
 
 Pinned for an 8 GB card: num_ctx=2048, num_predict=200, keep_alive=1h,
@@ -8,6 +10,7 @@ think=false. Sampling is controlled by --temp-milli and --seed.
 
 Usage:
     python tools/responder_ollama.py --out a.jsonl --temp-milli 0 --seed 42
+    python tools/responder_ollama.py --multi --out m7.jsonl
 """
 
 from __future__ import annotations
@@ -22,9 +25,10 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from jian_pcs.probes import load_probes  # noqa: E402
+from jian_pcs.probes import load_hard_probes, load_probes  # noqa: E402
 
 ENDPOINT = "http://127.0.0.1:11434/api/generate"
+CHAT_ENDPOINT = "http://127.0.0.1:11434/api/chat"
 DEFAULT_MODEL = "qwen3.5:9b"
 TIMEOUT = 180
 NUM_CTX = 2048
@@ -72,16 +76,50 @@ def call_ollama(
     return text.strip()
 
 
+def call_chat(
+    messages: list[dict[str, str]],
+    system: str,
+    model: str,
+    temp_milli: int,
+    seed: int,
+) -> str:
+    """POST one non-streaming /api/chat request and return the next reply."""
+    body = json.dumps({
+        "keep_alive": KEEP_ALIVE,
+        "messages": [{"role": "system", "content": system}, *messages],
+        "model": model,
+        "options": {
+            "num_ctx": NUM_CTX,
+            "num_predict": NUM_PREDICT,
+            "seed": seed,
+            "temperature": temp_milli / 1000,
+        },
+        "stream": False,
+        "think": False,
+    }).encode("utf-8")
+    request = urllib.request.Request(
+        CHAT_ENDPOINT, data=body, headers={"Content-Type": "application/json"}
+    )
+    with urllib.request.urlopen(request, timeout=TIMEOUT) as response:
+        payload = json.loads(response.read().decode("utf-8"))
+    message = payload.get("message")
+    text = message.get("content") if isinstance(message, dict) else None
+    if not isinstance(text, str) or not text.strip():
+        raise ValueError("ollama returned an empty chat response")
+    return text.strip()
+
+
 def collect(
-    probe_path: Path, model: str, temp_milli: int, seed: int
+    probe_path: Path, model: str, temp_milli: int, seed: int, multi: bool = False
 ) -> tuple[list[dict[str, object]], list[str]]:
     """Run every probe once; a failed call becomes an unknown, not a lost round.
 
     Mirrors ``ingest_live``: one OOM or timeout must not throw away the other
     replies. The failed probe gets empty text, which the judge reports as
-    ``unknown`` and excludes from every denominator.
+    ``unknown`` and excludes from every denominator. Multi-turn probes replay
+    the whole dialogue through /api/chat and keep each turn's reply.
     """
-    probes = load_probes(probe_path)
+    probes = load_hard_probes(probe_path) if multi else load_probes(probe_path)
     rules: list[str] = []
     for probe in probes:
         if probe.rule not in rules:
@@ -90,19 +128,41 @@ def collect(
     records: list[dict[str, object]] = []
     errors: list[str] = []
     for probe in probes:
-        try:
-            text = call_ollama(probe.prompt, system, model, temp_milli, seed)
-        except Exception as exc:
-            errors.append(f"{probe.probe_id}: {exc}")
-            text = ""
-        records.append({
+        record: dict[str, object] = {
             "model": model,
             "probe_id": probe.probe_id,
             "seed": seed,
             "temp_milli": temp_milli,
-            "text": text,
-        })
+        }
+        try:
+            if probe.turns:
+                turns = _run_turns(probe.turns, system, model, temp_milli, seed)
+                record["text"] = turns[-1]
+                record["turns_replied"] = turns
+            else:
+                record["text"] = call_ollama(
+                    probe.prompt, system, model, temp_milli, seed
+                )
+        except Exception as exc:
+            errors.append(f"{probe.probe_id}: {exc}")
+            record["text"] = ""
+            if probe.turns:
+                record["turns_replied"] = []
+        records.append(record)
     return records, errors
+
+
+def _run_turns(
+    turns: tuple[str, ...], system: str, model: str, temp_milli: int, seed: int
+) -> list[str]:
+    messages: list[dict[str, str]] = []
+    replied: list[str] = []
+    for turn in turns:
+        messages.append({"role": "user", "content": turn})
+        reply = call_chat(messages, system, model, temp_milli, seed)
+        messages.append({"role": "assistant", "content": reply})
+        replied.append(reply)
+    return replied
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -113,15 +173,20 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--temp-milli", type=int, default=0)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--probes", default=None, help="override probe JSONL")
-    args = parser.parse_args(argv)
-    probe_path = (
-        ROOT / "jian_pcs" / "data" / "probes.jsonl"
-        if args.probes is None
-        else Path(args.probes)
+    parser.add_argument(
+        "--multi", action="store_true",
+        help="send turn lists through /api/chat and keep every turn",
     )
+    args = parser.parse_args(argv)
+    if args.probes is not None:
+        probe_path = Path(args.probes)
+    elif args.multi:
+        probe_path = ROOT / "jian_pcs" / "data" / "probes_hard.jsonl"
+    else:
+        probe_path = ROOT / "jian_pcs" / "data" / "probes.jsonl"
     try:
         records, errors = collect(
-            probe_path, args.model, args.temp_milli, args.seed
+            probe_path, args.model, args.temp_milli, args.seed, args.multi
         )
     except Exception as exc:
         sys.stderr.write(f"E_PCS_RESPONDER: {exc}\n")

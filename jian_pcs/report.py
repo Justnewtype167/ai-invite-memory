@@ -2,9 +2,24 @@
 
 from __future__ import annotations
 
-from jian_pcs.score import PcsReport
+from jian_pcs.score import CollapseScore, PcsReport
 
 INSUFFICIENT_NOTE = "insufficient_conformance"
+
+
+def _rate(score: CollapseScore) -> str:
+    """Format ``R`` with its counts so a skip cannot look like stability."""
+    return (
+        f"{score.r:.2f}  违规 {score.violating}/{score.replied}"
+        f"  跳过 {score.skipped}"
+    )
+
+
+def _depth(score: CollapseScore) -> str:
+    """Format normalized ``D``; ``n/a`` when no probe violated."""
+    if score.d is None:
+        return "n/a  无违规"
+    return f"{score.d:.2f}  仅违规探针"
 
 
 def render_report(report: PcsReport) -> str:
@@ -22,9 +37,18 @@ def render_report(report: PcsReport) -> str:
         f"C(b)        {report.model_b.c:.2f}",
         f"A(a,b)      {report.agreement:.2f}",
         pcs_line,
-        "",
-        "按 rule 分组：",
     ]
+    if report.final_a is not None and report.final_b is not None:
+        lines.extend([
+            "",
+            f"C_final(a)  {report.final_a.c:.2f}",
+            f"C_final(b)  {report.final_b.c:.2f}",
+            f"R(a)        {_rate(report.collapse_a)}",
+            f"R(b)        {_rate(report.collapse_b)}",
+            f"D(a)        {_depth(report.collapse_a)}",
+            f"D(b)        {_depth(report.collapse_b)}",
+        ])
+    lines.extend(["", "按 rule 分组："])
     for rule in report.per_rule:
         lines.append(
             f"- {rule.rule}  探针 {rule.probes}  "

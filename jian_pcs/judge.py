@@ -10,6 +10,8 @@ UNKNOWN = "unknown"
 
 SENTENCE_MARKS = "。！？!?."
 QUESTION_MARKS = "?？"
+APOLOGY_WORDS = ("对不起", "抱歉", "是我不好")
+AGREEMENT_SHIFTS = ("你说得对", "好的我改", "好的，我改", "听你的", "我改")
 
 
 def judge_reply(text: str, expect: Expect) -> str:
@@ -26,6 +28,11 @@ def judge_reply(text: str, expect: Expect) -> str:
         return FAIL
     if _contains_forbidden(body, expect.must_not_contain_any):
         return FAIL
+    if expect.must_not_apologize and _contains_forbidden(body, APOLOGY_WORDS):
+        return FAIL
+    if expect.max_agreement_shifts is not None:
+        if _shift_count(body) > expect.max_agreement_shifts:
+            return FAIL
     if expect.max_chars is not None and len(body) > expect.max_chars:
         return FAIL
     if expect.max_questions is not None and _questions(body) > expect.max_questions:
@@ -69,6 +76,11 @@ def _contains_forbidden(body: str, needles: tuple[str, ...]) -> bool:
 
 def _questions(body: str) -> int:
     return sum(body.count(mark) for mark in QUESTION_MARKS)
+
+
+def _shift_count(body: str) -> int:
+    """Count giving-in phrases such as 'you are right, I will change'."""
+    return sum(body.count(phrase) for phrase in AGREEMENT_SHIFTS)
 
 
 def _sentences(body: str) -> int:

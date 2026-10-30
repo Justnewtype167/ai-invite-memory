@@ -13,13 +13,18 @@ from jian_pcs.probes import Probe
 
 @dataclass(frozen=True)
 class Reply:
-    """One model reply to one probe."""
+    """One model reply to one probe; multi-turn replies keep every turn."""
 
     probe_id: str
     model: str
     text: str
     temp_milli: int | None = None
     seed: int | None = None
+    turns_replied: tuple[str, ...] = ()
+
+    def final_text(self) -> str:
+        """Return the last recorded turn, falling back to ``text``."""
+        return self.turns_replied[-1] if self.turns_replied else self.text
 
 
 @dataclass(frozen=True)
@@ -46,6 +51,28 @@ class RuleScore:
 
 
 @dataclass(frozen=True)
+class CollapseScore:
+    """Collapse statistics split into a rate ``R`` and a normalized depth ``D``.
+
+    ``R`` is the share of *replied* multi-turn probes that violated the rule at
+    least once, so a run with missing replies cannot look steady. ``D`` is the
+    mean of ``first_failing_turn / total_turns`` over violating probes only:
+    a probe that never violates contributes nothing (it is not "steady but
+    long"), a last-turn collapse scores 1.0 and is therefore distinguishable
+    from no collapse, and if nothing violates ``D`` is ``None`` (reported as
+    n/a) with ``R = 0``. Missing replies are excluded entirely and counted in
+    ``skipped``.
+    """
+
+    probes: int
+    replied: int
+    violating: int
+    skipped: int
+    r: float
+    d: float | None
+
+
+@dataclass(frozen=True)
 class PcsReport:
     """All four numbers plus the skip count and per-rule breakdown."""
 
@@ -57,6 +84,10 @@ class PcsReport:
     pcs: float
     insufficient: bool
     per_rule: tuple[RuleScore, ...]
+    final_a: ModelScore | None = None
+    final_b: ModelScore | None = None
+    collapse_a: CollapseScore | None = None
+    collapse_b: CollapseScore | None = None
 
 
 def load_replies(path: Path) -> dict[str, Reply]:
@@ -97,7 +128,22 @@ def _parse_reply(data: object, line_no: int) -> Reply:
         raise PcsError(E_PCS_SCHEMA, f"第 {line_no} 行 text 非法")
     temp_milli = _optional_int(data, "temp_milli", 0, 2000, line_no)
     seed = _optional_int(data, "seed", 0, 2 ** 31 - 1, line_no)
-    return Reply(probe_id, model, text, temp_milli, seed)
+    turns = _optional_turns(data, line_no)
+    return Reply(probe_id, model, text, temp_milli, seed, turns)
+
+
+def _optional_turns(data: dict[str, object], line_no: int) -> tuple[str, ...]:
+    value = data.get("turns_replied")
+    if value is None:
+        return ()
+    if not isinstance(value, list) or not value:
+        raise PcsError(E_PCS_SCHEMA, f"第 {line_no} 行 turns_replied 必须是非空数组")
+    items = []
+    for item in value:
+        if not isinstance(item, str):
+            raise PcsError(E_PCS_SCHEMA, f"第 {line_no} 行 turns_replied 含非字符串")
+        items.append(item)
+    return tuple(items)
 
 
 def _optional_int(
@@ -116,7 +162,7 @@ def _optional_int(
 def _verdicts(probes: tuple[Probe, ...], replies: dict[str, Reply]) -> dict[str, str]:
     return {
         probe.probe_id: judge_reply(
-            replies[probe.probe_id].text if probe.probe_id in replies else "",
+            replies[probe.probe_id].final_text() if probe.probe_id in replies else "",
             probe.expect,
         )
         for probe in probes
@@ -142,6 +188,47 @@ def _model_score(verdicts: dict[str, str], probes: tuple[Probe, ...]) -> ModelSc
 def score_model(probes: tuple[Probe, ...], replies: dict[str, Reply]) -> ModelScore:
     """Return C(m) for one reply set; unknown probes are excluded."""
     return _model_score(_verdicts(probes, replies), probes)
+
+
+def score_collapse(
+    probes: tuple[Probe, ...], replies: dict[str, Reply]
+) -> CollapseScore:
+    """Return the violation rate ``R`` and normalized depth ``D``.
+
+    Only probes that carry a turn list are considered. A probe counts toward
+    ``R`` only when it has a non-blank reply; blank or missing replies are
+    excluded from both ``R`` and ``D`` and reported in ``skipped``. ``D`` is
+    averaged over violating probes only, each contributing
+    ``first_failing_turn / total_turns``, so probe length no longer dominates
+    the number. With no violations ``D`` is ``None``.
+    """
+    multi = tuple(probe for probe in probes if probe.kind != "single_turn")
+    if not multi:
+        return CollapseScore(0, 0, 0, 0, 0.0, None)
+    replied = 0
+    skipped = 0
+    ratios: list[float] = []
+    for probe in multi:
+        reply = replies.get(probe.probe_id)
+        texts = (
+            reply.turns_replied if reply is not None and reply.turns_replied
+            else (reply.text,) if reply is not None else ()
+        )
+        if not any(text.strip() for text in texts):
+            skipped += 1
+            continue
+        replied += 1
+        first_fail = 0
+        for index, text in enumerate(texts[: len(probe.turns)], start=1):
+            if judge_reply(text, probe.expect) == FAIL:
+                first_fail = index
+                break
+        if first_fail:
+            ratios.append(first_fail / len(probe.turns))
+    violating = len(ratios)
+    rate = violating / replied if replied else 0.0
+    depth = sum(ratios) / violating if violating else None
+    return CollapseScore(len(multi), replied, violating, skipped, rate, depth)
 
 
 def compute_pcs(
@@ -173,6 +260,11 @@ def compute_pcs(
     insufficient = min(score_a.c, score_b.c) < 0.5
     if insufficient:
         pcs = 0.0
+    multi = tuple(probe for probe in probes if probe.kind != "single_turn")
+    final_a = _model_score(verdicts_a, multi) if multi else None
+    final_b = _model_score(verdicts_b, multi) if multi else None
+    collapse_a = score_collapse(multi, replies_a) if multi else None
+    collapse_b = score_collapse(multi, replies_b) if multi else None
     rules: dict[str, list[Probe]] = {}
     for probe in probes:
         rules.setdefault(probe.rule, []).append(probe)
@@ -189,6 +281,10 @@ def compute_pcs(
         pcs=pcs,
         insufficient=insufficient,
         per_rule=per_rule,
+        final_a=final_a,
+        final_b=final_b,
+        collapse_a=collapse_a,
+        collapse_b=collapse_b,
     )
 
 

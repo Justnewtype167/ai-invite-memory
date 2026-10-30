@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 
 from jian_pcs.errors import PcsError
-from jian_pcs.probes import load_probes
+from jian_pcs.probes import load_all_probes
 from jian_pcs.report import render_report
 from jian_pcs.score import compute_pcs, load_replies
 
@@ -22,10 +22,16 @@ def main(argv: list[str] | None = None) -> int:
     pcs.add_argument("--probes", default=None, help="override probe JSONL")
     args = parser.parse_args(argv)
     try:
-        probes = load_probes(None if args.probes is None else Path(args.probes))
+        if args.probes is None:
+            probes = load_all_probes()
+        else:
+            from jian_pcs.probes import load_probes
+            probes = load_probes(Path(args.probes))
         replies_a = load_replies(Path(args.a))
         replies_b = load_replies(Path(args.b))
-        report = compute_pcs(probes, replies_a, replies_b)
+        wanted = set(replies_a) | set(replies_b)
+        selected = tuple(p for p in probes if p.probe_id in wanted)
+        report = compute_pcs(selected, replies_a, replies_b)
     except PcsError as exc:
         sys.stderr.write(f"{exc.code}: {exc.message}\n")
         return 1
