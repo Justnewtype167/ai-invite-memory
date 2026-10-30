@@ -11,6 +11,7 @@ from jian_pcs.judge import (
     FAIL,
     PASS,
     UNKNOWN,
+    accepts_pass,
     judge_reply,
     violation_rejected,
 )
@@ -46,6 +47,7 @@ __all__ = [
     "Reply",
     "RuleScore",
     "UNKNOWN",
+    "accepts_pass",
     "compute_pcs",
     "judge_reply",
     "load_probes",

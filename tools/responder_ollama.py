@@ -74,8 +74,13 @@ def call_ollama(
 
 def collect(
     probe_path: Path, model: str, temp_milli: int, seed: int
-) -> list[dict[str, object]]:
-    """Run every probe once and return reply records in probe order."""
+) -> tuple[list[dict[str, object]], list[str]]:
+    """Run every probe once; a failed call becomes an unknown, not a lost round.
+
+    Mirrors ``ingest_live``: one OOM or timeout must not throw away the other
+    replies. The failed probe gets empty text, which the judge reports as
+    ``unknown`` and excludes from every denominator.
+    """
     probes = load_probes(probe_path)
     rules: list[str] = []
     for probe in probes:
@@ -83,8 +88,13 @@ def collect(
             rules.append(probe.rule)
     system = build_system(rules)
     records: list[dict[str, object]] = []
+    errors: list[str] = []
     for probe in probes:
-        text = call_ollama(probe.prompt, system, model, temp_milli, seed)
+        try:
+            text = call_ollama(probe.prompt, system, model, temp_milli, seed)
+        except Exception as exc:
+            errors.append(f"{probe.probe_id}: {exc}")
+            text = ""
         records.append({
             "model": model,
             "probe_id": probe.probe_id,
@@ -92,7 +102,7 @@ def collect(
             "temp_milli": temp_milli,
             "text": text,
         })
-    return records
+    return records, errors
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -110,7 +120,9 @@ def main(argv: list[str] | None = None) -> int:
         else Path(args.probes)
     )
     try:
-        records = collect(probe_path, args.model, args.temp_milli, args.seed)
+        records, errors = collect(
+            probe_path, args.model, args.temp_milli, args.seed
+        )
     except Exception as exc:
         sys.stderr.write(f"E_PCS_RESPONDER: {exc}\n")
         return 1
@@ -119,7 +131,9 @@ def main(argv: list[str] | None = None) -> int:
         json.dumps(record, ensure_ascii=False).encode("utf-8") + b"\n"
         for record in records
     ))
-    print(f"wrote {len(records)} replies to {out}")
+    for error in errors:
+        sys.stderr.write(f"unknown: {error}\n")
+    print(f"wrote {len(records)} replies to {out} ({len(errors)} unknown)")
     return 0
 
 

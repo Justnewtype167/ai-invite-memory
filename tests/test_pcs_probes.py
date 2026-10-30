@@ -20,7 +20,7 @@ class TestProbes(unittest.TestCase):
         cls.self_md = pcs_fixtures.build_self_md()
 
     def test_thirty_unique_probes(self) -> None:
-        """T1: exactly 30 probes with unique ids and all five fields."""
+        """T1: exactly 30 probes with unique ids and all six fields."""
         print(f"T1 probes={len(self.probes)}")
         self.assertEqual(len(self.probes), PROBE_COUNT)
         ids = [probe.probe_id for probe in self.probes]
@@ -28,6 +28,11 @@ class TestProbes(unittest.TestCase):
         for probe in self.probes:
             self.assertTrue(probe.prompt)
             self.assertTrue(probe.violation)
+            self.assertGreaterEqual(len(probe.accept), 2)
+            self.assertLessEqual(len(probe.accept), 3)
+            for text in probe.accept:
+                self.assertTrue(text.strip())
+            self.assertEqual(len(set(probe.accept)), len(probe.accept))
             expect = probe.expect
             self.assertTrue(
                 expect.must_contain_any or expect.must_not_contain_any

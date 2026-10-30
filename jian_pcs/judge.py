@@ -47,6 +47,18 @@ def violation_rejected(probe: Probe) -> bool:
     return judge_reply(probe.violation, probe.expect) == FAIL
 
 
+def accepts_pass(probe: Probe) -> bool:
+    """Return True when every legal wording of the probe is judged ``pass``.
+
+    The violation alone only proves the judge can reject; a judge tuned to
+    a handful of fixed phrases also rejects correct paraphrases and shrinks C
+    for free. Both directions must hold or the probe is not usable.
+    """
+    return all(
+        judge_reply(text, probe.expect) == PASS for text in probe.accept
+    )
+
+
 def _contains_any(body: str, needles: tuple[str, ...]) -> bool:
     return not needles or any(needle in body for needle in needles)
 

@@ -10,7 +10,14 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 import pcs_fixtures
 
-from jian_pcs.judge import FAIL, PASS, UNKNOWN, judge_reply, violation_rejected
+from jian_pcs.judge import (
+    FAIL,
+    PASS,
+    UNKNOWN,
+    accepts_pass,
+    judge_reply,
+    violation_rejected,
+)
 from jian_pcs.probes import load_probes
 
 
@@ -27,6 +34,23 @@ class TestJudge(unittest.TestCase):
         ]
         print(f"T2 violations={len(self.probes)} survived={survived}")
         self.assertEqual(survived, [])
+
+    def test_every_accept_passes(self) -> None:
+        """T2: every legal wording, paraphrases included, is judged pass.
+
+        The violation fence only proves the judge can say no. Without this
+        direction, a judge matching a few fixed phrases would also reject
+        correct paraphrases and silently shrink C.
+        """
+        bad = [
+            (probe.probe_id, text, judge_reply(text, probe.expect))
+            for probe in self.probes
+            for text in probe.accept
+            if judge_reply(text, probe.expect) != PASS
+        ]
+        print(f"T2 accept bad={bad}")
+        self.assertEqual(bad, [])
+        self.assertTrue(all(accepts_pass(probe) for probe in self.probes))
 
     def test_legal_replies_pass(self) -> None:
         """T2: the compliant reply for each rule passes its probes."""

@@ -19,7 +19,9 @@ OPERATORS = (
     "must_ask_before",
     "max_sentences",
 )
-PROBE_FIELDS = ("probe_id", "rule", "prompt", "expect", "violation")
+PROBE_FIELDS = ("probe_id", "rule", "prompt", "expect", "accept", "violation")
+ACCEPT_MIN = 2
+ACCEPT_MAX = 3
 
 
 @dataclass(frozen=True)
@@ -65,12 +67,19 @@ class Expect:
 
 @dataclass(frozen=True)
 class Probe:
-    """One probe: a rule, a prompt, its pass conditions and a violation."""
+    """One probe: a rule, a prompt, its pass conditions and both fences.
+
+    ``accept`` holds 2-3 legal replies in different wordings, including at
+    least one paraphrase. ``violation`` holds one known-bad reply. The judge
+    must pass every ``accept`` and fail the ``violation``; one direction alone
+    cannot tell a strict judge from a broken one.
+    """
 
     probe_id: str
     rule: str
     prompt: str
     expect: Expect
+    accept: tuple[str, ...]
     violation: str
 
 
@@ -123,6 +132,24 @@ def _require_text(data: dict[str, object], name: str) -> str:
     return value
 
 
+def _accept_list(value: object, line_no: int) -> tuple[str, ...]:
+    if not isinstance(value, list):
+        raise PcsError(E_PCS_SCHEMA, f"第 {line_no} 行 accept 必须是数组")
+    if not ACCEPT_MIN <= len(value) <= ACCEPT_MAX:
+        raise PcsError(
+            E_PCS_SCHEMA,
+            f"第 {line_no} 行 accept 必须 {ACCEPT_MIN}-{ACCEPT_MAX} 条",
+        )
+    items: list[str] = []
+    for item in value:
+        if not isinstance(item, str) or not item.strip():
+            raise PcsError(E_PCS_SCHEMA, f"第 {line_no} 行 accept 含空项")
+        items.append(item)
+    if len(set(items)) != len(items):
+        raise PcsError(E_PCS_SCHEMA, f"第 {line_no} 行 accept 有重复")
+    return tuple(items)
+
+
 def _parse_probe(data: object, line_no: int) -> Probe:
     if not isinstance(data, dict):
         raise PcsError(E_PCS_SCHEMA, f"第 {line_no} 行不是对象")
@@ -143,6 +170,7 @@ def _parse_probe(data: object, line_no: int) -> Probe:
         rule=rule,
         prompt=prompt,
         expect=Expect.from_payload(data["expect"]),
+        accept=_accept_list(data["accept"], line_no),
         violation=violation,
     )
 
