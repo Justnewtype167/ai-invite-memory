@@ -6,13 +6,11 @@
 
 运行：python tools/demo_e2e.py
 """
-import sys, json, shutil, hashlib, pathlib, datetime
+import sys, shutil, pathlib, datetime
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from jian.capsule import init_store, append_event, seal_store, export_capsule, import_capsule, verify_path
-from jian.canonical import dumps
-from jian.event import compute_hash, GENESIS_PREV
 from jian.errors import JianError
 from jian_cn.kinship import parse_kinship
 from jian_cn.timex import parse_time
@@ -45,21 +43,6 @@ FILLER = [
     ("地铁上有人吵架。", "离远点就行。"),
     ("我把冰箱清了，扔了一堆。", "下次少买点。"),
 ]
-
-def typed(store, events):
-    seg = pathlib.Path(store) / "evidence" / "seg-0001.jsonl"
-    lines = [l for l in seg.read_bytes().split(b"\n") if l] if seg.exists() else []
-    prev = json.loads(lines[-1])["hash"] if lines else GENESIS_PREV
-    seq = len(lines) + 1
-    with seg.open("ab") as f:
-        for typ, kind, text, ts in events:
-            body = {"v": 1, "id": f"ev_{seq:06d}", "ep": "seg-0001", "t": ts, "type": typ}
-            if kind: body["kind"] = kind
-            body["text"] = text
-            h = compute_hash(prev, body)
-            ev = dict(body); ev["prev"] = prev; ev["hash"] = h
-            f.write(dumps(ev) + b"\n")
-            prev = h; seq += 1
 
 def main():
     if DEMO.exists():
@@ -178,18 +161,22 @@ def main():
     print(f"  kinship 我姑妈的女儿 → {parse_kinship('我姑妈的女儿').candidates}")
     print(f"  slang   yyds@2021={usable('yyds', datetime.date(2021,6,1))}  yyds@2026={usable('yyds', datetime.date(2026,6,1))}")
 
-    # ---------- 9. 缺口 ----------
-    hr("9. 这次演示暴露的缺口")
+    # ---------- 9. 五类事件 ----------
+    hr("9. 五类事件进可校验链路（M4.1）")
     gap = DEMO / "gap_demo"
     init_store(gap)
     append_event(gap, "user", "你好", t="2026-03-12T10:00:00Z")
-    typed(gap, [("directive", "lock", "称呼：叫我「小满」", "2026-03-12T10:01:00Z")])
-    try:
-        seal_store(gap); print("  seal → 通过（意外）")
-    except JianError as e:
-        print(f"  directive 事件 seal → FAIL {e.code}")
-        print("  M1 的 parse_event 只认 turn 字段集；M4 需要的 directive/milestone/feedback 进不了可校验链路。")
-        print("  → 登记为 M4.1：扩展事件模型 + 公开写入 API。")
+    append_event(gap, type="directive", kind="lock",
+                 text="称呼：叫我「小满」", t="2026-03-12T10:01:00Z")
+    append_event(gap, type="milestone", text="第一次一起过生日",
+                 t="2026-03-12T10:02:00Z")
+    append_event(gap, type="feedback", kind="praise", text="你记得真准",
+                 target="ev_000001", t="2026-03-12T10:03:00Z")
+    append_event(gap, type="checkpoint", text="0" * 64,
+                 t="2026-03-12T10:04:00Z")
+    seal_store(gap)
+    rep = verify_path(gap)
+    print(f"  directive / milestone / feedback / checkpoint → seal OK events={rep.events}")
 
     hr("结论")
     print("  1. 对话→证据：可校验，改 1 字节被发现")

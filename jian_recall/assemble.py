@@ -7,13 +7,23 @@ than sending fewer of them.
 
 from __future__ import annotations
 
+import hashlib
 import json
 from dataclasses import dataclass
 from pathlib import Path
 
+from jian.canonical import dumps
+from jian_cn.normalize import normalize
+
 from jian_recall.errors import E_RC_BAD_BUDGET, E_RC_STALE, RecallError
-from jian_recall.index import index_status, load_meta, parse_now, read_tail_events
-from jian_recall.retrieve import _search
+from jian_recall.index import (
+    StoredEvent,
+    index_status,
+    load_meta,
+    parse_now,
+    read_tail_events,
+)
+from jian_recall.retrieve import Hit, _search
 from jian_recall.tokenizer import estimate_tokens
 from jian_recall.trigger import _triggers
 
@@ -31,6 +41,7 @@ class ContextItem:
     slot: str
     tokens: int
     text: str
+    merged: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -52,6 +63,7 @@ class Context:
                     "slot": item.slot,
                     "tokens": item.tokens,
                     "text": item.text,
+                    "merged": list(item.merged),
                 }
                 for item in self.items
             ],
@@ -77,6 +89,11 @@ def assemble(
     total can stay below the budget when candidates are scarce. Output order
     is fixed: trigger, retrieved by score, recent by time. When candidates
     overflow their caps, retrieved hits are dropped from the tail first.
+
+    Items are deduplicated by ``sha256(normalize(text))``. The surviving
+    item keeps the highest priority (trigger > retrieved > recent), then the
+    highest score; merged event ids are recorded in ``item.merged`` and the
+    output order is unchanged.
     """
     if isinstance(budget, bool) or not isinstance(budget, int):
         raise RecallError(E_RC_BAD_BUDGET, "budget 必须是整数")
@@ -97,40 +114,55 @@ def assemble(
     trigger_pool = _triggers(store, moment)
     retrieved_pool = _search(store, query, RETRIEVE_K, moment)
 
-    chosen: dict[str, ContextItem] = {}
+    rows = _candidates(recent_pool, trigger_pool, retrieved_pool)
+    groups: dict[str, list[_Candidate]] = {}
+    for candidate in rows:
+        groups.setdefault(candidate.key, []).append(candidate)
+    leaders = {
+        key: min(group, key=lambda row: (row.priority, -row.score, row.order))
+        for key, group in groups.items()
+    }
+    merged = {
+        leader.event_id: tuple(sorted({
+            row.event_id for row in group if row.event_id != leader.event_id
+        }))
+        for key, group in groups.items()
+        for leader in (leaders[key],)
+    }
+
     recent_items: list[ContextItem] = []
     trigger_items: list[ContextItem] = []
     retrieved_items: list[ContextItem] = []
-    used_recent = 0
-    used_trigger = 0
-    used_retrieved = 0
-    for event in recent_pool:
-        tokens = estimate_tokens(event.text)
-        if used_recent + tokens <= cap_recent:
-            item = ContextItem(event.event_id, "recent", tokens, event.text)
-            chosen[event.event_id] = item
-            recent_items.append(item)
-            used_recent += tokens
-    for hit in trigger_pool:
-        if hit.event_id in chosen:
+    chosen_ids: set[str] = set()
+    used_keys: set[str] = set()
+    used = {"recent": 0, "trigger": 0, "retrieved": 0}
+    caps = {"recent": cap_recent, "trigger": cap_trigger,
+            "retrieved": cap_retrieved}
+    for candidate in rows:
+        leader = leaders[candidate.key]
+        if candidate.event_id != leader.event_id or candidate.key in used_keys:
             continue
-        tokens = estimate_tokens(hit.text)
-        if used_trigger + tokens <= cap_trigger:
-            item = ContextItem(hit.event_id, "trigger", tokens, hit.text)
-            chosen[hit.event_id] = item
-            trigger_items.append(item)
-            used_trigger += tokens
-    for hit in retrieved_pool:
-        if hit.event_id in chosen:
+        if candidate.event_id in chosen_ids:
             continue
-        tokens = estimate_tokens(hit.text)
-        if used_retrieved + tokens <= cap_retrieved:
-            item = ContextItem(hit.event_id, "retrieved", tokens, hit.text)
-            chosen[hit.event_id] = item
-            retrieved_items.append(item)
-            used_retrieved += tokens
+        if used[candidate.slot] + candidate.tokens > caps[candidate.slot]:
+            continue
+        items = {
+            "recent": recent_items,
+            "trigger": trigger_items,
+            "retrieved": retrieved_items,
+        }[candidate.slot]
+        items.append(ContextItem(
+            candidate.event_id, candidate.slot, candidate.tokens,
+            candidate.text, merged.get(candidate.event_id, ()),
+        ))
+        chosen_ids.add(candidate.event_id)
+        used_keys.add(candidate.key)
+        used[candidate.slot] += candidate.tokens
 
     ordered = trigger_items + retrieved_items + recent_items
+    used_recent = used["recent"]
+    used_trigger = used["trigger"]
+    used_retrieved = used["retrieved"]
     total = used_recent + used_trigger + used_retrieved
     candidates = len(
         {event.event_id for event in recent_pool}
@@ -138,3 +170,47 @@ def assemble(
         | {hit.event_id for hit in retrieved_pool}
     )
     return Context(total, tuple(ordered), candidates)
+
+
+@dataclass(frozen=True)
+class _Candidate:
+    """One pool entry before text-level deduplication."""
+
+    event_id: str
+    slot: str
+    priority: int
+    order: int
+    score: float
+    tokens: int
+    text: str
+    key: str
+
+
+def _candidates(
+    recent_pool: list[StoredEvent],
+    trigger_pool: list[Hit],
+    retrieved_pool: list[Hit],
+) -> list[_Candidate]:
+    """Flatten the three pools with their dedupe key and priority."""
+    rows: list[_Candidate] = []
+    for order, event in enumerate(recent_pool):
+        rows.append(_Candidate(
+            event.event_id, "recent", 2, order, 0.0,
+            estimate_tokens(event.text), event.text, _dedupe_key(event.text),
+        ))
+    for order, hit in enumerate(trigger_pool):
+        rows.append(_Candidate(
+            hit.event_id, "trigger", 0, order, hit.score,
+            estimate_tokens(hit.text), hit.text, _dedupe_key(hit.text),
+        ))
+    for order, hit in enumerate(retrieved_pool):
+        rows.append(_Candidate(
+            hit.event_id, "retrieved", 1, order, hit.score,
+            estimate_tokens(hit.text), hit.text, _dedupe_key(hit.text),
+        ))
+    return rows
+
+
+def _dedupe_key(text: str) -> str:
+    """Return ``sha256`` over the canonical view of the normalized text."""
+    return hashlib.sha256(dumps({"t": normalize(text)})).hexdigest()

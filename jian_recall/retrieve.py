@@ -13,6 +13,9 @@ from jian_recall.index import connect_index, index_status, parse_now, parse_stam
 from jian_recall.tokenizer import bigrams
 
 DECAY_WINDOW_DAYS = 365.0
+COVERAGE_FLOOR = 400
+COVERAGE_SPAN = 600
+MILLI = 1000
 
 
 @dataclass(frozen=True)
@@ -35,9 +38,15 @@ def search(
     """Return up to ``k`` lexical hits, most relevant first.
 
     The query is converted to Han bigrams and matched with FTS5 using OR
-    semantics. Each bm25 relevance is multiplied by a time decay factor
-    relative to ``now`` (defaults to the current UTC time). No matches yield
-    an empty list.
+    semantics. The bm25 relevance is normalized across this round's
+    candidates, then weighted by query coverage and by a time decay factor
+    relative to ``now`` (defaults to the current UTC time):
+
+    ``score = bm25_normalized * (0.4 + 0.6 * coverage) * time_decay``
+
+    Coverage is how many of the query bigrams appear in the event text, and
+    it is computed with integer arithmetic only. No matches yield an empty
+    list.
     """
     status = index_status(store)
     if status.stale:
@@ -62,16 +71,26 @@ def _search(store: Path, query: str, k: int, moment: datetime) -> list[Hit]:
         raise RecallError(E_RC_IO, f"检索失败：{exc}") from exc
     finally:
         connection.close()
+    if not rows:
+        return []
+    relevances = [-float(row["rank"]) for row in rows]
+    best = max(relevances)
+    worst = min(relevances)
+    span = best - worst
+    total_terms = len(terms)
     hits: list[Hit] = []
-    for row in rows:
+    for row, relevance in zip(rows, relevances):
         event_id = str(row["event_id"])
+        text = texts.get(event_id, "")
         elapsed = moment - parse_stamp(str(row["ts"]))
         days = max(0.0, elapsed.total_seconds() / 86400.0)
-        relevance = -float(row["rank"])
         decay = 0.5 + 0.5 * math.exp(-days / DECAY_WINDOW_DAYS)
+        normalized = 1.0 if span == 0 else (relevance - worst) / span
+        coverage = sum(1 for term in terms if term in text)
+        factor = COVERAGE_FLOOR + COVERAGE_SPAN * coverage * MILLI // total_terms
         hits.append(
             Hit(event_id, str(row["seg"]), str(row["ts"]),
-                relevance * decay, texts.get(event_id, ""))
+                normalized * decay * factor / MILLI, text)
         )
     hits.sort(key=lambda hit: (-hit.score, hit.event_id))
     return hits

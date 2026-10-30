@@ -34,7 +34,9 @@ class TestAssemble(unittest.TestCase):
         events.append(("2022-10-29T10:00:00Z", "纪念日回忆二"))
         events.append(("2023-10-29T10:00:00Z", "纪念日回忆三"))
         for index in range(8):
-            events.append((f"2025-06-01T08:0{index}:00Z", "最近的日常记录"))
+            events.append(
+                (f"2025-06-01T08:0{index}:00Z", f"最近的日常记录{index + 1}")
+            )
         rc_fixtures.write_store(cls.root, events)
         build_index(cls.root)
 
