@@ -44,7 +44,7 @@ class TestDeterminism(unittest.TestCase):
                 record["text"] = text
                 record["turns_replied"] = [text] * len(probe.turns)
             else:
-                record["text"] = pcs_fixtures.reply_for(probe.rule, obey)
+                record["text"] = pcs_fixtures.reply_for(probe, obey)
             lines.append(json.dumps(record, ensure_ascii=False))
         path.write_text("\n".join(lines) + "\n", encoding="utf-8")
         return path

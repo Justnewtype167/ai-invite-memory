@@ -18,7 +18,7 @@ def _replies(probes, pass_count: int) -> dict[str, Reply]:
     return {
         probe.probe_id: Reply(
             probe.probe_id, "scripted",
-            pcs_fixtures.reply_for(probe.rule, index < pass_count),
+            pcs_fixtures.reply_for(probe, index < pass_count),
         )
         for index, probe in enumerate(probes)
     }

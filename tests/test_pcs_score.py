@@ -17,7 +17,7 @@ from jian_pcs.score import Reply, compute_pcs
 def _all(probes, obey: bool) -> dict[str, Reply]:
     return {
         probe.probe_id: Reply(
-            probe.probe_id, "scripted", pcs_fixtures.reply_for(probe.rule, obey)
+            probe.probe_id, "scripted", pcs_fixtures.reply_for(probe, obey)
         )
         for probe in probes
     }
@@ -62,10 +62,10 @@ class TestScore(unittest.TestCase):
             obey_a = index < 20
             obey_b = index < 15
             replies_a[probe.probe_id] = Reply(
-                probe.probe_id, "a", pcs_fixtures.reply_for(probe.rule, obey_a)
+                probe.probe_id, "a", pcs_fixtures.reply_for(probe, obey_a)
             )
             replies_b[probe.probe_id] = Reply(
-                probe.probe_id, "b", pcs_fixtures.reply_for(probe.rule, obey_b)
+                probe.probe_id, "b", pcs_fixtures.reply_for(probe, obey_b)
             )
         report = compute_pcs(self.probes, replies_a, replies_b)
         print(

@@ -16,12 +16,13 @@ from jian_pcs.judge import (
     violation_rejected,
 )
 from jian_pcs.probes import (
-    AskBefore,
     Expect,
     Probe,
+    Rule,
     load_all_probes,
     load_hard_probes,
     load_probes,
+    load_rules_v2,
     validate_expect,
 )
 from jian_pcs.report import render_report
@@ -40,7 +41,6 @@ from jian_pcs.score import (
 __all__ = [
     "E_PCS_IO",
     "E_PCS_SCHEMA",
-    "AskBefore",
     "CollapseScore",
     "Expect",
     "FAIL",
@@ -50,6 +50,7 @@ __all__ = [
     "PcsReport",
     "Probe",
     "Reply",
+    "Rule",
     "RuleScore",
     "UNKNOWN",
     "accepts_pass",
@@ -59,6 +60,7 @@ __all__ = [
     "load_hard_probes",
     "load_probes",
     "load_replies",
+    "load_rules_v2",
     "render_report",
     "score_collapse",
     "score_model",

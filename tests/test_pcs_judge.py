@@ -53,10 +53,10 @@ class TestJudge(unittest.TestCase):
         self.assertTrue(all(accepts_pass(probe) for probe in self.probes))
 
     def test_legal_replies_pass(self) -> None:
-        """T2: the compliant reply for each rule passes its probes."""
+        """T2: the compliant reply for each probe passes its expectation."""
         bad = []
         for probe in self.probes:
-            verdict = judge_reply(pcs_fixtures.LEGAL[probe.rule], probe.expect)
+            verdict = judge_reply(pcs_fixtures.reply_for(probe, True), probe.expect)
             if verdict != PASS:
                 bad.append((probe.probe_id, verdict))
         print(f"T2 legal bad={bad}")

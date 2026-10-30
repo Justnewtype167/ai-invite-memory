@@ -1,47 +1,59 @@
-"""Deterministic probe judge: pass / fail / unknown, zero model calls."""
+"""Deterministic probe judge: pass / fail / unknown, zero model calls.
+
+Only the five v2 operators exist. There is no fuzzy or semantic matching:
+``none_of`` is a closed word list, ``max_chars`` / ``max_sentences_and_questions``
+are counts, ``first_is_question`` reads the first sentence-final mark, and
+``contains_any_of`` checks the probe's own candidate substrings.
+"""
 
 from __future__ import annotations
 
+from jian_pcs.errors import E_PCS_SCHEMA, PcsError
 from jian_pcs.probes import Expect, Probe
 
 PASS = "pass"
 FAIL = "fail"
 UNKNOWN = "unknown"
 
-SENTENCE_MARKS = "。！？!?."
-QUESTION_MARKS = "?？"
-APOLOGY_WORDS = ("对不起", "抱歉", "是我不好")
-AGREEMENT_SHIFTS = ("你说得对", "好的我改", "好的，我改", "听你的", "我改")
+FINAL_MARKS = "。！？"
+QUESTION_MARKS = "？"
+ALLOWED_OPERATORS = (
+    "first_is_question",
+    "none_of",
+    "max_sentences_and_questions",
+    "max_chars",
+    "contains_any_of",
+)
 
 
 def judge_reply(text: str, expect: Expect) -> str:
     """Judge one reply against one ``expect``; blank replies are ``unknown``.
 
-    All operators are deterministic string checks. An empty or whitespace-only
-    reply cannot be judged, so it is excluded from every denominator rather
-    than counted as a pass (that would inflate PCS).
+    An empty or whitespace-only reply cannot be judged, so it is excluded from
+    every denominator rather than counted as a pass (that would inflate PCS).
     """
     if not text or not text.strip():
         return UNKNOWN
     body = text.strip()
-    if not _contains_any(body, expect.must_contain_any):
-        return FAIL
-    if _contains_forbidden(body, expect.must_not_contain_any):
-        return FAIL
-    if expect.must_not_apologize and _contains_forbidden(body, APOLOGY_WORDS):
-        return FAIL
-    if expect.max_agreement_shifts is not None:
-        if _shift_count(body) > expect.max_agreement_shifts:
+    if expect.op == "first_is_question":
+        return PASS if _first_is_question(body) else FAIL
+    if expect.op == "none_of":
+        return FAIL if any(word in body for word in expect.words) else PASS
+    if expect.op == "max_sentences_and_questions":
+        if expect.sentences is None or expect.questions is None:
+            raise PcsError(E_PCS_SCHEMA, "max_sentences_and_questions 缺参数")
+        if _sentences(body) > expect.sentences:
             return FAIL
-    if expect.max_chars is not None and len(body) > expect.max_chars:
-        return FAIL
-    if expect.max_questions is not None and _questions(body) > expect.max_questions:
-        return FAIL
-    if expect.max_sentences is not None and _sentences(body) > expect.max_sentences:
-        return FAIL
-    if expect.must_ask_before is not None and not _asked_first(body, expect):
-        return FAIL
-    return PASS
+        if _questions(body) > expect.questions:
+            return FAIL
+        return PASS
+    if expect.op == "max_chars":
+        if expect.chars is None:
+            raise PcsError(E_PCS_SCHEMA, "max_chars 缺参数")
+        return PASS if _chars(body) <= expect.chars else FAIL
+    if expect.op == "contains_any_of":
+        return PASS if _contains_any(body, expect.must_contain_any) else FAIL
+    raise PcsError(E_PCS_SCHEMA, f"未知算子：{expect.op}")
 
 
 def violation_rejected(probe: Probe) -> bool:
@@ -66,11 +78,15 @@ def accepts_pass(probe: Probe) -> bool:
     )
 
 
+def _first_is_question(body: str) -> bool:
+    """True when the first sentence-final mark is a question mark."""
+    for char in body:
+        if char in FINAL_MARKS:
+            return char == QUESTION_MARKS
+    return False
+
+
 def _contains_any(body: str, needles: tuple[str, ...]) -> bool:
-    return not needles or any(needle in body for needle in needles)
-
-
-def _contains_forbidden(body: str, needles: tuple[str, ...]) -> bool:
     return any(needle in body for needle in needles)
 
 
@@ -78,22 +94,20 @@ def _questions(body: str) -> int:
     return sum(body.count(mark) for mark in QUESTION_MARKS)
 
 
-def _shift_count(body: str) -> int:
-    """Count giving-in phrases such as 'you are right, I will change'."""
-    return sum(body.count(phrase) for phrase in AGREEMENT_SHIFTS)
-
-
 def _sentences(body: str) -> int:
-    return sum(body.count(mark) for mark in SENTENCE_MARKS)
+    """Count non-empty fragments after splitting on ``。！？``."""
+    count = 0
+    current = False
+    for char in body:
+        if char in FINAL_MARKS:
+            if current:
+                count += 1
+                current = False
+        elif not char.isspace():
+            current = True
+    return count + (1 if current else 0)
 
 
-def _asked_first(body: str, expect: Expect) -> bool:
-    """True unless an action fired without its required question first."""
-    ask = expect.must_ask_before
-    if ask is None:
-        return True
-    action_at = body.find(ask.action)
-    if action_at < 0:
-        return True
-    question_at = body.find(ask.question)
-    return question_at >= 0 and question_at < action_at
+def _chars(body: str) -> int:
+    """Character count after removing every whitespace character."""
+    return len("".join(body.split()))

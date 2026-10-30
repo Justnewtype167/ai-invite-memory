@@ -1,4 +1,4 @@
-"""U1: the M7 hard probe set is complete and traceable to self.md."""
+"""U1: the M7 hard probe set is complete and bound to rules_v2."""
 
 from __future__ import annotations
 
@@ -8,15 +8,15 @@ import unittest
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
-import pcs_fixtures
-
 from jian_pcs.probes import (
     HARD_KINDS,
     HARD_PROBE_COUNT,
     PROBE_COUNT,
+    V2_OPERATORS,
     load_all_probes,
     load_hard_probes,
     load_probes,
+    load_rules_v2,
 )
 
 
@@ -24,7 +24,7 @@ class TestHardProbes(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.probes = load_hard_probes()
-        cls.self_md = pcs_fixtures.build_self_md()
+        cls.rules = load_rules_v2()
 
     def test_eighteen_hard_probes(self) -> None:
         """U1: exactly 18 probes, 6 per kind, every id unique."""
@@ -44,21 +44,12 @@ class TestHardProbes(unittest.TestCase):
             self.assertGreaterEqual(len(probe.accept), 2)
             self.assertLessEqual(len(probe.accept), 3)
             self.assertTrue(probe.violation.strip())
-            self.assertTrue(probe.expect.must_contain_any
-                            or probe.expect.must_not_contain_any
-                            or probe.expect.max_chars is not None
-                            or probe.expect.max_questions is not None
-                            or probe.expect.must_ask_before is not None
-                            or probe.expect.max_sentences is not None
-                            or probe.expect.must_not_apologize
-                            or probe.expect.max_agreement_shifts is not None)
+            self.assertIn(probe.expect.op, V2_OPERATORS)
 
-    def test_rules_come_from_self_md(self) -> None:
-        """U1: every hard probe rule literally appears in the compiled self.md."""
-        missing = [
-            probe.rule for probe in self.probes
-            if probe.rule not in self.self_md
-        ]
+    def test_rules_come_from_rules_v2(self) -> None:
+        """U1: every hard probe rule is defined by the v2 rule file."""
+        known = {rule.rule_id for rule in self.rules}
+        missing = [probe.rule for probe in self.probes if probe.rule not in known]
         print(f"U1 hard rules={len({p.rule for p in self.probes})} missing={missing}")
         self.assertEqual(missing, [])
 

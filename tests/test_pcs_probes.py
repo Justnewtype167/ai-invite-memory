@@ -1,4 +1,4 @@
-"""T1: the probe set is complete, legal and traceable to self.md."""
+"""T1: the probe set is complete, legal and bound to rules_v2."""
 
 from __future__ import annotations
 
@@ -8,16 +8,16 @@ import unittest
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
-import pcs_fixtures
-
-from jian_pcs.probes import PROBE_COUNT, load_probes
+from jian_pcs.probes import (
+    PROBE_COUNT, V2_OPERATORS, load_probes, load_rules_v2,
+)
 
 
 class TestProbes(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.probes = load_probes()
-        cls.self_md = pcs_fixtures.build_self_md()
+        cls.rules = load_rules_v2()
 
     def test_thirty_unique_probes(self) -> None:
         """T1: exactly 30 probes with unique ids and all six fields."""
@@ -33,25 +33,15 @@ class TestProbes(unittest.TestCase):
             for text in probe.accept:
                 self.assertTrue(text.strip())
             self.assertEqual(len(set(probe.accept)), len(probe.accept))
-            expect = probe.expect
-            self.assertTrue(
-                expect.must_contain_any or expect.must_not_contain_any
-                or expect.max_chars is not None
-                or expect.max_questions is not None
-                or expect.must_ask_before is not None
-                or expect.max_sentences is not None
-            )
+            self.assertIn(probe.expect.op, V2_OPERATORS)
 
-    def test_every_rule_is_in_self_md(self) -> None:
-        """T1: every probe rule literally appears in the compiled self.md."""
-        missing = [
-            probe.rule for probe in self.probes
-            if probe.rule not in self.self_md
-        ]
+    def test_every_rule_comes_from_rules_v2(self) -> None:
+        """T1: every probe names a rule that the v2 rule file defines."""
+        known = {rule.rule_id for rule in self.rules}
+        missing = [probe.rule for probe in self.probes if probe.rule not in known]
         print(f"T1 rules={len({p.rule for p in self.probes})} missing={missing}")
         self.assertEqual(missing, [])
-        self.assertIn("## Style", self.self_md)
-        self.assertIn("## Conduct", self.self_md)
+        self.assertEqual(len(known), 6)
 
 
 if __name__ == "__main__":
