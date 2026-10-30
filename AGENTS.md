@@ -7,23 +7,24 @@
 
 交付物是「格式 + 参考实现 + 一致性套件 + 论文」，不是聊天产品。
 
-## 1. 当前阶段：M5 第一步（提案进链路，但不接模型）
+## 1. 当前阶段：M5 第二步（接本地模型）
 
-**已封版**：`v0.1-m1` / `v0.2-m2` / `v0.3-m3` / `v0.4-m4` / `v0.5-m41`，共 **148 个测试**。
-归档见 `docs/RELEASE-v0.5-m41.md`（zip 的 sha256 在里面），路线见 `docs/M5-ROUTE.md`。
+**已封版**：`v0.1-m1` … `v0.5-m41`，共 **148 个测试**；M5 第一步已通过（提案链路，163 测试）。
+归档见 `docs/RELEASE-v0.5-m41.md`，路线见 `docs/M5-ROUTE.md`。
 
-这一步**不调用任何模型**：提案由 `ReplayProposer` 从证据里读。
-先证明「提案进证据 → kid 可复算 → 少一条提案 kid 必变」，再接真模型。
+本机模型：**`qwen3.5:9b`**（9.0B / Q4_K_M / 6.55 GB / llamacpp），服务 `127.0.0.1:11434`。
+实测：temp 0 + 固定 seed → 3/3 输出逐字相同；只给它规则不给形容词，输出质量可用。
 
 | 可改 | 不可改 |
 |---|---|
-| `jian/event.py`（加第 6 种事件 `proposal`） | `jian/capsule.py`、`jian/cli.py` |
+| `jian/event.py`（proposal 加 4 个可选字段） | `jian/capsule.py`、`jian/cli.py` |
 | `jian_kernel/*` | `jian_cn/`、`jian_recall/` 全部 |
-| `tests/` 新增 | 事件哈希算法、canonical 规则 |
+| `tools/proposer_*.py`（新增） | 事件哈希算法、canonical 规则 |
 
-规格见 `docs/TASK-06-proposal.md`。**写之前先过一遍 `docs/SPEC-CHECKLIST.md` 的十问。**
+规格见 `docs/TASK-07-live-proposer.md`。**写之前先过一遍 `docs/SPEC-CHECKLIST.md` 的十问。**
 
-唯一目标：**提案在，人格变；提案走，人格回来**——且 `META.origin` 必须标出这份人格是模型参与还是规则兜底。
+唯一目标：**本地模型能产出可用提案、提案进证据、人格随之变化，而核心库仍然零依赖零网络。**
+网络只允许出现在 `tools/`；测试只跑假提案器，一次也不联网。
 越界视为任务失败，即使代码能跑。
 
 ## 2. 十二条不可协商约束
