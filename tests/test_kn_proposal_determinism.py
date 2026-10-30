@@ -52,9 +52,11 @@ class TestProposalDeterminism(unittest.TestCase):
         for seed in ("0", "12345"):
             env = dict(os.environ)
             env["PYTHONHASHSEED"] = seed
+            env["PYTHONUTF8"] = "1"
             completed = subprocess.run(
                 [sys.executable, "-c", SCRIPT, str(self.root), NOW],
-                cwd=str(ROOT), env=env, capture_output=True, text=True, check=True,
+                cwd=str(ROOT), env=env, capture_output=True, text=True,
+                encoding="utf-8", errors="replace", check=True,
             )
             kids.append(completed.stdout.strip())
         print(f"P6 seed0={kids[0][:12]} seed12345={kids[1][:12]}")

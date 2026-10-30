@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import pathlib
 import shutil
 import subprocess
@@ -120,7 +121,9 @@ class TestLiveFallback(unittest.TestCase):
             str(self.root), "--now", NOW, *extra,
         ]
         return subprocess.run(
-            command, cwd=ROOT, capture_output=True, text=True, timeout=120,
+            command, cwd=ROOT, capture_output=True, text=True,
+            encoding="utf-8", errors="replace",
+            env={**os.environ, "PYTHONUTF8": "1"}, timeout=120,
         )
 
 
