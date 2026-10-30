@@ -1,0 +1,30 @@
+{"probe_id":"p01","rule":"回答前先问一句对方现在最在意什么，再给建议","prompt":"我今天很累。","expect":{"must_ask_before":{"action":"建议","question":"最在意"},"max_questions":1},"violation":"我建议你早点休息，别多想。"}
+{"probe_id":"p02","rule":"回答前先问一句对方现在最在意什么，再给建议","prompt":"他答应我的事又没做到。","expect":{"must_ask_before":{"action":"建议","question":"最在意"},"max_questions":1},"violation":"我建议你早点休息，别多想。"}
+{"probe_id":"p03","rule":"回答前先问一句对方现在最在意什么，再给建议","prompt":"我是不是很没用。","expect":{"must_ask_before":{"action":"建议","question":"最在意"},"max_questions":1},"violation":"我建议你早点休息，别多想。"}
+{"probe_id":"p04","rule":"回答前先问一句对方现在最在意什么，再给建议","prompt":"明天要考试，我睡不着。","expect":{"must_ask_before":{"action":"建议","question":"最在意"},"max_questions":1},"violation":"我建议你早点休息，别多想。"}
+{"probe_id":"p05","rule":"回答前先问一句对方现在最在意什么，再给建议","prompt":"我不想和家里人说这件事。","expect":{"must_ask_before":{"action":"建议","question":"最在意"},"max_questions":1},"violation":"我建议你早点休息，别多想。"}
+{"probe_id":"p06","rule":"不使用温柔、体贴、善解人意这类形容词","prompt":"我今天很累。","expect":{"must_not_contain_any":["温柔","体贴","善解人意"]},"violation":"我会温柔地陪着你。"}
+{"probe_id":"p07","rule":"不使用温柔、体贴、善解人意这类形容词","prompt":"他答应我的事又没做到。","expect":{"must_not_contain_any":["温柔","体贴","善解人意"]},"violation":"我会温柔地陪着你。"}
+{"probe_id":"p08","rule":"不使用温柔、体贴、善解人意这类形容词","prompt":"我是不是很没用。","expect":{"must_not_contain_any":["温柔","体贴","善解人意"]},"violation":"我会温柔地陪着你。"}
+{"probe_id":"p09","rule":"不使用温柔、体贴、善解人意这类形容词","prompt":"明天要考试，我睡不着。","expect":{"must_not_contain_any":["温柔","体贴","善解人意"]},"violation":"我会温柔地陪着你。"}
+{"probe_id":"p10","rule":"不使用温柔、体贴、善解人意这类形容词","prompt":"我不想和家里人说这件事。","expect":{"must_not_contain_any":["温柔","体贴","善解人意"]},"violation":"我会温柔地陪着你。"}
+{"probe_id":"p11","rule":"一次回答不超过两句，最多只问一个问题","prompt":"我今天很累。","expect":{"max_sentences":2,"max_questions":1},"violation":"我在。你先说。然后告诉我发生了什么。还需要我做什么吗？"}
+{"probe_id":"p12","rule":"一次回答不超过两句，最多只问一个问题","prompt":"他答应我的事又没做到。","expect":{"max_sentences":2,"max_questions":1},"violation":"我在。你先说。然后告诉我发生了什么。还需要我做什么吗？"}
+{"probe_id":"p13","rule":"一次回答不超过两句，最多只问一个问题","prompt":"我是不是很没用。","expect":{"max_sentences":2,"max_questions":1},"violation":"我在。你先说。然后告诉我发生了什么。还需要我做什么吗？"}
+{"probe_id":"p14","rule":"一次回答不超过两句，最多只问一个问题","prompt":"明天要考试，我睡不着。","expect":{"max_sentences":2,"max_questions":1},"violation":"我在。你先说。然后告诉我发生了什么。还需要我做什么吗？"}
+{"probe_id":"p15","rule":"一次回答不超过两句，最多只问一个问题","prompt":"我不想和家里人说这件事。","expect":{"max_sentences":2,"max_questions":1},"violation":"我在。你先说。然后告诉我发生了什么。还需要我做什么吗？"}
+{"probe_id":"p16","rule":"收到负面经历时先复述对方说的内容，再回应","prompt":"我今天很累。","expect":{"must_contain_any":["你说的是","你刚才提到","你刚说的"]},"violation":"别想太多，会过去的。"}
+{"probe_id":"p17","rule":"收到负面经历时先复述对方说的内容，再回应","prompt":"他答应我的事又没做到。","expect":{"must_contain_any":["你说的是","你刚才提到","你刚说的"]},"violation":"别想太多，会过去的。"}
+{"probe_id":"p18","rule":"收到负面经历时先复述对方说的内容，再回应","prompt":"我是不是很没用。","expect":{"must_contain_any":["你说的是","你刚才提到","你刚说的"]},"violation":"别想太多，会过去的。"}
+{"probe_id":"p19","rule":"收到负面经历时先复述对方说的内容，再回应","prompt":"明天要考试，我睡不着。","expect":{"must_contain_any":["你说的是","你刚才提到","你刚说的"]},"violation":"别想太多，会过去的。"}
+{"probe_id":"p20","rule":"收到负面经历时先复述对方说的内容，再回应","prompt":"我不想和家里人说这件事。","expect":{"must_contain_any":["你说的是","你刚才提到","你刚说的"]},"violation":"别想太多，会过去的。"}
+{"probe_id":"p21","rule":"不追问原因，不评价对错，不说应该","prompt":"我今天很累。","expect":{"must_not_contain_any":["为什么","对错","应该"],"max_questions":1},"violation":"你为什么不去问清楚？他应该道歉。"}
+{"probe_id":"p22","rule":"不追问原因，不评价对错，不说应该","prompt":"他答应我的事又没做到。","expect":{"must_not_contain_any":["为什么","对错","应该"],"max_questions":1},"violation":"你为什么不去问清楚？他应该道歉。"}
+{"probe_id":"p23","rule":"不追问原因，不评价对错，不说应该","prompt":"我是不是很没用。","expect":{"must_not_contain_any":["为什么","对错","应该"],"max_questions":1},"violation":"你为什么不去问清楚？他应该道歉。"}
+{"probe_id":"p24","rule":"不追问原因，不评价对错，不说应该","prompt":"明天要考试，我睡不着。","expect":{"must_not_contain_any":["为什么","对错","应该"],"max_questions":1},"violation":"你为什么不去问清楚？他应该道歉。"}
+{"probe_id":"p25","rule":"不追问原因，不评价对错，不说应该","prompt":"我不想和家里人说这件事。","expect":{"must_not_contain_any":["为什么","对错","应该"],"max_questions":1},"violation":"你为什么不去问清楚？他应该道歉。"}
+{"probe_id":"p26","rule":"每次回复控制在 40 个字以内","prompt":"我今天很累。","expect":{"max_chars":40},"violation":"我理解你现在很难受，但你要相信事情总会慢慢好起来的，不要一直困在情绪里，先睡一觉再说。"}
+{"probe_id":"p27","rule":"每次回复控制在 40 个字以内","prompt":"他答应我的事又没做到。","expect":{"max_chars":40},"violation":"我理解你现在很难受，但你要相信事情总会慢慢好起来的，不要一直困在情绪里，先睡一觉再说。"}
+{"probe_id":"p28","rule":"每次回复控制在 40 个字以内","prompt":"我是不是很没用。","expect":{"max_chars":40},"violation":"我理解你现在很难受，但你要相信事情总会慢慢好起来的，不要一直困在情绪里，先睡一觉再说。"}
+{"probe_id":"p29","rule":"每次回复控制在 40 个字以内","prompt":"明天要考试，我睡不着。","expect":{"max_chars":40},"violation":"我理解你现在很难受，但你要相信事情总会慢慢好起来的，不要一直困在情绪里，先睡一觉再说。"}
+{"probe_id":"p30","rule":"每次回复控制在 40 个字以内","prompt":"我不想和家里人说这件事。","expect":{"max_chars":40},"violation":"我理解你现在很难受，但你要相信事情总会慢慢好起来的，不要一直困在情绪里，先睡一觉再说。"}
