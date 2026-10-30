@@ -7,22 +7,23 @@
 
 交付物是「格式 + 参考实现 + 一致性套件 + 论文」，不是聊天产品。
 
-## 1. 当前阶段：M4.1（补最后三公里）
+## 1. 当前阶段：M5 第一步（提案进链路，但不接模型）
 
-**四个已封版模块**：`jian/`（v0.1-m1）、`jian_cn/`（v0.2-m2）、`jian_recall/`（v0.3-m3）、`jian_kernel/`（v0.4-m4），共 131 个测试。
+**已封版**：`v0.1-m1` / `v0.2-m2` / `v0.3-m3` / `v0.4-m4` / `v0.5-m41`，共 **148 个测试**。
+归档见 `docs/RELEASE-v0.5-m41.md`（zip 的 sha256 在里面），路线见 `docs/M5-ROUTE.md`。
 
-端到端演示暴露三件事：事件类型写不进证据层、去重没定义、检索单字命中即入选。
-'M4.1 只做这三件，**并且一次性放开冻结**，但**只放开这几个文件**：
+这一步**不调用任何模型**：提案由 `ReplayProposer` 从证据里读。
+先证明「提案进证据 → kid 可复算 → 少一条提案 kid 必变」，再接真模型。
 
 | 可改 | 不可改 |
 |---|---|
-| `jian/event.py`、`jian/capsule.py`、`jian/cli.py` | `jian_cn/` 全部 |
-| `jian_recall/retrieve.py`、`jian_recall/assemble.py` | `jian_kernel/` 全部 |
-| | 事件哈希算法、canonical 规则 |
+| `jian/event.py`（加第 6 种事件 `proposal`） | `jian/capsule.py`、`jian/cli.py` |
+| `jian_kernel/*` | `jian_cn/`、`jian_recall/` 全部 |
+| `tests/` 新增 | 事件哈希算法、canonical 规则 |
 
-规格见 `docs/TASK-05-events-dedupe-coverage.md`。**写之前先过一遍 `docs/SPEC-CHECKLIST.md` 的十问。**
+规格见 `docs/TASK-06-proposal.md`。**写之前先过一遍 `docs/SPEC-CHECKLIST.md` 的十问。**
 
-M4.1 的唯一目标：**五类事件能进可校验链路、同一句话在上下文里只出现一次、金句进 top-5。**
+唯一目标：**提案在，人格变；提案走，人格回来**——且 `META.origin` 必须标出这份人格是模型参与还是规则兜底。
 越界视为任务失败，即使代码能跑。
 
 ## 2. 十二条不可协商约束
