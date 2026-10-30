@@ -29,7 +29,9 @@ META_FILE = "META.json"
 EVIDENCE_DIR = "evidence"
 
 STYLE_TARGET = "self.style"
-STYLE_TARGETS = (STYLE_TARGET,)
+CONDUCT_TARGET = "self.conduct"
+STYLE_TARGETS = (STYLE_TARGET, CONDUCT_TARGET)
+STYLE_SECTIONS = ((STYLE_TARGET, "Style"), (CONDUCT_TARGET, "Conduct"))
 STYLE_TEXT_MAX = 120
 STYLE_TOTAL_MAX = 800
 STYLE_MAX_PER_TARGET = 8
@@ -64,6 +66,7 @@ class Policy:
     delta_limit: int = DEFAULT_DELTA_LIMIT
     require_proposals: bool = False
     allow_fallback: bool = False
+    force_fallback: bool = False
 
     def resolved_now(self, fallback: str) -> datetime:
         """Return the policy clock, falling back to the latest evidence stamp."""
@@ -90,6 +93,10 @@ class EvidenceEvent:
     target: str | None = None
     model: str | None = None
     prompt_sha: str | None = None
+    quant: str | None = None
+    weights_sha: str | None = None
+    temp_milli: int | None = None
+    seed: int | None = None
 
 
 @dataclass(frozen=True)
@@ -244,6 +251,7 @@ class Kernel:
     origin: str = ORIGIN_RULE_ONLY
     style: tuple[str, ...] = ()
     rejected: int = 0
+    models: tuple[str, ...] = ()
 
     def graph_payload(self) -> dict[str, object]:
         """Return the canonical graph view."""
@@ -259,8 +267,10 @@ class Kernel:
             "generation": self.generation,
             "head": self.head,
             "kid": self.kid,
+            "models": list(self.models),
             "origin": self.origin,
             "policy_hash": self.policy_hash,
+            "proposals": {"accepted": len(self.style), "rejected": self.rejected},
             "version": version,
         }
         return {
@@ -310,16 +320,19 @@ def parse_canon(text: str) -> tuple[CanonEntry, ...]:
 
 
 def kernel_kid(self_md: str, canon_md: str, state: dict[str, int],
-               graph: dict[str, object], origin: str) -> str:
+               graph: dict[str, object], origin: str,
+               models: tuple[str, ...] = ()) -> str:
     """Return the content identity of a kernel; version is never included.
 
     ``origin`` records whether a model-shaped source contributed (or the
     rules had to fall back), so a change of input source always changes the
-    kid.
+    kid. ``models`` records every model that proposed, so the same evidence
+    under a different model can never share a kid.
     """
     payload = {
         "canon": canon_md,
         "graph": graph,
+        "models": list(models),
         "origin": origin,
         "self": self_md,
         "state": dict(state),

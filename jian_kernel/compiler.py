@@ -26,6 +26,7 @@ from jian_kernel.kernel import (
     STATE_MAX,
     STATE_MIN,
     STYLE_MAX_PER_TARGET,
+    STYLE_SECTIONS,
     STYLE_TEXT_MAX,
     STYLE_TOTAL_MAX,
     Anchor,
@@ -92,20 +93,21 @@ def _compile(
         raise KernelError(E_KN_IO, "证据目录为空")
     moment = chosen.resolved_now(events[-1].stamp)
     check_proposals(events)
-    style, rejected = _select_style(events)
+    style, rejected, groups = _select_style(events)
     origin = _resolve_origin(chosen, style)
+    models = _model_ids(events)
     proposals = source.propose(store, chosen)
     content = [event for event in events if event.type != "proposal"]
     canon = _build_canon(content, proposals)
     state = _compute_state(content)
     edges, anchors = _build_graph(content)
-    self_md = _render_self(content, moment, edges, style)
+    self_md = _render_self(content, moment, edges, groups)
     canon_md = render_canon(canon)
     graph = {
         "anchors": [anchor.to_payload() for anchor in anchors],
         "edges": [edge.to_payload() for edge in edges],
     }
-    kid = kernel_kid(self_md, canon_md, state, graph, origin)
+    kid = kernel_kid(self_md, canon_md, state, graph, origin, models)
     return Kernel(
         kid=kid,
         head=events[-1].event_id,
@@ -119,6 +121,7 @@ def _compile(
         origin=origin,
         style=style,
         rejected=rejected,
+        models=models,
     )
 
 
@@ -161,6 +164,10 @@ def _parse_event(line: str, path: Path) -> EvidenceEvent:
     target = data.get("target")
     model = data.get("model")
     prompt_sha = data.get("prompt_sha")
+    quant = data.get("quant")
+    weights_sha = data.get("weights_sha")
+    temp_milli = data.get("temp_milli")
+    seed = data.get("seed")
     if not isinstance(event_id, str) or not isinstance(stamp, str) \
             or not isinstance(text, str):
         raise KernelError(E_KN_IO, f"证据字段缺失：{path}")
@@ -170,45 +177,82 @@ def _parse_event(line: str, path: Path) -> EvidenceEvent:
         raise KernelError(E_KN_IO, f"证据 kind 不是字符串：{path}")
     if target is not None and not isinstance(target, str):
         raise KernelError(E_KN_IO, f"证据 target 不是字符串：{path}")
-    if model is not None and not isinstance(model, str):
-        raise KernelError(E_KN_IO, f"证据 model 不是字符串：{path}")
-    if prompt_sha is not None and not isinstance(prompt_sha, str):
-        raise KernelError(E_KN_IO, f"证据 prompt_sha 不是字符串：{path}")
-    return EvidenceEvent(event_id, stamp_text(parse_stamp(stamp)),
-                         str(event_type), kind, text, target, model, prompt_sha)
+    for name, value in (("model", model), ("prompt_sha", prompt_sha),
+                        ("quant", quant), ("weights_sha", weights_sha)):
+        if value is not None and not isinstance(value, str):
+            raise KernelError(E_KN_IO, f"证据 {name} 不是字符串：{path}")
+    for name, value in (("temp_milli", temp_milli), ("seed", seed)):
+        if value is not None and (
+            isinstance(value, bool) or not isinstance(value, int)
+        ):
+            raise KernelError(E_KN_IO, f"证据 {name} 不是整数：{path}")
+    return EvidenceEvent(
+        event_id, stamp_text(parse_stamp(stamp)), str(event_type), kind, text,
+        target, model, prompt_sha, quant, weights_sha, temp_milli, seed,
+    )
 
 
-def _select_style(events: list[EvidenceEvent]) -> tuple[tuple[str, ...], int]:
-    """Return the accepted style lines and the per-target quota rejects.
+def _select_style(
+    events: list[EvidenceEvent],
+) -> tuple[tuple[str, ...], int, dict[str, tuple[str, ...]]]:
+    """Return accepted lines, reject count and per-target sections.
 
-    Lines follow numeric event order, each is cut to ``STYLE_TEXT_MAX`` and
-    the section stops once ``STYLE_TOTAL_MAX`` characters are used.
+    Every target has its own quota (``STYLE_MAX_PER_TARGET``) and its own
+    character budget (``STYLE_TOTAL_MAX``). Lines follow numeric event order,
+    each is cut to ``STYLE_TEXT_MAX``; anything that does not fit is counted
+    as rejected instead of silently dropped.
     """
     proposals = ReplayProposer().style(events)
     accepted: list[str] = []
     rejected = 0
-    used = 0
+    used: dict[str, int] = {}
     counts: dict[str, int] = {}
+    groups: dict[str, list[str]] = {target: [] for target, _ in STYLE_SECTIONS}
     for proposal in proposals:
-        if counts.get(proposal.target, 0) >= STYLE_MAX_PER_TARGET:
+        count = counts.get(proposal.target, 0)
+        if count >= STYLE_MAX_PER_TARGET:
             rejected += 1
             continue
         text = proposal.text[:STYLE_TEXT_MAX]
-        cost = len(text) + (1 if accepted else 0)
-        if used + cost > STYLE_TOTAL_MAX:
-            break
-        used += cost
+        cost = len(text) + (1 if groups[proposal.target] else 0)
+        if used.get(proposal.target, 0) + cost > STYLE_TOTAL_MAX:
+            rejected += 1
+            continue
+        used[proposal.target] = used.get(proposal.target, 0) + cost
+        counts[proposal.target] = count + 1
         accepted.append(text)
-        counts[proposal.target] = counts.get(proposal.target, 0) + 1
-    return tuple(accepted), rejected
+        groups[proposal.target].append(text)
+    sections = {
+        target: tuple(texts) for target, texts in groups.items() if texts
+    }
+    return tuple(accepted), rejected, sections
+
+
+def _model_ids(events: list[EvidenceEvent]) -> tuple[str, ...]:
+    """Return the sorted unique ``model/quant/weights_sha`` ids of proposers."""
+    found: set[str] = set()
+    for event in events:
+        if event.type != "proposal" or not event.model:
+            continue
+        parts = [event.model]
+        if event.quant:
+            parts.append(event.quant)
+        if event.weights_sha:
+            parts.append(event.weights_sha)
+        found.add("/".join(parts))
+    return tuple(sorted(found))
 
 
 def _resolve_origin(policy: Policy, style: tuple[str, ...]) -> str:
     """Return ``rule_only`` / ``with_proposals`` / ``rule_fallback``.
 
     A policy that requires proposals must not fall back silently: without
-    ``allow_fallback`` the compile fails with ``E_KN_NO_PROPOSAL``.
+    ``allow_fallback`` the compile fails with ``E_KN_NO_PROPOSAL``. A live
+    proposer failure sets ``force_fallback``, so even a partially successful
+    round is marked as a rule fallback and the kid necessarily changes.
     """
+    if policy.force_fallback:
+        return ORIGIN_RULE_FALLBACK
     if style:
         return ORIGIN_WITH_PROPOSALS
     if policy.require_proposals:
@@ -355,9 +399,9 @@ def _render_self(
     events: list[EvidenceEvent],
     moment: datetime,
     edges: tuple[GraphEdge, ...],
-    style: tuple[str, ...],
+    groups: dict[str, tuple[str, ...]],
 ) -> str:
-    """Render ``self.md`` from a fixed template plus statistics and style."""
+    """Render ``self.md`` from a fixed template plus statistics and sections."""
     lines = [
         "# Self",
         "",
@@ -367,9 +411,12 @@ def _render_self(
         f"- top_kinship: {_top_kinship(edges)}",
         f"- latest_milestone: {_latest_milestone(events)}",
     ]
-    if style:
-        lines.extend(["", "## Style", ""])
-        lines.extend(f"- {text}" for text in style)
+    for target, title in STYLE_SECTIONS:
+        texts = groups.get(target, ())
+        if not texts:
+            continue
+        lines.extend(["", f"## {title}", ""])
+        lines.extend(f"- {text}" for text in texts)
     return "\n".join(lines) + "\n"
 
 

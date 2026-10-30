@@ -8,7 +8,9 @@ canonical note path stays available for explicitly passed proposers.
 
 from __future__ import annotations
 
+import hashlib
 import json
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
@@ -21,6 +23,7 @@ from jian.event import (
     PROMPT_SHA_RE,
     PROPOSAL_TEXT_MAX_CHARS,
     SEGMENT_MAX_EVENTS,
+    WEIGHTS_SHA_RE,
     Event,
     new_event,
     utc_now,
@@ -30,6 +33,8 @@ from jian_kernel.errors import (
     E_KN_BAD_PROPOSAL,
     E_KN_BAD_TARGET,
     E_KN_IO,
+    E_KN_THIN_EVIDENCE,
+    E_PROPOSER_FAILED,
     KernelError,
 )
 from jian_kernel.kernel import STYLE_TARGETS, EvidenceEvent, Policy
@@ -37,6 +42,23 @@ from jian_kernel.kernel import STYLE_TARGETS, EvidenceEvent, Policy
 CHAIN_PATH = "chain.json"
 MANIFEST_PATH = "manifest.json"
 EVIDENCE_DIR = "evidence"
+
+MIN_EVIDENCE_EVENTS = 10
+EVIDENCE_TYPES = ("turn", "feedback")
+EVIDENCE_MAX_CHARS = 1200
+DEFAULT_PROPOSER_TIMEOUT = 200
+PROMPT_TEMPLATE = (
+    "你在帮一个 AI 伙伴修订「{style|conduct}」。根据下面这段真实对话，"
+    "写一条具体、可执行的要求。\n"
+    "要求：\n"
+    "- 不超过 40 个字\n"
+    "- 不许用形容词堆砌（温柔、体贴、善解人意这类一律不许）\n"
+    "- 要写成行为规则，能照着判断「做到了没有」\n"
+    "- 只输出这一条，不要解释\n"
+    "\n"
+    "对话：\n"
+    "{evidence}"
+)
 
 
 @dataclass(frozen=True)
@@ -65,6 +87,45 @@ class StyleProposal:
     text: str
     model: str
     prompt_sha: str
+
+
+@dataclass(frozen=True)
+class LiveProposal:
+    """One proposal returned by an external proposer process.
+
+    ``model`` / ``prompt_sha`` are mandatory; the four provenance fields are
+    optional and follow the same integer-only rules as the event layer.
+    """
+
+    target: str
+    text: str
+    model: str
+    prompt_sha: str
+    quant: str | None = None
+    weights_sha: str | None = None
+    temp_milli: int | None = None
+    seed: int | None = None
+
+
+def prompt_sha_for(target: str) -> str:
+    """Return ``sha256(prompt template + target)[:16]`` for one target."""
+    payload = (PROMPT_TEMPLATE + target).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()[:16]
+
+
+def evidence_summary(events: list[EvidenceEvent]) -> str:
+    """Return a deterministic plain-text digest of turn/feedback evidence.
+
+    Only the last ``EVIDENCE_MAX_CHARS`` characters are kept, so a long
+    conversation still fits one subprocess request.
+    """
+    lines = [
+        f"{event.event_id} {event.text}"
+        for event in events
+        if event.type in EVIDENCE_TYPES
+    ]
+    text = "\n".join(lines)
+    return text[-EVIDENCE_MAX_CHARS:]
 
 
 class Proposer(Protocol):
@@ -124,6 +185,150 @@ class ReplayProposer:
         ]
 
 
+class SubprocessProposer:
+    """Bridge to an external proposer process; the core never goes online.
+
+    The contract is one JSON line in and one JSON line out. A crash, a
+    malformed reply or a timeout is always ``E_PROPOSER_FAILED``.
+    """
+
+    def __init__(
+        self, command: list[str], timeout: int = DEFAULT_PROPOSER_TIMEOUT
+    ) -> None:
+        if not command:
+            raise KernelError(E_PROPOSER_FAILED, "外部提案器命令为空")
+        self._command = list(command)
+        self._timeout = timeout
+
+    def propose(self, target: str, evidence: str, prompt_sha: str) -> LiveProposal:
+        """Run the process once and return its validated proposal."""
+        request = dumps({
+            "evidence": evidence,
+            "prompt_sha": prompt_sha,
+            "target": target,
+        })
+        try:
+            completed = subprocess.run(
+                self._command,
+                input=request,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                timeout=self._timeout,
+                check=False,
+            )
+        except subprocess.TimeoutExpired as exc:
+            raise KernelError(
+                E_PROPOSER_FAILED, f"外部提案器超时（{self._timeout}s）"
+            ) from exc
+        except OSError as exc:
+            raise KernelError(
+                E_PROPOSER_FAILED, f"外部提案器无法启动：{exc}"
+            ) from exc
+        lines = [
+            line for line in completed.stdout.decode("utf-8", "replace").splitlines()
+            if line
+        ]
+        if not lines:
+            detail = completed.stderr.decode("utf-8", "replace").strip()
+            raise KernelError(
+                E_PROPOSER_FAILED,
+                f"外部提案器没有输出：{detail or 'empty stdout'}",
+            )
+        payload = _load_reply(lines[-1], completed.stderr)
+        return _live_from_payload(payload, target, prompt_sha)
+
+
+def _load_reply(line: str, stderr: bytes) -> dict[str, object]:
+    """Parse one reply line; a rejected reply becomes ``E_PROPOSER_FAILED``."""
+    try:
+        data = json.loads(line)
+    except json.JSONDecodeError as exc:
+        detail = stderr.decode("utf-8", "replace").strip()
+        raise KernelError(
+            E_PROPOSER_FAILED, f"外部提案器输出不是 JSON：{detail or line}"
+        ) from exc
+    if not isinstance(data, dict):
+        raise KernelError(E_PROPOSER_FAILED, "外部提案器输出不是对象")
+    if data.get("ok") is not True:
+        code = data.get("code", E_PROPOSER_FAILED)
+        message = data.get("message", "外部提案器失败")
+        hint = f"{code}: {message}" if isinstance(code, str) else str(message)
+        raise KernelError(E_PROPOSER_FAILED, f"外部提案器失败：{hint}")
+    return data
+
+
+def _live_from_payload(
+    payload: dict[str, object], target: str, prompt_sha: str
+) -> LiveProposal:
+    """Validate a successful reply line and build a :class:`LiveProposal`."""
+    text = payload.get("text")
+    model = payload.get("model")
+    if not isinstance(text, str) or not 1 <= len(text) <= PROPOSAL_TEXT_MAX_CHARS:
+        raise KernelError(E_PROPOSER_FAILED, "外部提案器 text 非法")
+    if not isinstance(model, str) or not model or len(model) > MODEL_MAX_CHARS:
+        raise KernelError(E_PROPOSER_FAILED, "外部提案器 model 非法")
+    quant = _reply_text(payload, "quant", 32)
+    weights = _reply_text(payload, "weights_sha", 64)
+    if weights is not None and not WEIGHTS_SHA_RE.match(weights):
+        raise KernelError(E_PROPOSER_FAILED, "外部提案器 weights_sha 非十六进制")
+    return LiveProposal(
+        target,
+        text,
+        model,
+        prompt_sha,
+        _reply_text(payload, "quant", 32),
+        _reply_text(payload, "weights_sha", 64),
+        _reply_int(payload, "temp_milli", 0, 2000),
+        _reply_int(payload, "seed", 0, 2 ** 31 - 1),
+    )
+
+
+def _reply_text(payload: dict[str, object], name: str, limit: int) -> str | None:
+    value = payload.get(name)
+    if value is None:
+        return None
+    if not isinstance(value, str) or not 1 <= len(value) <= limit:
+        raise KernelError(E_PROPOSER_FAILED, f"外部提案器 {name} 非法")
+    return value
+
+
+def _reply_int(
+    payload: dict[str, object], name: str, low: int, high: int
+) -> int | None:
+    value = payload.get(name)
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, int) or not low <= value <= high:
+        raise KernelError(E_PROPOSER_FAILED, f"外部提案器 {name} 非法")
+    return value
+
+
+def _require_evidence_volume(folder: Path) -> None:
+    """Refuse a proposal when turn/feedback evidence is thinner than 10."""
+    count = 0
+    for path in sorted(folder.glob("seg-*.jsonl")):
+        try:
+            lines = path.read_text(encoding="utf-8").splitlines()
+        except OSError as exc:
+            raise KernelError(E_KN_IO, f"无法读取证据段：{path}") from exc
+        for line in lines:
+            if not line:
+                continue
+            try:
+                data = json.loads(line)
+            except json.JSONDecodeError as exc:
+                raise KernelError(E_KN_IO, f"证据行无法解析：{path}") from exc
+            if isinstance(data, dict) and data.get("type") in EVIDENCE_TYPES:
+                count += 1
+        if count >= MIN_EVIDENCE_EVENTS:
+            return
+    raise KernelError(
+        E_KN_THIN_EVIDENCE,
+        f"可提案证据不足：需要 {MIN_EVIDENCE_EVENTS} 条 turn/feedback，"
+        f"实际 {count} 条",
+    )
+
+
 def record_proposal(
     store: Path,
     target: str,
@@ -131,6 +336,11 @@ def record_proposal(
     model: str,
     prompt_sha: str,
     t: str | None = None,
+    *,
+    quant: str | None = None,
+    weights_sha: str | None = None,
+    temp_milli: int | None = None,
+    seed: int | None = None,
 ) -> EvidenceEvent:
     """Append one ``proposal`` event to the evidence chain.
 
@@ -138,11 +348,16 @@ def record_proposal(
     id, the chain ``prev`` hash and a segment position. ``capsule.py`` is
     frozen and its ``append_event`` cannot carry ``model`` / ``prompt_sha``,
     so this function maintains the same chain rules itself.
+
+    A proposal needs at least ``MIN_EVIDENCE_EVENTS`` turn/feedback events;
+    anything thinner is refused with ``E_KN_THIN_EVIDENCE`` before a byte is
+    written. One round of "在吗 / 在" must never be able to define a persona.
     """
     if not store.is_dir() or not (store / EVIDENCE_DIR).is_dir():
         raise KernelError(E_KN_IO, f"存储目录未初始化：{store}")
     _check_proposal_input(target, text, model, prompt_sha)
     folder = store / EVIDENCE_DIR
+    _require_evidence_volume(folder)
     paths = sorted(folder.glob("seg-*.jsonl"))
     total = 0
     last_hash: str | None = None
@@ -190,6 +405,10 @@ def record_proposal(
             target=target,
             model=model,
             prompt_sha=prompt_sha,
+            quant=quant,
+            weights_sha=weights_sha,
+            temp_milli=temp_milli,
+            seed=seed,
         )
     except JianError as exc:
         raise KernelError(E_KN_BAD_PROPOSAL, exc.message) from exc
@@ -204,6 +423,7 @@ def record_proposal(
     return EvidenceEvent(
         event.id, event.t, event.type, None, event.text,
         event.target, event.model, event.prompt_sha,
+        event.quant, event.weights_sha, event.temp_milli, event.seed,
     )
 
 
@@ -302,3 +522,55 @@ def _parse_proposal(line: str, path: Path) -> Proposal:
     ):
         raise KernelError(E_KN_IO, f"提案 evidence 不是字符串数组：{path}")
     return Proposal(text=text, evidence=tuple(evidence), kind=kind)
+
+
+@dataclass(frozen=True)
+class LiveIngest:
+    """Outcome of one live proposal round.
+
+    ``failed`` is operational noise: it is returned to the caller and logged,
+    but never stored in META and never mixed into the kid.
+    """
+
+    recorded: tuple[EvidenceEvent, ...] = ()
+    failed: int = 0
+    errors: tuple[str, ...] = ()
+
+
+def ingest_live(
+    store: Path,
+    command: list[str],
+    timeout: int = DEFAULT_PROPOSER_TIMEOUT,
+    strict: bool = False,
+) -> LiveIngest:
+    """Run the external proposer once per target and record its replies.
+
+    By default a proposer failure (OOM, timeout, bad reply) is downgraded:
+    the compile continues with whatever proposals were recorded and the
+    caller must mark the kernel as a rule fallback. ``strict`` re-raises so
+    CI can treat any proposer failure as fatal.
+    """
+    from jian_kernel.compiler import read_evidence
+
+    proposer = SubprocessProposer(command, timeout)
+    summary = evidence_summary(read_evidence(store))
+    recorded: list[EvidenceEvent] = []
+    errors: list[str] = []
+    failed = 0
+    for target in STYLE_TARGETS:
+        sha = prompt_sha_for(target)
+        try:
+            proposal = proposer.propose(target, summary, sha)
+            event = record_proposal(
+                store, target, proposal.text, proposal.model, sha,
+                quant=proposal.quant, weights_sha=proposal.weights_sha,
+                temp_milli=proposal.temp_milli, seed=proposal.seed,
+            )
+        except KernelError as exc:
+            if exc.code != E_PROPOSER_FAILED or strict:
+                raise
+            failed += 1
+            errors.append(f"{target}: {exc.code}: {exc.message}")
+            continue
+        recorded.append(event)
+    return LiveIngest(tuple(recorded), failed, tuple(errors))

@@ -238,13 +238,18 @@ def _disk_kid(store: Path) -> str | None:
     origin = meta.get("origin")
     if not isinstance(origin, str) or origin not in ORIGINS:
         return None
+    models = meta.get("models", [])
+    if not isinstance(models, list) or not all(
+        isinstance(item, str) for item in models
+    ):
+        return None
     values: dict[str, int] = {}
     for name in STATE_KEYS:
         value = state.get(name)
         if isinstance(value, bool) or not isinstance(value, int):
             return None
         values[name] = value
-    return kernel_kid(self_md, canon_md, values, graph, origin)
+    return kernel_kid(self_md, canon_md, values, graph, origin, tuple(models))
 
 
 def _tamper_line(

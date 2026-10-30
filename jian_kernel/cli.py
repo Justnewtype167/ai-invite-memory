@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import shlex
 import sys
 from pathlib import Path
 
@@ -16,7 +18,7 @@ from jian_kernel.history import (
     verify_kernel,
 )
 from jian_kernel.kernel import Policy
-from jian_kernel.proposer import record_proposal
+from jian_kernel.proposer import ingest_live, record_proposal
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -25,17 +27,34 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         if args.command == "compile":
+            store = Path(args.store)
+            failed = 0
+            if args.proposer_cmd:
+                outcome = ingest_live(
+                    store,
+                    shlex.split(args.proposer_cmd, posix=os.name != "nt"),
+                    args.proposer_timeout,
+                    args.strict_proposals,
+                )
+                failed = outcome.failed
+                for event in outcome.recorded:
+                    _emit({"event": event.event_id, "target": event.target})
+                for message in outcome.errors:
+                    sys.stderr.write(f"proposer fallback: {message}\n")
             policy = Policy(
                 now=args.now,
                 require_proposals=args.require_proposals,
                 allow_fallback=args.allow_fallback,
+                force_fallback=failed > 0,
             )
-            kernel = compile_kernel(Path(args.store), policy)
+            kernel = compile_kernel(store, policy)
             _emit({
                 "canon": len(kernel.canon),
                 "head": kernel.head,
                 "kid": kernel.kid,
+                "models": list(kernel.models),
                 "origin": kernel.origin,
+                "proposals_failed": failed,
                 "rejected": kernel.rejected,
                 "style": len(kernel.style),
             })
@@ -59,7 +78,9 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "propose":
             event = record_proposal(
                 Path(args.store), args.target, args.text, args.model,
-                args.prompt_sha, args.t,
+                args.prompt_sha, args.t, quant=args.quant,
+                weights_sha=args.weights_sha, temp_milli=args.temp_milli,
+                seed=args.seed,
             )
             _emit({"event": event.event_id, "target": event.target})
             return 0
@@ -87,6 +108,9 @@ def _parser() -> argparse.ArgumentParser:
     compile_command.add_argument("--now", default=None)
     compile_command.add_argument("--require-proposals", action="store_true")
     compile_command.add_argument("--allow-fallback", action="store_true")
+    compile_command.add_argument("--proposer-cmd", default=None)
+    compile_command.add_argument("--proposer-timeout", type=int, default=200)
+    compile_command.add_argument("--strict-proposals", action="store_true")
     record = commands.add_parser("record")
     record.add_argument("store")
     record.add_argument("--now", default=None)
@@ -100,6 +124,10 @@ def _parser() -> argparse.ArgumentParser:
     propose.add_argument("--prompt-sha", required=True)
     propose.add_argument("--target", default="self.style")
     propose.add_argument("--t", default=None)
+    propose.add_argument("--quant", default=None)
+    propose.add_argument("--weights-sha", default=None)
+    propose.add_argument("--temp-milli", type=int, default=None)
+    propose.add_argument("--seed", type=int, default=None)
     for name in ("history", "verify"):
         command = commands.add_parser(name)
         command.add_argument("store")
