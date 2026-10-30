@@ -7,24 +7,23 @@
 
 交付物是「格式 + 参考实现 + 一致性套件 + 论文」，不是聊天产品。
 
-## 1. 当前阶段：M5 第二步（接本地模型）
+## 1. 当前阶段：M6（PCS：行为身份）
 
-**已封版**：`v0.1-m1` … `v0.5-m41`，共 **148 个测试**；M5 第一步已通过（提案链路，163 测试）。
+**已封版**：`v0.1-m1` … `v0.7-m5`（含 M5 两步：提案链路 + 本地模型），共 **180 个测试**。
 归档见 `docs/RELEASE-v0.5-m41.md`，路线见 `docs/M5-ROUTE.md`。
 
-本机模型：**`qwen3.5:9b`**（9.0B / Q4_K_M / 6.55 GB / llamacpp），服务 `127.0.0.1:11434`。
-实测：temp 0 + 固定 seed → 3/3 输出逐字相同；只给它规则不给形容词，输出质量可用。
+`kid` 量内容身份，答不了「换模型还像不像同一个人」。PCS 就是为这个问题做的。
 
 | 可改 | 不可改 |
 |---|---|
-| `jian/event.py`（proposal 加 4 个可选字段） | `jian/capsule.py`、`jian/cli.py` |
-| `jian_kernel/*` | `jian_cn/`、`jian_recall/` 全部 |
-| `tools/proposer_*.py`（新增） | 事件哈希算法、canonical 规则 |
+| `jian_pcs/`（新增） | `jian/`、`jian_cn/`、`jian_recall/`、`jian_kernel/` 全部 |
+| `tools/responder_*.py`（新增） | 事件哈希算法、canonical 规则 |
+| `tests/` 新增 | —— |
 
-规格见 `docs/TASK-07-live-proposer.md`。**写之前先过一遍 `docs/SPEC-CHECKLIST.md` 的十问。**
+规格见 `docs/TASK-08-pcs.md`。**写之前先过一遍 `docs/SPEC-CHECKLIST.md` 的十问。**
 
-唯一目标：**本地模型能产出可用提案、提案进证据、人格随之变化，而核心库仍然零依赖零网络。**
-网络只允许出现在 `tools/`；测试只跑假提案器，一次也不联网。
+唯一目标：**给出一对模型的行为一致率，且这个数字必须先证明能判错。**
+`jian_pcs/` 零依赖零网络；网络只允许出现在 `tools/`；测试只跑脚本化回复，一次也不联网。
 越界视为任务失败，即使代码能跑。
 
 ## 2. 十二条不可协商约束
