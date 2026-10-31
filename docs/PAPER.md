@@ -38,9 +38,9 @@
 
 ### 1.2 现有方案为何绕不开
 
-把记忆存成 Markdown 或向量库（Mem0、Letta、Zep、EverMemOS 一类）解决了「不丢」，但没有解决「可验证」。
+把记忆存成 Markdown 或向量库（Mem0[1]、MemGPT/Letta[2]、Zep[3]、EverMemOS[4] 一类）解决了「不丢」，但没有解决「可验证」。
 文件可以被编辑、被改写、被合并，没有任何机制能回答「这份记忆有没有被改过」。
-另一条路线是把上下文做长（百万级 token 注意力），但**塞得起也带不走**：上下文再长，仍然活在一次会话里。
+另一条路线是把上下文做长（百万级 token 注意力[6]，或利用长上下文的隐式记忆[8]），但**塞得起也带不走**：上下文再长，仍然活在一次会话里。
 
 ### 1.3 本文的主张
 
@@ -74,10 +74,10 @@
 
 | 路线 | 代表 | 记忆形态 | 可验证内容身份 | 人格可重算 |
 |---|---|---|---|---|
-| Markdown 即真相 | EverMemOS 一类 | 人类可读文件 | ✗ 可被随意编辑，无追加链 | ✗ |
-| 抽取式记忆 + 向量库 | Mem0 / Letta / Zep | 记忆条目 + embedding | ✗ 条目可被覆盖与合并 | ✗ |
-| 长上下文 | 百万 token 级注意力 | 会话内上下文 | ✗ 依附于一次会话 | ✗ |
-| 便携格式 | Portable Memory 一类 | 单文件封装 | ~ 可搬，但无确定性与效度度量 | ✗ |
+| Markdown 即真相 | EverMemOS[4] 一类 | 人类可读文件 | ✗ 可被随意编辑，无追加链 | ✗ |
+| 抽取式记忆 + 向量库 | Mem0[1] / MemGPT[2] / Zep[3] | 记忆条目 + embedding | ✗ 条目可被覆盖与合并 | ✗ |
+| 长上下文 | MSA[6] 一类 | 会话内上下文 | ✗ 依附于一次会话 | ✗ |
+| 便携格式 | Portable Memory[7] | 单文件封装 | ~ 可搬，但无确定性与效度度量 | ✗ |
 | **本文** | — | **追加链 + 可重算内核** | **✓ kid 可验证** | **✓ 纯函数派生** |
 
 注：本表按公开文档对机制的描述归类，**未做横向实验**，因此不构成性能比较。
@@ -88,12 +88,15 @@
 这在检索上是对的，但它使一个基本问题失去意义——「这条记忆有没有被改过」。
 本文把「不可变」作为第一性：证据只追加，人格每次从证据重算，改一个字节即被哈希链发现。
 
-**人格漂移。** BRIDGE、MENTOR 等工作观察到长对话中的人格漂移，但研究单位是行为观察，
+**人格漂移。** BRIDGE[5] 等工作观察到长对话中的人格漂移并以 refinement 缓解，但研究单位是行为观察，
 缺少「身份」的形式化定义——也就无法回答「漂移了但没有变成另一个人」这种情形。
 本文把身份拆成内容身份与行为身份两个可计算量，正是为了容纳这种情形。
 
 **长上下文。** 百万 token 注意力把「记得住」推向极致，代价是每轮成本随对话线性增长，且上下文无法离开会话。
 本文的 4k 预算装配在 20 万条记忆上测得 p50 13ms，说明「便宜」与「记得住」可以分开优化。
+
+**智能体记忆流。** Generative Agents[9] 以记忆流加反思构建长期行为一致性，这也是最接近「人格养成」的既有工作；
+但其记忆条目经摘要与重写，同一人格在不同时间无法被验证为同一份内容。
 
 **可复现性。** 本文把可复现当作一等公民而非附录：240 个测试、11 个里程碑标签、零第三方依赖、两个本地模型，
 所有进入正文的数字都由仓库内脚本生成。
@@ -348,6 +351,30 @@ python tools/pcs_matrix.py --models qwen3.5:9b glm4:9b
 ```
 
 所有进入本文的数字都由仓库内的脚本生成，判定器与探针随代码发布。
+
+---
+
+## 参考文献
+
+> 以下条目均已核对 arXiv / ACL / PMLR 官方页面；未能核实的系统不列入。
+
+[1] Chhikara, P., Khant, D., et al. **Mem0: Building Production-Ready AI Agents with Scalable Long-Term Memory.** arXiv:2504.19413, 2025.
+
+[2] Packer, C., Wooders, S., Lin, K., et al. **MemGPT: Towards LLMs as Operating Systems.** arXiv:2310.08560, 2023.
+
+[3] Rasmussen, P., Paliychuk, P., et al. **Zep: A Temporal Knowledge Graph Architecture for Agent Memory.** arXiv:2501.13956, 2025.
+
+[4] **EverMemOS: A Self-Organizing Memory Operating System for Structured Long-Horizon Reasoning.** ACL 2026 (Long Papers), paper 2125.
+
+[5] Jiang, Y., Xu, B., Xie, J., Sun, H. **BRIDGE: Triangular Fixed-Point Refinement for Long-Horizon Persona Consistency.** ICML 2026 (PMLR v306).
+
+[6] Chen, Y., Chen, R., et al. **MSA: Memory Sparse Attention for Efficient End-to-End Memory Model Scaling to 100M Tokens.** arXiv:2603.23516, 2026.
+
+[7] MacPaw Research. **Memory Belongs to the User: Portable Memory, an Open Standard Proposal for Cross-Vendor AI Memory.** 2026.
+
+[8] Liu, N. F., Lin, K., Hewitt, J., et al. **Lost in the Middle: How Language Models Use Long Contexts.** arXiv:2307.03172, 2023.
+
+[9] Park, J. S., O'Brien, J. C., Cai, C. J., et al. **Generative Agents: Interactive Simulacra of Human Behavior.** UIST 2023; arXiv:2304.03442.
 
 ---
 
