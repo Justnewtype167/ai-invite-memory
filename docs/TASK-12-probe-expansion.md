@@ -67,3 +67,36 @@ python -m jian_pcs.cli pcs --a … --b …       # 用 60 条重算
 
 **CI 应当明显收窄**；若没有收窄，说明新探针与旧探针难度分布雷同，需要检查。
 
+---
+
+## 5. 状态说明（2026-10-31 更新）
+
+```
+rules_v2.json 目前**已回退**到 R3 = ≤1（questions 不超过 1），
+因为代码尚不支持 questions_exact，不回退会让 load_rules_v2 抛 E_PCS_SCHEMA、整个包不可用。
+
+本轮要求：代码与数据**同一次提交**落地——
+先实现 questions_exact，再把 rules_v2.json 的 R3 改回：
+  text: 「两句以内，恰好一问」
+  human: 「按 。！？ 切分后不超过 2 句，且「？」恰好 1 个」
+  args:  {sentences: 2, questions: 1, questions_exact: true}
+```
+
+### 为什么要改（独立于标注者的理由）
+
+实测：同一批 80 条真人发言，
+
+```
+≤1 读法   通过率 1.00   → 对任何人恒为满分，等于没测
+=1 读法   通过率 0.07   → 有明确区分度
+```
+
+**「恰好一问」是唯一有信息量的读法。** 依据见 `docs/RESULTS-rater-comparison.md` §3。
+
+## 6. 补充验收
+
+| # | 断言 |
+|---|---|
+| X6 | `load_real_probes()` 读 `probes_real.jsonl`（20 条），`load_all_probes()` = 30 + 30 + 20 = 80 |
+| X7 | R3 改回 `questions_exact` 后，`load_rules_v2()` 正常，且 235 个既有测试仍全绿 |
+
