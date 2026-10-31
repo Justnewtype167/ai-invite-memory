@@ -14,7 +14,7 @@ We present a three-layer architecture — an immutable evidence layer, a recompi
 
 Behavioral identity is measured by PCS, defined as `A × min(Ca, Cb)`, where rules are written as **executable checks** rather than natural-language expectations. On two local models and 80 executable-rule probes we measure self-conformance of 0.863 and 0.838, and PCS = 0.649 (95% CI [0.522, 0.754]). The judge is validated on a 60-item human holdout with kappa = 0.690 (0.907 after a wording revision).
 
-Three negative results matter as much as the positive ones: (1) a keyword-level judge agrees with humans at kappa ~ 0, and the failure concentrates on semantic rules (0.43) rather than mechanical ones (0.87); (2) under sampling decoding, a model's agreement with itself is only 0.622-0.758, overlapping the cross-model value of 0.576 — a single sample cannot tell a model swap from a resample; (3) applied to 191 real human turns, the same rules are satisfied 10% of the time for question-first but 98% for echoing, showing the rule set prescribes AI behavior rather than describing human behavior.
+Three negative results matter as much as the positive ones: (1) a keyword-level judge agrees with humans at kappa ~ 0, and the failure concentrates on semantic rules (0.43) rather than mechanical ones (0.87); (2) under sampling decoding, a model's agreement with itself is only 0.622-0.758, overlapping the cross-model value of 0.576 — a single sample cannot tell a model swap from a resample; (3) applied to 191 real human turns, the same rules are satisfied 10% of the time for question-first but 98% for echoing, showing the rule set prescribes AI behavior rather than describing human behavior. We then introduce **mode-conditional evaluation**: emotional support and consultation each get their own executable rule set and are reported separately. In consultation mode PCS = 0.723, and each model turns out to be better in a different mode - averaging the two would hide it.
 
 **Keywords**: long-term memory, persona consistency, reproducibility, behavioral identity, judge validity
 
@@ -52,6 +52,7 @@ They necessarily diverge when the model changes: `kid` always changes (proposals
 3. **Rules as executable checks**: six closed operators, validated against a 60-item human holdout (kappa 0.00 to 0.690, 0.907 after revision).
 4. **Measurement**: two local models, 80 probes, PCS = 0.649 (95% CI [0.522, 0.754]).
 5. **Three negative results** on judge validity, sampling resolution, and the gap between rule sets and human behavior.
+6. **Mode-conditional evaluation**: two executable rule sets (6 support, 5 consultation), reported separately; consultation PCS = 0.7225.
 
 ---
 
@@ -265,11 +266,46 @@ We applied the same rules to **all 191 human turns** of two real Chinese convers
 
 Three conclusions: (1) R1 and R3 **prescribe AI behavior**, not human behavior - models score 1.00 while humans score 8-13%; (2) R5 **is** human behavior - humans satisfy it 98% of the time while the model manages 40%; (3) the same human dropping from 1.00 to 0.84 on R6 when switching to a consultation register shows **rule validity is mode-dependent**. All conclusions in this paper apply to the emotional-support mode only.
 
-### 6.6 Resolution under sampling
+### 6.6 Mode-conditional evaluation: consultation
+
+Since R6 wrongly kills correct answers in a consultation register, that register needs its own rules rather than a borrowed persona. Candidates were calibrated on the 94 real consultation turns:
+
+| Candidate rule | Human pass rate | Verdict |
+|---|---|---|
+| Does not open with a question | 0.87 | usable |
+| Length <= 60 | 0.99 | too lax, no discrimination |
+| Contains a verdict word or digit | 0.62 | too strict |
+| Not pure evasion | 1.00 | vacuous; kept as a floor guard |
+| **Directly answers (no evasion)** | **0.86** | **adopted** |
+
+The final set is five executable rules: Q1 answer directly, Q2 no evasion, Q3 at most 60 characters, Q4 no adjective stacking, Q5 advice allowed. Q5 is a *permission* rule (always passes): its purpose is to write the mode difference into the rule file instead of hiding it in a code branch.
+
+Scoring routes by the probe's `mode` field. **We do not implement automatic mode detection**: a classifier would add an unvalidated component and turn PCS validity into a product of two unknowns.
+
+**Table 12  Consultation mode (20 probes)**
+
+| Metric | qwen3.5:9b | glm4:9b |
+|---|---|---|
+| C | 0.8500 | **1.0000** |
+| A | 0.8500 | |
+| **PCS** | **0.7225** | |
+
+Per rule: Q1 (answer directly) 0.40 / 1.00, Q2-Q4 all 1.00.
+
+**Table 13  The same model in two modes**
+
+| Mode | C(qwen) | C(glm) | A |
+|---|---|---|---|
+| Emotional support | 0.8667 | 0.7000 | **0.6333** |
+| Consultation | 0.8500 | **1.0000** | 0.8500 |
+
+**Each model is better in a different mode.** Averaging the two modes into one number erases exactly this fact, which is why we argue persona consistency must be reported per mode.
+
+### 6.7 Resolution under sampling
 
 ![Figure 4  Temperature decides whether PCS can resolve a model swap](figures/fig4-resolution.svg)
 
-**Table 12  Resolution under greedy vs sampled decoding**
+**Table 14  Resolution under greedy vs sampled decoding**
 
 | Comparison | temp 0 | temp 0.7 |
 |---|---|---|
@@ -309,14 +345,14 @@ Without these three, behavioral identity produces numbers that look stable and m
 2. Both models are Q4-quantized.
 3. 80 probes: PCS CI is still +/-0.12.
 4. No real long-term users.
-5. No rule set for the consultation mode; all results are emotional-support only.
+5. No automatic mode detection: modes are declared by the probes, not inferred by the system.
 
 ---
 
 ## 8. Reproducibility
 
 ```
-240 tests, 11 milestone tags, 0 third-party dependencies, Python 3.11+
+246 tests, 12 milestone tags, 0 third-party dependencies, Python 3.11+
 Two local models (qwen3.5:9b / glm4:9b), fully offline
 python tools/pcs_matrix.py --models qwen3.5:9b glm4:9b
 ```
@@ -349,7 +385,7 @@ Every number in this paper is produced by a script in the repository; the judge 
 
 ## Appendix A: Milestones and evidence
 
-**Table 13  Milestones and test distribution**
+**Table 15  Milestones and test distribution**
 
 | tag | Content | Tests |
 |---|---|---|
@@ -365,4 +401,5 @@ Every number in this paper is produced by a script in the repository; the judge 
 | v0.10-m8 | executable rules and judge validity | 22 |
 | v0.10-m8.1 | holdout and new R5 definition | 7 |
 | v0.11-m83 | exact R3 semantics, 80 probes | 5 |
-| **total** | | **240** |
+| v0.12-m9 | consultation rule set and mode-conditional evaluation | 6 |
+| **total** | | **246** |
