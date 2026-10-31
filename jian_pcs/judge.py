@@ -46,7 +46,11 @@ def judge_reply(text: str, expect: Expect) -> str:
             raise PcsError(E_PCS_SCHEMA, "max_sentences_and_questions 缺参数")
         if _sentences(body) > expect.sentences:
             return FAIL
-        if _questions(body) > expect.questions:
+        question_count = _questions(body)
+        if expect.questions_exact:
+            if question_count != expect.questions:
+                return FAIL
+        elif question_count > expect.questions:
             return FAIL
         return PASS
     if expect.op == "max_chars":

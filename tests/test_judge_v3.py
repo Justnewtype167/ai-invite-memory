@@ -50,10 +50,10 @@ class TestJudgeV3(unittest.TestCase):
         )
 
     def test_r3_sentences_and_questions(self) -> None:
-        """V2 R3: at most two sentences and at most one question mark."""
+        """V2 R3: at most two sentences and exactly one question mark."""
         self._assert_pairs(
             _expect("R3"),
-            ["我在。你先说。", "累了就先歇一会儿？我在。", "你说，我听着。"],
+            ["我在。你先说，哪里最累？", "累了就先歇一会儿？我在。", "你说，我听着。哪里最累？"],
             [
                 "我在。你先说。然后告诉我发生了什么。",
                 "你怎么样？要不要说说？还有别的事吗？",

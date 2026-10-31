@@ -18,7 +18,7 @@ class TestR5Echo(unittest.TestCase):
         cls.rules = {rule.rule_id: rule for rule in load_rules_v2()}
 
     def test_r5_echo_source(self) -> None:
-        """W1: all 8 R5 probes fill echo_source from their own input."""
+        """W1: all 14 scored R5 probes fill echo_source from their own input."""
         r5 = [probe for probe in self.probes if probe.rule == "R5"]
         problems = []
         for probe in r5:
@@ -32,7 +32,7 @@ class TestR5Echo(unittest.TestCase):
             if source != expected:
                 problems.append((probe.probe_id, "not-user-last-turn"))
         print(f"W1 r5={len(r5)} problems={problems}")
-        self.assertEqual(len(r5), 8)
+        self.assertEqual(len(r5), 14)
         self.assertEqual(problems, [])
 
 

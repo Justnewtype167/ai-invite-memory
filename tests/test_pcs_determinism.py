@@ -15,7 +15,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 import pcs_fixtures
 
-from jian_pcs.probes import load_all_probes
+from jian_pcs.probes import load_all_probes, load_hard_probes
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 
@@ -24,7 +24,7 @@ class TestDeterminism(unittest.TestCase):
     def setUp(self) -> None:
         self.root = pathlib.Path(tempfile.mkdtemp(prefix="jian_pcs_t5_"))
         self.addCleanup(shutil.rmtree, self.root, True)
-        probes = load_all_probes()
+        probes = load_all_probes() + load_hard_probes()
         self.a = self._write("a.jsonl", probes, 35)
         self.b = self._write("b.jsonl", probes, 25)
 

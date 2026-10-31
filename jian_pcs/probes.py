@@ -15,10 +15,25 @@ from pathlib import Path
 from jian_pcs.errors import E_PCS_IO, E_PCS_SCHEMA, PcsError
 
 DATA_PATH = Path(__file__).resolve().parent / "data" / "probes.jsonl"
+MORE_DATA_PATH = Path(__file__).resolve().parent / "data" / "probes_more.jsonl"
+REAL_DATA_PATH = Path(__file__).resolve().parent / "data" / "probes_real.jsonl"
 HARD_DATA_PATH = Path(__file__).resolve().parent / "data" / "probes_hard.jsonl"
 RULES_PATH = Path(__file__).resolve().parent / "data" / "rules_v2.json"
 CALIBRATION_PATH = Path(__file__).resolve().parent / "data" / "calibration.json"
-PROBE_COUNT = 30
+
+
+def _count_probes(path: Path) -> int:
+    """Count non-blank lines in a probe file, so no count is hard-coded."""
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise PcsError(E_PCS_IO, f"无法读取探针文件：{path}") from exc
+    return sum(1 for line in text.splitlines() if line.strip())
+
+
+PROBE_COUNT = _count_probes(DATA_PATH)
+MORE_PROBE_COUNT = _count_probes(MORE_DATA_PATH)
+REAL_PROBE_COUNT = _count_probes(REAL_DATA_PATH)
 HARD_PROBE_COUNT = 18
 HARD_KINDS = ("multi_turn", "contradiction", "pressure")
 CALIBRATION_LOW = 0.50
@@ -58,6 +73,7 @@ class Rule:
     words: tuple[str, ...] = ()
     sentences: int | None = None
     questions: int | None = None
+    questions_exact: bool = False
     chars: int | None = None
 
 
@@ -66,7 +82,8 @@ class Expect:
     """One probe's pass condition: a v2 operator plus its static arguments.
 
     ``echo_source`` is the user's last message; R5 compares it with the reply
-    by shared character substrings. ``must_contain_any`` is kept only for
+    by shared character substrings. ``questions_exact`` switches the question
+    limit from "at most" to "exactly". ``must_contain_any`` is kept only for
     older callers and is never read by the judge.
     """
 
@@ -74,6 +91,7 @@ class Expect:
     words: tuple[str, ...] = ()
     sentences: int | None = None
     questions: int | None = None
+    questions_exact: bool = False
     chars: int | None = None
     echo_source: str = ""
     must_contain_any: tuple[str, ...] = ()
@@ -113,6 +131,7 @@ class Expect:
             words=rule.words,
             sentences=rule.sentences,
             questions=rule.questions,
+            questions_exact=rule.questions_exact,
             chars=rule.chars,
             echo_source=source,
         )
@@ -184,14 +203,20 @@ def _parse_rule(data: object, index: int) -> Rule:
         words = _string_list(args, "words")
         return Rule(rule_id, text, op, human, words=words)
     if op == "max_sentences_and_questions":
-        if set(args) != {"sentences", "questions"}:
+        allowed = {"sentences", "questions", "questions_exact"}
+        if set(args) - allowed or not {"sentences", "questions"} <= set(args):
             raise PcsError(
-                E_PCS_SCHEMA, f"{rule_id} 的 args 只允许 sentences / questions"
+                E_PCS_SCHEMA,
+                f"{rule_id} 的 args 只允许 sentences / questions / questions_exact",
             )
+        exact = args.get("questions_exact", False)
+        if not isinstance(exact, bool):
+            raise PcsError(E_PCS_SCHEMA, f"{rule_id} 的 questions_exact 必须是布尔")
         return Rule(
             rule_id, text, op, human,
             sentences=_rule_arg(args, "sentences", 1),
             questions=_rule_arg(args, "questions", 0),
+            questions_exact=exact,
         )
     if op == "max_chars":
         if set(args) != {"chars"}:
@@ -378,15 +403,29 @@ def load_probes(path: Path | None = None) -> tuple[Probe, ...]:
     return _load_file(DATA_PATH if path is None else Path(path))
 
 
+def load_more_probes(path: Path | None = None) -> tuple[Probe, ...]:
+    """Load the 30 M8.3 expansion probes; one more sample per M6 rule."""
+    return _load_file(MORE_DATA_PATH if path is None else Path(path))
+
+
+def load_real_probes(path: Path | None = None) -> tuple[Probe, ...]:
+    """Load the 20 probes shaped after real conversational input."""
+    return _load_file(REAL_DATA_PATH if path is None else Path(path))
+
+
 def load_hard_probes(path: Path | None = None) -> tuple[Probe, ...]:
     """Load the M7 hard probe set: multi-turn, contradiction and pressure."""
     return _load_file(HARD_DATA_PATH if path is None else Path(path))
 
 
 def load_all_probes() -> tuple[Probe, ...]:
-    """Return the M6 and M7 probe sets merged, with ids checked across both."""
-    merged = load_probes() + load_hard_probes()
+    """Return the 80 scored probes (base + more + real), ids checked.
+
+    The 18 hard probes stay out on purpose: they drive ``C_final`` / ``R`` /
+    ``D`` and are scored as their own set, never mixed into ``C``.
+    """
+    merged = load_probes() + load_more_probes() + load_real_probes()
     ids = [probe.probe_id for probe in merged]
     if len(set(ids)) != len(ids):
-        raise PcsError(E_PCS_SCHEMA, "M6 与 M7 探针 id 冲突")
+        raise PcsError(E_PCS_SCHEMA, "base / more / real 探针 id 冲突")
     return merged

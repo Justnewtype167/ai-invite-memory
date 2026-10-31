@@ -23,5 +23,6 @@ def expect_of(rule_id: str) -> Expect:
         words=rule.words,
         sentences=rule.sentences,
         questions=rule.questions,
+        questions_exact=rule.questions_exact,
         chars=rule.chars,
     )

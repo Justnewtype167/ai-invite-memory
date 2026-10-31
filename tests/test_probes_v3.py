@@ -1,4 +1,4 @@
-"""V3: all 48 probes are bound to R1-R6 and satisfy both fences."""
+"""V3: all 80 scored probes are bound to R1-R6 and satisfy both fences."""
 
 from __future__ import annotations
 
@@ -33,7 +33,7 @@ class TestProbesV3(unittest.TestCase):
             if probe.expect.op != self.rules[probe.rule].op:
                 bad.append((probe.probe_id, "op-mismatch"))
         print(f"V3 probes={len(self.probes)} bad={bad}")
-        self.assertEqual(len(self.probes), 48)
+        self.assertEqual(len(self.probes), 80)
         self.assertEqual(bad, [])
 
     def test_accept_passes_and_violation_fails(self) -> None:
@@ -67,7 +67,7 @@ class TestProbesV3(unittest.TestCase):
             if source != probe.prompt:
                 problems.append((probe.probe_id, source, probe.prompt))
         print(f"V3 r5 probes={len(r5)} problems={problems}")
-        self.assertEqual(len(r5), 8)
+        self.assertEqual(len(r5), 14)
         self.assertEqual(problems, [])
 
     def test_merged_ids_are_unique(self) -> None:

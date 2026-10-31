@@ -11,7 +11,9 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from jian_pcs.probes import (
     HARD_KINDS,
     HARD_PROBE_COUNT,
+    MORE_PROBE_COUNT,
     PROBE_COUNT,
+    REAL_PROBE_COUNT,
     V2_OPERATORS,
     load_all_probes,
     load_hard_probes,
@@ -54,12 +56,14 @@ class TestHardProbes(unittest.TestCase):
         self.assertEqual(missing, [])
 
     def test_m6_set_is_untouched_and_merge_is_clean(self) -> None:
-        """U1: load_probes still returns 30, and merged ids do not collide."""
+        """U1: load_probes still returns 30, and the scored merge is 80."""
         m6 = load_probes()
         merged = load_all_probes()
         print(f"U1 m6={len(m6)} merged={len(merged)}")
         self.assertEqual(len(m6), PROBE_COUNT)
-        self.assertEqual(len(merged), PROBE_COUNT + HARD_PROBE_COUNT)
+        self.assertEqual(
+            len(merged), PROBE_COUNT + MORE_PROBE_COUNT + REAL_PROBE_COUNT
+        )
         self.assertEqual(len({probe.probe_id for probe in merged}), len(merged))
         for probe in m6:
             self.assertEqual(probe.kind, "single_turn")

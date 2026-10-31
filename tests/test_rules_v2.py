@@ -44,6 +44,7 @@ class TestRulesV2(unittest.TestCase):
             elif rule.op == "max_sentences_and_questions":
                 self.assertEqual(rule.sentences, 2)
                 self.assertEqual(rule.questions, 1)
+                self.assertTrue(rule.questions_exact)
             elif rule.op == "max_chars":
                 self.assertEqual(rule.chars, 40)
             else:
@@ -74,6 +75,7 @@ class TestRulesV2(unittest.TestCase):
             if rule.op == "max_sentences_and_questions" and (
                 expect.sentences != rule.sentences
                 or expect.questions != rule.questions
+                or expect.questions_exact != rule.questions_exact
             ):
                 bad.append((probe.probe_id, "limits"))
             if rule.op == "max_chars" and expect.chars != rule.chars:

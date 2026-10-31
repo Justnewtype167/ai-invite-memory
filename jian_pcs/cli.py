@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 
 from jian_pcs.errors import PcsError
-from jian_pcs.probes import load_all_probes
+from jian_pcs.probes import load_all_probes, load_hard_probes
 from jian_pcs.report import render_report
 from jian_pcs.score import compute_pcs, load_replies
 
@@ -23,7 +23,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         if args.probes is None:
-            probes = load_all_probes()
+            probes = load_all_probes() + load_hard_probes()
         else:
             from jian_pcs.probes import load_probes
             probes = load_probes(Path(args.probes))
