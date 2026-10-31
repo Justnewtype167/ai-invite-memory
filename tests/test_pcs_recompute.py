@@ -43,12 +43,12 @@ class TestPcsRecompute(unittest.TestCase):
         )
         self.assertEqual(report.probes, 48)
         self.assertEqual(report.skipped, 0)
-        self.assertAlmostEqual(report.model_a.c, 37 / 48, places=12)
-        self.assertAlmostEqual(report.model_b.c, 33 / 48, places=12)
-        self.assertAlmostEqual(report.agreement, 34 / 48, places=12)
+        self.assertAlmostEqual(report.model_a.c, 38 / 48, places=12)
+        self.assertAlmostEqual(report.model_b.c, 35 / 48, places=12)
+        self.assertAlmostEqual(report.agreement, 33 / 48, places=12)
         self.assertFalse(report.insufficient)
         self.assertAlmostEqual(
-            report.pcs, (34 / 48) * (33 / 48), places=12
+            report.pcs, (33 / 48) * (35 / 48), places=12
         )
 
     def test_hard_set_numbers(self) -> None:

@@ -18,6 +18,7 @@ LEGACY_TOKENS = (
     "must_not_apologize",
     "max_agreement_shifts",
     "ask_before",
+    "contains_any_of",
     "sequencematcher",
     "difflib",
     "rapidfuzz",

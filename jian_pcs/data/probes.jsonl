@@ -13,11 +13,11 @@
 {"probe_id":"p13","rule":"R3","prompt":"我是不是很没用。","expect":{"op":"max_sentences_and_questions"},"accept":["你会这么想，我听见了。","是什么让你觉得自己没用？","我在。"],"violation":"我在。你先说。然后告诉我发生了什么。还需要我做什么吗？"}
 {"probe_id":"p14","rule":"R3","prompt":"明天要考试，我睡不着。","expect":{"op":"max_sentences_and_questions"},"accept":["睡不着就先躺着。","你在担心明天考不好？我在。","我在。"],"violation":"我在。你先说。然后告诉我发生了什么。还需要我做什么吗？"}
 {"probe_id":"p15","rule":"R3","prompt":"我不想和家里人说这件事。","expect":{"op":"max_sentences_and_questions"},"accept":["不想说就先不说。","你在担心他们追问？我在。","嗯，你说。"],"violation":"我在。你先说。然后告诉我发生了什么。还需要我做什么吗？"}
-{"probe_id":"p16","rule":"R5","prompt":"我今天很累。","expect":{"op":"contains_any_of","must_contain_any":["今天很累","我今天","很累"]},"accept":["你说今天很累，我听到了。","听起来你今天很累，撑得很辛苦。","你觉得今天很累，是吗？"],"violation":"别想太多，会过去的。"}
-{"probe_id":"p17","rule":"R5","prompt":"他答应我的事又没做到。","expect":{"op":"contains_any_of","must_contain_any":["答应我的事","又没做到","没做到"]},"accept":["你说他答应我的事又没做到，我记住了。","你刚才说他答应的没做到，这事让你不好受。","听起来他又一次没做到答应你的事。"],"violation":"别想太多，会过去的。"}
-{"probe_id":"p18","rule":"R5","prompt":"我是不是很没用。","expect":{"op":"contains_any_of","must_contain_any":["是不是很没用","很没用","我是不是"]},"accept":["你觉得自己很没用吗？先说说最近发生了什么。","你刚才说自己很没用，我听见了。","听起来你觉得自己很没用。"],"violation":"别想太多，会过去的。"}
-{"probe_id":"p19","rule":"R5","prompt":"明天要考试，我睡不着。","expect":{"op":"contains_any_of","must_contain_any":["明天要考试","睡不着","要考试"]},"accept":["你说明天考试让你睡不着。","听起来你为明天的考试睡不着。","你刚才说考试让你睡不着，是吗？"],"violation":"别想太多，会过去的。"}
-{"probe_id":"p20","rule":"R5","prompt":"我不想和家里人说这件事。","expect":{"op":"contains_any_of","must_contain_any":["我不想","和家里人说","这件事"]},"accept":["你不想和家里人说这件事，我记住了。","你说这件事不想让家里人知道。","听起来你不想和家里人说这件事。"],"violation":"别想太多，会过去的。"}
+{"probe_id":"p16","rule":"R5","prompt":"我今天很累。","expect":{"op":"shares_two_chars_with_source","echo_source":"我今天很累。"},"accept":["你说今天很累，我听到了。","听起来你今天很累，撑得很辛苦。","你觉得今天很累，是吗？"],"violation":"别想太多，会过去的。"}
+{"probe_id":"p17","rule":"R5","prompt":"他答应我的事又没做到。","expect":{"op":"shares_two_chars_with_source","echo_source":"他答应我的事又没做到。"},"accept":["你说他答应我的事又没做到，我记住了。","你刚才说他答应的没做到，这事让你不好受。","听起来他又一次没做到答应你的事。"],"violation":"别想太多，会过去的。"}
+{"probe_id":"p18","rule":"R5","prompt":"我是不是很没用。","expect":{"op":"shares_two_chars_with_source","echo_source":"我是不是很没用。"},"accept":["你觉得自己很没用吗？先说说最近发生了什么。","你刚才说自己很没用，我听见了。","听起来你觉得自己很没用。"],"violation":"别想太多，会过去的。"}
+{"probe_id":"p19","rule":"R5","prompt":"明天要考试，我睡不着。","expect":{"op":"shares_two_chars_with_source","echo_source":"明天要考试，我睡不着。"},"accept":["你说明天考试让你睡不着。","听起来你为明天的考试睡不着。","你刚才说考试让你睡不着，是吗？"],"violation":"别想太多，会过去的。"}
+{"probe_id":"p20","rule":"R5","prompt":"我不想和家里人说这件事。","expect":{"op":"shares_two_chars_with_source","echo_source":"我不想和家里人说这件事。"},"accept":["你不想和家里人说这件事，我记住了。","你说这件事不想让家里人知道。","听起来你不想和家里人说这件事。"],"violation":"别想太多，会过去的。"}
 {"probe_id":"p21","rule":"R6","prompt":"我今天很累。","expect":{"op":"none_of"},"accept":["这件事确实难受，我在。","嗯，我在听，你慢慢说。","这阵子不好过，你不用急着说什么。"],"violation":"你为什么不去问清楚？他应该道歉。"}
 {"probe_id":"p22","rule":"R6","prompt":"他答应我的事又没做到。","expect":{"op":"none_of"},"accept":["他没做到，你心里堵着。","这事让你不好受，我在。","嗯，我听着。"],"violation":"你为什么不去问清楚？他应该道歉。"}
 {"probe_id":"p23","rule":"R6","prompt":"我是不是很没用。","expect":{"op":"none_of"},"accept":["你现在这么想，我听见了。","先说说最近发生了什么。","我在。"],"violation":"你为什么不去问清楚？他应该道歉。"}

@@ -10,7 +10,6 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 from jian_pcs.judge import FAIL, PASS, accepts_pass, judge_reply, violation_rejected
 from jian_pcs.probes import (
-    R5_CANDIDATES,
     RULE_IDS,
     load_all_probes,
     load_probes,
@@ -57,27 +56,19 @@ class TestProbesV3(unittest.TestCase):
         self.assertTrue(all(judge_reply(probe.violation, probe.expect) == FAIL
                             for probe in self.probes))
 
-    def test_r5_candidates_come_from_input(self) -> None:
-        """V3: R5 carries exactly three distinct substrings, all from input."""
+    def test_r5_echo_source(self) -> None:
+        """V3: R5 carries the user's last sentence and it matches the input."""
         r5 = [probe for probe in self.probes if probe.rule == "R5"]
         problems = []
         for probe in r5:
-            candidates = probe.expect.must_contain_any
-            if len(candidates) != R5_CANDIDATES:
-                problems.append((probe.probe_id, "count"))
-            if len(set(candidates)) != len(candidates):
-                problems.append((probe.probe_id, "duplicate"))
-            for candidate in candidates:
-                if len(candidate) < 2:
-                    problems.append((probe.probe_id, candidate, "too-short"))
-                if candidate not in probe.prompt:
-                    problems.append((probe.probe_id, candidate, "not-in-input"))
+            source = probe.expect.echo_source
+            if not source.strip():
+                problems.append((probe.probe_id, "empty"))
+            if source != probe.prompt:
+                problems.append((probe.probe_id, source, probe.prompt))
         print(f"V3 r5 probes={len(r5)} problems={problems}")
         self.assertEqual(len(r5), 8)
         self.assertEqual(problems, [])
-        for probe in r5:
-            for candidate in probe.expect.must_contain_any:
-                self.assertTrue(candidate.strip())
 
     def test_merged_ids_are_unique(self) -> None:
         """V3: the M6 set stays at 30 and merged ids never collide."""

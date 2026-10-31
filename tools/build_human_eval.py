@@ -1,14 +1,18 @@
-"""Build the human-evaluation sheet for the PCS judge (blind + key).
+"""Build the human-evaluation sheets for the PCS judge (blind + key).
 
 Default (v1): samples 60 replies with the old broad rules and writes
 ``human_eval/blind.csv``. With ``--rules-v2`` the sheet is rebuilt from the
 executable rules in ``rules_v2.json``: the rule column carries the short
-sentence plus the ``human`` definition, and R5 also lists its candidate
-substrings, so the annotator can apply the rule mechanically.
+sentence plus the ``human`` definition, and R5 also names the source
+sentence it must echo, so the annotator can apply the rule mechanically.
+With ``--holdout`` the frozen 60-row held-out sheet is written from the
+``s2`` replies; every row is excluded from the tuning key by
+``(source, probe_id)``.
 
 Usage:
     python tools/build_human_eval.py
     python tools/build_human_eval.py --rules-v2
+    python tools/build_human_eval.py --holdout
 
 """
 
@@ -24,11 +28,16 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from jian_pcs.judge import judge_reply
-from jian_pcs.probes import load_hard_probes, load_probes, load_rules_v2
+from jian_pcs.judge import UNKNOWN, judge_reply
+from jian_pcs.probes import Probe, load_hard_probes, load_probes, load_rules_v2
 from jian_pcs.score import load_replies
 
 SEED = 20261030
+HOLDOUT_ROWS = 60
+HOLDOUT_SOURCES = (
+    ("qwen_s2", "replies_qwen3.5_9b_s2.jsonl"),
+    ("glm_s2", "replies_glm4_9b_s2.jsonl"),
+)
 PASS_QUOTA = {
     "qwen_base": 15,
     "glm_base": 15,
@@ -38,8 +47,18 @@ PASS_QUOTA = {
 TOTAL_ROWS = 60
 
 
+def dialogue_input(probe: Probe) -> str:
+    """Render the full user dialogue; the last line is the turn being answered.
+
+    A multi-turn probe keeps every user turn, one speaker-labelled line each,
+    so the annotator can see which sentence the reply must echo.
+    """
+    turns = probe.turns if probe.turns else (probe.prompt,)
+    return "\n".join(f"用户：{turn}" for turn in turns)
+
+
 def gather() -> list[dict[str, object]]:
-    """Return every judged item with its source, prompt and reply text."""
+    """Return every judged item with its source, full input and reply text."""
     base = load_probes()
     hard = load_hard_probes()
     items: list[dict[str, object]] = []
@@ -56,17 +75,17 @@ def gather() -> list[dict[str, object]]:
             reply = replies.get(probe.probe_id)
             if reply is None:
                 continue
-            verdict = judge_reply(reply.text, probe.expect)
-            if verdict == "unknown":
+            verdict = judge_reply(reply.final_text(), probe.expect)
+            if verdict == UNKNOWN:
                 continue
             items.append({
                 "source": source,
                 "probe_id": probe.probe_id,
                 "rule": probe.rule,
-                "prompt": probe.prompt,
-                "reply": reply.text,
+                "input": dialogue_input(probe),
+                "reply": reply.final_text(),
                 "machine": verdict,
-                "must_contain_any": list(probe.expect.must_contain_any),
+                "echo_source": probe.expect.echo_source,
             })
 
     hard_path = ROOT / "m7_qwen.jsonl"
@@ -77,17 +96,16 @@ def gather() -> list[dict[str, object]]:
             if reply is None:
                 continue
             verdict = judge_reply(reply.final_text(), probe.expect)
-            if verdict == "unknown":
+            if verdict == UNKNOWN:
                 continue
-            turns = reply.turns_replied or (reply.text,)
             items.append({
                 "source": "qwen_hard",
                 "probe_id": probe.probe_id,
                 "rule": probe.rule,
-                "prompt": " ／ ".join(turns[:-1]) if len(turns) > 1 else probe.prompt,
-                "reply": turns[-1],
+                "input": dialogue_input(probe),
+                "reply": reply.final_text(),
                 "machine": verdict,
-                "must_contain_any": list(probe.expect.must_contain_any),
+                "echo_source": probe.expect.echo_source,
             })
     return items
 
@@ -134,6 +152,56 @@ def _v2_pick(items: list[dict[str, object]]) -> list[dict[str, object]]:
     return picked
 
 
+def _tuning_keys() -> set[tuple[str, str]]:
+    """Return every ``(source, probe_id)`` already used by the tuning sheet."""
+    path = ROOT / "human_eval" / "key_v2.json"
+    if not path.exists():
+        return set()
+    data = json.loads(path.read_text(encoding="utf-8"))
+    return {
+        (str(item["source"]), str(item["probe_id"]))
+        for item in data.values()
+        if isinstance(item, dict) and "source" in item and "probe_id" in item
+    }
+
+
+def build_holdout() -> list[dict[str, object]]:
+    """Return the held-out rows whose keys never appear in the tuning sheet.
+
+    The holdout is sampled from a second run (``s2``) of the 30 base probes,
+    so every ``(source, probe_id)`` differs from the tuning set by
+    construction. Rows are emitted in probe order, qwen first.
+    """
+    tuning = _tuning_keys()
+    probes = load_probes()
+    items: list[dict[str, object]] = []
+    for source, name in HOLDOUT_SOURCES:
+        path = ROOT / "pcs_out" / name
+        if not path.exists():
+            raise ValueError(f"缺少回复文件：{path}")
+        replies = load_replies(path)
+        for probe in probes:
+            reply = replies.get(probe.probe_id)
+            if reply is None:
+                raise ValueError(f"{source} 缺回复：{probe.probe_id}")
+            text = reply.final_text()
+            verdict = judge_reply(text, probe.expect)
+            if verdict == UNKNOWN:
+                raise ValueError(f"{source} 的 {probe.probe_id} 回复为空")
+            if (source, probe.probe_id) in tuning:
+                continue
+            items.append({
+                "source": source,
+                "probe_id": probe.probe_id,
+                "rule": probe.rule,
+                "input": dialogue_input(probe),
+                "reply": text,
+                "machine": verdict,
+                "echo_source": probe.expect.echo_source,
+            })
+    return items
+
+
 def _rule_labels() -> dict[str, str]:
     """Return one mechanical rule label per rule id, human definition included."""
     labels: dict[str, str] = {}
@@ -146,10 +214,9 @@ def _label(item: dict[str, object], labels: dict[str, str] | None) -> str:
     if labels is None:
         return str(item["rule"])
     label = labels[str(item["rule"])]
-    candidates = item.get("must_contain_any") or []
-    if candidates:
-        joined = "、".join(str(value) for value in candidates)
-        label = f"{label}；候选子串：{joined}"
+    source = str(item.get("echo_source") or "")
+    if source:
+        label = f"{label}；复述对象：{source}"
     return label
 
 
@@ -166,7 +233,7 @@ def _write_csv(
             writer.writerow([
                 row_label,
                 _label(item, labels),
-                item["prompt"],
+                item["input"],
                 item["reply"],
                 "",
             ])
@@ -183,19 +250,37 @@ def _write_key(path: pathlib.Path, picked: list[dict[str, object]]) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Write the blind sheet and key; ``--rules-v2`` uses the v2 rule labels."""
+    """Write the blind or held-out sheet; ``--holdout`` uses the s2 replies."""
     parser = argparse.ArgumentParser(prog="build_human_eval")
     parser.add_argument(
         "--rules-v2",
         action="store_true",
         help="use the executable rules_v2 definitions in the rule column",
     )
+    parser.add_argument(
+        "--holdout",
+        action="store_true",
+        help="write the frozen 60-row held-out sheet, disjoint from the tuning key",
+    )
     args = parser.parse_args(argv)
+    out_dir = ROOT / "human_eval"
+    out_dir.mkdir(exist_ok=True)
+
+    if args.holdout:
+        rows = build_holdout()
+        if len(rows) != HOLDOUT_ROWS:
+            raise SystemExit(f"holdout rows={len(rows)}，必须是 {HOLDOUT_ROWS}")
+        labels = _rule_labels()
+        holdout = out_dir / "holdout.csv"
+        _write_csv(holdout, rows, labels)
+        _write_key(out_dir / "holdout_key.json", rows)
+        print(f"wrote {holdout.relative_to(ROOT)}  rows={len(rows)}")
+        print(f"wrote {(out_dir / 'holdout_key.json').relative_to(ROOT)}")
+        return 0
+
     items = gather()
     fails = [item for item in items if item["machine"] == "fail"]
     passes = [item for item in items if item["machine"] == "pass"]
-    out_dir = ROOT / "human_eval"
-    out_dir.mkdir(exist_ok=True)
 
     if args.rules_v2:
         labels = _rule_labels()

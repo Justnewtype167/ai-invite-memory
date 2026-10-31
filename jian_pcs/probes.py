@@ -30,12 +30,11 @@ V2_OPERATORS = (
     "none_of",
     "max_sentences_and_questions",
     "max_chars",
-    "contains_any_of",
+    "shares_two_chars_with_source",
 )
-R5_CANDIDATES = 3
 PROBE_FIELDS = ("probe_id", "rule", "prompt", "expect", "accept", "violation")
 HARD_FIELDS = ("probe_id", "kind", "rule", "turns", "expect_final", "accept", "violation")
-EXPECT_FIELDS = ("op", "must_contain_any")
+EXPECT_FIELDS = ("op", "echo_source")
 TURN_MIN = 2
 TURN_MAX = 6
 ACCEPT_MIN = 2
@@ -64,23 +63,28 @@ class Rule:
 
 @dataclass(frozen=True)
 class Expect:
-    """One probe's pass condition: a v2 operator plus its static arguments."""
+    """One probe's pass condition: a v2 operator plus its static arguments.
+
+    ``echo_source`` is the user's last message; R5 compares it with the reply
+    by shared character substrings. ``must_contain_any`` is kept only for
+    older callers and is never read by the judge.
+    """
 
     op: str
     words: tuple[str, ...] = ()
     sentences: int | None = None
     questions: int | None = None
     chars: int | None = None
+    echo_source: str = ""
     must_contain_any: tuple[str, ...] = ()
 
     @classmethod
     def from_payload(cls, payload: object, rule: Rule) -> "Expect":
         """Bind one probe's ``expect`` object to its rule program.
 
-        The probe may only echo the operator name. Limits and word lists are
-        taken from the rule, so a probe cannot silently loosen the rule. R5 is
-        the one exception: its candidate substrings are probe-specific and
-        must be supplied by the probe author.
+        The probe may only echo the operator name and, for R5, the source
+        sentence it must share characters with. Limits and word lists always
+        come from the rule file, so a probe cannot silently loosen a rule.
         """
         if not isinstance(payload, dict):
             raise PcsError(E_PCS_SCHEMA, "expect 必须是对象")
@@ -92,16 +96,17 @@ class Expect:
             raise PcsError(
                 E_PCS_SCHEMA, f"{rule.rule_id} 的算子必须是 {rule.op}，收到 {op}"
             )
-        candidates = _string_list(payload, "must_contain_any")
-        if rule.op == "contains_any_of":
-            if len(candidates) != R5_CANDIDATES:
+        source = payload.get("echo_source", "")
+        if not isinstance(source, str):
+            raise PcsError(E_PCS_SCHEMA, "echo_source 必须是字符串")
+        if rule.op == "shares_two_chars_with_source":
+            if not source.strip():
                 raise PcsError(
-                    E_PCS_SCHEMA,
-                    f"{rule.rule_id} 必须给出 {R5_CANDIDATES} 个候选子串",
+                    E_PCS_SCHEMA, f"{rule.rule_id} 必须填写 echo_source"
                 )
-        elif candidates:
+        elif source.strip():
             raise PcsError(
-                E_PCS_SCHEMA, f"{rule.rule_id} 不接受 must_contain_any"
+                E_PCS_SCHEMA, f"{rule.rule_id} 不接受 echo_source"
             )
         return cls(
             op=rule.op,
@@ -109,7 +114,7 @@ class Expect:
             sentences=rule.sentences,
             questions=rule.questions,
             chars=rule.chars,
-            must_contain_any=candidates,
+            echo_source=source,
         )
 
 

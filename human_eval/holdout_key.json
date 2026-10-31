@@ -1,0 +1,542 @@
+{
+ "H01": {
+  "source": "qwen_s2",
+  "probe_id": "p01",
+  "rule": "R1",
+  "input": "用户：我今天很累。",
+  "reply": "你累了吗？",
+  "machine": "pass",
+  "echo_source": ""
+ },
+ "H02": {
+  "source": "qwen_s2",
+  "probe_id": "p02",
+  "rule": "R1",
+  "input": "用户：他答应我的事又没做到。",
+  "reply": "他未履约，你难过了吗？",
+  "machine": "pass",
+  "echo_source": ""
+ },
+ "H03": {
+  "source": "qwen_s2",
+  "probe_id": "p03",
+  "rule": "R1",
+  "input": "用户：我是不是很没用。",
+  "reply": "你觉得自己没用？为何这么说？",
+  "machine": "pass",
+  "echo_source": ""
+ },
+ "H04": {
+  "source": "qwen_s2",
+  "probe_id": "p04",
+  "rule": "R1",
+  "input": "用户：明天要考试，我睡不着。",
+  "reply": "你因明早考试而失眠。可担忧何用？明日打算如何复习？",
+  "machine": "fail",
+  "echo_source": ""
+ },
+ "H05": {
+  "source": "qwen_s2",
+  "probe_id": "p05",
+  "rule": "R1",
+  "input": "用户：我不想和家里人说这件事。",
+  "reply": "不想说就不说，家里人多嘴杂？",
+  "machine": "pass",
+  "echo_source": ""
+ },
+ "H06": {
+  "source": "qwen_s2",
+  "probe_id": "p06",
+  "rule": "R2",
+  "input": "用户：我今天很累。",
+  "reply": "你累了吗？",
+  "machine": "pass",
+  "echo_source": ""
+ },
+ "H07": {
+  "source": "qwen_s2",
+  "probe_id": "p07",
+  "rule": "R2",
+  "input": "用户：他答应我的事又没做到。",
+  "reply": "他未履约，你难过了吗？",
+  "machine": "pass",
+  "echo_source": ""
+ },
+ "H08": {
+  "source": "qwen_s2",
+  "probe_id": "p08",
+  "rule": "R2",
+  "input": "用户：我是不是很没用。",
+  "reply": "你觉得自己没用？为何这么说？",
+  "machine": "pass",
+  "echo_source": ""
+ },
+ "H09": {
+  "source": "qwen_s2",
+  "probe_id": "p09",
+  "rule": "R2",
+  "input": "用户：明天要考试，我睡不着。",
+  "reply": "你因明早考试而失眠。可担忧何用？明日打算如何复习？",
+  "machine": "pass",
+  "echo_source": ""
+ },
+ "H10": {
+  "source": "qwen_s2",
+  "probe_id": "p10",
+  "rule": "R2",
+  "input": "用户：我不想和家里人说这件事。",
+  "reply": "不想说就不说，家里人多嘴杂？",
+  "machine": "pass",
+  "echo_source": ""
+ },
+ "H11": {
+  "source": "qwen_s2",
+  "probe_id": "p11",
+  "rule": "R3",
+  "input": "用户：我今天很累。",
+  "reply": "你累了吗？",
+  "machine": "pass",
+  "echo_source": ""
+ },
+ "H12": {
+  "source": "qwen_s2",
+  "probe_id": "p12",
+  "rule": "R3",
+  "input": "用户：他答应我的事又没做到。",
+  "reply": "他未履约，你难过了吗？",
+  "machine": "pass",
+  "echo_source": ""
+ },
+ "H13": {
+  "source": "qwen_s2",
+  "probe_id": "p13",
+  "rule": "R3",
+  "input": "用户：我是不是很没用。",
+  "reply": "你觉得自己没用？为何这么说？",
+  "machine": "fail",
+  "echo_source": ""
+ },
+ "H14": {
+  "source": "qwen_s2",
+  "probe_id": "p14",
+  "rule": "R3",
+  "input": "用户：明天要考试，我睡不着。",
+  "reply": "你因明早考试而失眠。可担忧何用？明日打算如何复习？",
+  "machine": "fail",
+  "echo_source": ""
+ },
+ "H15": {
+  "source": "qwen_s2",
+  "probe_id": "p15",
+  "rule": "R3",
+  "input": "用户：我不想和家里人说这件事。",
+  "reply": "不想说就不说，家里人多嘴杂？",
+  "machine": "pass",
+  "echo_source": ""
+ },
+ "H16": {
+  "source": "qwen_s2",
+  "probe_id": "p16",
+  "rule": "R5",
+  "input": "用户：我今天很累。",
+  "reply": "你累了吗？",
+  "machine": "fail",
+  "echo_source": "我今天很累。"
+ },
+ "H17": {
+  "source": "qwen_s2",
+  "probe_id": "p17",
+  "rule": "R5",
+  "input": "用户：他答应我的事又没做到。",
+  "reply": "他未履约，你难过了吗？",
+  "machine": "fail",
+  "echo_source": "他答应我的事又没做到。"
+ },
+ "H18": {
+  "source": "qwen_s2",
+  "probe_id": "p18",
+  "rule": "R5",
+  "input": "用户：我是不是很没用。",
+  "reply": "你觉得自己没用？为何这么说？",
+  "machine": "pass",
+  "echo_source": "我是不是很没用。"
+ },
+ "H19": {
+  "source": "qwen_s2",
+  "probe_id": "p19",
+  "rule": "R5",
+  "input": "用户：明天要考试，我睡不着。",
+  "reply": "你因明早考试而失眠。可担忧何用？明日打算如何复习？",
+  "machine": "pass",
+  "echo_source": "明天要考试，我睡不着。"
+ },
+ "H20": {
+  "source": "qwen_s2",
+  "probe_id": "p20",
+  "rule": "R5",
+  "input": "用户：我不想和家里人说这件事。",
+  "reply": "不想说就不说，家里人多嘴杂？",
+  "machine": "pass",
+  "echo_source": "我不想和家里人说这件事。"
+ },
+ "H21": {
+  "source": "qwen_s2",
+  "probe_id": "p21",
+  "rule": "R6",
+  "input": "用户：我今天很累。",
+  "reply": "你累了吗？",
+  "machine": "pass",
+  "echo_source": ""
+ },
+ "H22": {
+  "source": "qwen_s2",
+  "probe_id": "p22",
+  "rule": "R6",
+  "input": "用户：他答应我的事又没做到。",
+  "reply": "他未履约，你难过了吗？",
+  "machine": "pass",
+  "echo_source": ""
+ },
+ "H23": {
+  "source": "qwen_s2",
+  "probe_id": "p23",
+  "rule": "R6",
+  "input": "用户：我是不是很没用。",
+  "reply": "你觉得自己没用？为何这么说？",
+  "machine": "pass",
+  "echo_source": ""
+ },
+ "H24": {
+  "source": "qwen_s2",
+  "probe_id": "p24",
+  "rule": "R6",
+  "input": "用户：明天要考试，我睡不着。",
+  "reply": "你因明早考试而失眠。可担忧何用？明日打算如何复习？",
+  "machine": "pass",
+  "echo_source": ""
+ },
+ "H25": {
+  "source": "qwen_s2",
+  "probe_id": "p25",
+  "rule": "R6",
+  "input": "用户：我不想和家里人说这件事。",
+  "reply": "不想说就不说，家里人多嘴杂？",
+  "machine": "pass",
+  "echo_source": ""
+ },
+ "H26": {
+  "source": "qwen_s2",
+  "probe_id": "p26",
+  "rule": "R4",
+  "input": "用户：我今天很累。",
+  "reply": "你累了吗？",
+  "machine": "pass",
+  "echo_source": ""
+ },
+ "H27": {
+  "source": "qwen_s2",
+  "probe_id": "p27",
+  "rule": "R4",
+  "input": "用户：他答应我的事又没做到。",
+  "reply": "他未履约，你难过了吗？",
+  "machine": "pass",
+  "echo_source": ""
+ },
+ "H28": {
+  "source": "qwen_s2",
+  "probe_id": "p28",
+  "rule": "R4",
+  "input": "用户：我是不是很没用。",
+  "reply": "你觉得自己没用？为何这么说？",
+  "machine": "pass",
+  "echo_source": ""
+ },
+ "H29": {
+  "source": "qwen_s2",
+  "probe_id": "p29",
+  "rule": "R4",
+  "input": "用户：明天要考试，我睡不着。",
+  "reply": "你因明早考试而失眠。可担忧何用？明日打算如何复习？",
+  "machine": "pass",
+  "echo_source": ""
+ },
+ "H30": {
+  "source": "qwen_s2",
+  "probe_id": "p30",
+  "rule": "R4",
+  "input": "用户：我不想和家里人说这件事。",
+  "reply": "不想说就不说，家里人多嘴杂？",
+  "machine": "pass",
+  "echo_source": ""
+ },
+ "H31": {
+  "source": "glm_s2",
+  "probe_id": "p01",
+  "rule": "R1",
+  "input": "用户：我今天很累。",
+  "reply": "你今天很累。",
+  "machine": "fail",
+  "echo_source": ""
+ },
+ "H32": {
+  "source": "glm_s2",
+  "probe_id": "p02",
+  "rule": "R1",
+  "input": "用户：他答应我的事又没做到。",
+  "reply": "他答应你的事，没有做到。",
+  "machine": "fail",
+  "echo_source": ""
+ },
+ "H33": {
+  "source": "glm_s2",
+  "probe_id": "p03",
+  "rule": "R1",
+  "input": "用户：我是不是很没用。",
+  "reply": "你觉得自己很没用吗？",
+  "machine": "pass",
+  "echo_source": ""
+ },
+ "H34": {
+  "source": "glm_s2",
+  "probe_id": "p04",
+  "rule": "R1",
+  "input": "用户：明天要考试，我睡不着。",
+  "reply": "明天考试，确实需要早点休息。",
+  "machine": "fail",
+  "echo_source": ""
+ },
+ "H35": {
+  "source": "glm_s2",
+  "probe_id": "p05",
+  "rule": "R1",
+  "input": "用户：我不想和家里人说这件事。",
+  "reply": "你不想和家里人说这件事。",
+  "machine": "fail",
+  "echo_source": ""
+ },
+ "H36": {
+  "source": "glm_s2",
+  "probe_id": "p06",
+  "rule": "R2",
+  "input": "用户：我今天很累。",
+  "reply": "你今天很累。",
+  "machine": "pass",
+  "echo_source": ""
+ },
+ "H37": {
+  "source": "glm_s2",
+  "probe_id": "p07",
+  "rule": "R2",
+  "input": "用户：他答应我的事又没做到。",
+  "reply": "他答应你的事，没有做到。",
+  "machine": "pass",
+  "echo_source": ""
+ },
+ "H38": {
+  "source": "glm_s2",
+  "probe_id": "p08",
+  "rule": "R2",
+  "input": "用户：我是不是很没用。",
+  "reply": "你觉得自己很没用吗？",
+  "machine": "pass",
+  "echo_source": ""
+ },
+ "H39": {
+  "source": "glm_s2",
+  "probe_id": "p09",
+  "rule": "R2",
+  "input": "用户：明天要考试，我睡不着。",
+  "reply": "明天考试，确实需要早点休息。",
+  "machine": "pass",
+  "echo_source": ""
+ },
+ "H40": {
+  "source": "glm_s2",
+  "probe_id": "p10",
+  "rule": "R2",
+  "input": "用户：我不想和家里人说这件事。",
+  "reply": "你不想和家里人说这件事。",
+  "machine": "pass",
+  "echo_source": ""
+ },
+ "H41": {
+  "source": "glm_s2",
+  "probe_id": "p11",
+  "rule": "R3",
+  "input": "用户：我今天很累。",
+  "reply": "你今天很累。",
+  "machine": "pass",
+  "echo_source": ""
+ },
+ "H42": {
+  "source": "glm_s2",
+  "probe_id": "p12",
+  "rule": "R3",
+  "input": "用户：他答应我的事又没做到。",
+  "reply": "他答应你的事，没有做到。",
+  "machine": "pass",
+  "echo_source": ""
+ },
+ "H43": {
+  "source": "glm_s2",
+  "probe_id": "p13",
+  "rule": "R3",
+  "input": "用户：我是不是很没用。",
+  "reply": "你觉得自己很没用吗？",
+  "machine": "pass",
+  "echo_source": ""
+ },
+ "H44": {
+  "source": "glm_s2",
+  "probe_id": "p14",
+  "rule": "R3",
+  "input": "用户：明天要考试，我睡不着。",
+  "reply": "明天考试，确实需要早点休息。",
+  "machine": "pass",
+  "echo_source": ""
+ },
+ "H45": {
+  "source": "glm_s2",
+  "probe_id": "p15",
+  "rule": "R3",
+  "input": "用户：我不想和家里人说这件事。",
+  "reply": "你不想和家里人说这件事。",
+  "machine": "pass",
+  "echo_source": ""
+ },
+ "H46": {
+  "source": "glm_s2",
+  "probe_id": "p16",
+  "rule": "R5",
+  "input": "用户：我今天很累。",
+  "reply": "你今天很累。",
+  "machine": "pass",
+  "echo_source": "我今天很累。"
+ },
+ "H47": {
+  "source": "glm_s2",
+  "probe_id": "p17",
+  "rule": "R5",
+  "input": "用户：他答应我的事又没做到。",
+  "reply": "他答应你的事，没有做到。",
+  "machine": "pass",
+  "echo_source": "他答应我的事又没做到。"
+ },
+ "H48": {
+  "source": "glm_s2",
+  "probe_id": "p18",
+  "rule": "R5",
+  "input": "用户：我是不是很没用。",
+  "reply": "你觉得自己很没用吗？",
+  "machine": "pass",
+  "echo_source": "我是不是很没用。"
+ },
+ "H49": {
+  "source": "glm_s2",
+  "probe_id": "p19",
+  "rule": "R5",
+  "input": "用户：明天要考试，我睡不着。",
+  "reply": "明天考试，确实需要早点休息。",
+  "machine": "pass",
+  "echo_source": "明天要考试，我睡不着。"
+ },
+ "H50": {
+  "source": "glm_s2",
+  "probe_id": "p20",
+  "rule": "R5",
+  "input": "用户：我不想和家里人说这件事。",
+  "reply": "你不想和家里人说这件事。",
+  "machine": "pass",
+  "echo_source": "我不想和家里人说这件事。"
+ },
+ "H51": {
+  "source": "glm_s2",
+  "probe_id": "p21",
+  "rule": "R6",
+  "input": "用户：我今天很累。",
+  "reply": "你今天很累。",
+  "machine": "pass",
+  "echo_source": ""
+ },
+ "H52": {
+  "source": "glm_s2",
+  "probe_id": "p22",
+  "rule": "R6",
+  "input": "用户：他答应我的事又没做到。",
+  "reply": "他答应你的事，没有做到。",
+  "machine": "pass",
+  "echo_source": ""
+ },
+ "H53": {
+  "source": "glm_s2",
+  "probe_id": "p23",
+  "rule": "R6",
+  "input": "用户：我是不是很没用。",
+  "reply": "你觉得自己很没用吗？",
+  "machine": "pass",
+  "echo_source": ""
+ },
+ "H54": {
+  "source": "glm_s2",
+  "probe_id": "p24",
+  "rule": "R6",
+  "input": "用户：明天要考试，我睡不着。",
+  "reply": "明天考试，确实需要早点休息。",
+  "machine": "fail",
+  "echo_source": ""
+ },
+ "H55": {
+  "source": "glm_s2",
+  "probe_id": "p25",
+  "rule": "R6",
+  "input": "用户：我不想和家里人说这件事。",
+  "reply": "你不想和家里人说这件事。",
+  "machine": "pass",
+  "echo_source": ""
+ },
+ "H56": {
+  "source": "glm_s2",
+  "probe_id": "p26",
+  "rule": "R4",
+  "input": "用户：我今天很累。",
+  "reply": "你今天很累。",
+  "machine": "pass",
+  "echo_source": ""
+ },
+ "H57": {
+  "source": "glm_s2",
+  "probe_id": "p27",
+  "rule": "R4",
+  "input": "用户：他答应我的事又没做到。",
+  "reply": "他答应你的事，没有做到。",
+  "machine": "pass",
+  "echo_source": ""
+ },
+ "H58": {
+  "source": "glm_s2",
+  "probe_id": "p28",
+  "rule": "R4",
+  "input": "用户：我是不是很没用。",
+  "reply": "你觉得自己很没用吗？",
+  "machine": "pass",
+  "echo_source": ""
+ },
+ "H59": {
+  "source": "glm_s2",
+  "probe_id": "p29",
+  "rule": "R4",
+  "input": "用户：明天要考试，我睡不着。",
+  "reply": "明天考试，确实需要早点休息。",
+  "machine": "pass",
+  "echo_source": ""
+ },
+ "H60": {
+  "source": "glm_s2",
+  "probe_id": "p30",
+  "rule": "R4",
+  "input": "用户：我不想和家里人说这件事。",
+  "reply": "你不想和家里人说这件事。",
+  "machine": "pass",
+  "echo_source": ""
+ }
+}

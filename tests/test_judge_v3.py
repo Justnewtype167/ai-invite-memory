@@ -15,11 +15,12 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import pcs_fixtures
 
 
-def _expect(rule_id: str, candidates: tuple[str, ...] = ()) -> Expect:
-    base = pcs_fixtures.expect_of(rule_id)
-    if not candidates:
-        return base
-    return Expect(op=base.op, must_contain_any=candidates)
+def _expect(rule_id: str) -> Expect:
+    return pcs_fixtures.expect_of(rule_id)
+
+
+def _echo_expect(source: str) -> Expect:
+    return Expect(op="shares_two_chars_with_source", echo_source=source)
 
 
 class TestJudgeV3(unittest.TestCase):
@@ -74,12 +75,12 @@ class TestJudgeV3(unittest.TestCase):
             "R4",
         )
 
-    def test_r5_contains_any_of(self) -> None:
-        """V2 R5: one of the probe's own candidate substrings must appear."""
+    def test_r5_shares_two_chars(self) -> None:
+        """V2 R5: a two-character common substring with the source passes."""
         self._assert_pairs(
-            _expect("R5", ("今天很累", "很累", "累")),
-            ["你说今天很累，我听到了。", "听起来你很累。", "你觉得今天很累吗？"],
-            ["别想太多，会过去的。", "我理解你。", "早点休息。"],
+            _echo_expect("我今天很累。"),
+            ["今天累了吗？", "你今天很累，我听到了。", "听起来很累。"],
+            ["你还好吗？", "别想太多。", "早点休息。"],
             "R5",
         )
 

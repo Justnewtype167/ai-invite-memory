@@ -78,8 +78,13 @@ class TestRulesV2(unittest.TestCase):
                 bad.append((probe.probe_id, "limits"))
             if rule.op == "max_chars" and expect.chars != rule.chars:
                 bad.append((probe.probe_id, "chars"))
-            if rule.op != "contains_any_of" and expect.must_contain_any:
-                bad.append((probe.probe_id, "extra-candidates"))
+            if rule.op == "shares_two_chars_with_source":
+                if not expect.echo_source.strip():
+                    bad.append((probe.probe_id, "echo-source"))
+            elif expect.echo_source:
+                bad.append((probe.probe_id, "extra-echo-source"))
+            if expect.must_contain_any:
+                bad.append((probe.probe_id, "legacy-candidates"))
         print(f"V1 echoed-limit violations={bad}")
         self.assertEqual(bad, [])
 

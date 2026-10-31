@@ -3,7 +3,8 @@
 Only the five v2 operators exist. There is no fuzzy or semantic matching:
 ``none_of`` is a closed word list, ``max_chars`` / ``max_sentences_and_questions``
 are counts, ``first_is_question`` reads the first sentence-final mark, and
-``contains_any_of`` checks the probe's own candidate substrings.
+``shares_two_chars_with_source`` checks a two-character common substring with
+the probe's own source sentence.
 """
 
 from __future__ import annotations
@@ -22,7 +23,7 @@ ALLOWED_OPERATORS = (
     "none_of",
     "max_sentences_and_questions",
     "max_chars",
-    "contains_any_of",
+    "shares_two_chars_with_source",
 )
 
 
@@ -31,6 +32,7 @@ def judge_reply(text: str, expect: Expect) -> str:
 
     An empty or whitespace-only reply cannot be judged, so it is excluded from
     every denominator rather than counted as a pass (that would inflate PCS).
+    R5 without a source sentence is also ``unknown``.
     """
     if not text or not text.strip():
         return UNKNOWN
@@ -51,8 +53,10 @@ def judge_reply(text: str, expect: Expect) -> str:
         if expect.chars is None:
             raise PcsError(E_PCS_SCHEMA, "max_chars 缺参数")
         return PASS if _chars(body) <= expect.chars else FAIL
-    if expect.op == "contains_any_of":
-        return PASS if _contains_any(body, expect.must_contain_any) else FAIL
+    if expect.op == "shares_two_chars_with_source":
+        if not expect.echo_source.strip():
+            return UNKNOWN
+        return PASS if _shares_two_chars(expect.echo_source, body) else FAIL
     raise PcsError(E_PCS_SCHEMA, f"未知算子：{expect.op}")
 
 
@@ -86,8 +90,28 @@ def _first_is_question(body: str) -> bool:
     return False
 
 
-def _contains_any(body: str, needles: tuple[str, ...]) -> bool:
-    return any(needle in body for needle in needles)
+def _shares_two_chars(source: str, body: str) -> bool:
+    """True when normalized source and reply share a 2-character substring.
+
+    Both sides drop every non-alphanumeric character first, so punctuation and
+    whitespace never affect the comparison. Any common substring of length
+    two or more necessarily contains a common two-character window, so checking
+    adjacent pairs is exact.
+    """
+    left = _normalize(source)
+    right = _normalize(body)
+    if len(left) < 2 or len(right) < 2:
+        return False
+    pairs = {left[index:index + 2] for index in range(len(left) - 1)}
+    return any(
+        right[index:index + 2] in pairs
+        for index in range(len(right) - 1)
+    )
+
+
+def _normalize(text: str) -> str:
+    """Keep CJK characters, letters and digits; drop punctuation and spaces."""
+    return "".join(char for char in text if char.isalnum())
 
 
 def _questions(body: str) -> int:

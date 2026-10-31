@@ -25,7 +25,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from jian_pcs.probes import load_hard_probes, load_probes  # noqa: E402
+from jian_pcs.probes import load_hard_probes, load_probes, load_rules_v2  # noqa: E402
 
 ENDPOINT = "http://127.0.0.1:11434/api/generate"
 CHAT_ENDPOINT = "http://127.0.0.1:11434/api/chat"
@@ -120,10 +120,12 @@ def collect(
     the whole dialogue through /api/chat and keep each turn's reply.
     """
     probes = load_hard_probes(probe_path) if multi else load_probes(probe_path)
+    rule_text = {rule.rule_id: rule.text for rule in load_rules_v2()}
     rules: list[str] = []
     for probe in probes:
-        if probe.rule not in rules:
-            rules.append(probe.rule)
+        text = rule_text[probe.rule]
+        if text not in rules:
+            rules.append(text)
     system = build_system(rules)
     records: list[dict[str, object]] = []
     errors: list[str] = []
