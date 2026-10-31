@@ -282,15 +282,20 @@ The final set is five executable rules: Q1 answer directly, Q2 no evasion, Q3 at
 
 Scoring routes by the probe's `mode` field. **We do not implement automatic mode detection**: a classifier would add an unvalidated component and turn PCS validity into a product of two unknowns.
 
+![Figure 4  Self-conformance and agreement in the two modes](figures/fig4-two-modes.svg)
+
 **Table 12  Consultation mode (20 probes)**
 
-| Metric | qwen3.5:9b | glm4:9b |
+| Metric | Value | 95% CI |
 |---|---|---|
-| C | 0.8500 | **1.0000** |
-| A | 0.8500 | |
-| **PCS** | **0.7225** | |
+| C(qwen3.5:9b) | 0.8500 | [0.700, 1.000] |
+| C(glm4:9b) | **1.0000** | - (20/20, see below) |
+| A | 0.8500 | [0.700, 1.000] |
+| **PCS** | **0.7225** | **[0.490, 1.000]** |
 
 Per rule: Q1 (answer directly) 0.40 / 1.00, Q2-Q4 all 1.00.
+
+> Two caveats travel with these numbers: (1) with only 20 probes the PCS interval is 0.51 wide, versus 0.23 in the support mode, so it does not support fine-grained model comparisons; (2) glm's 20/20 is not perfect - by the rule of three, zero failures in 20 bounds the true failure rate at roughly 15%.
 
 **Table 13  The same model in two modes**
 
@@ -303,7 +308,7 @@ Per rule: Q1 (answer directly) 0.40 / 1.00, Q2-Q4 all 1.00.
 
 ### 6.7 Resolution under sampling
 
-![Figure 4  Temperature decides whether PCS can resolve a model swap](figures/fig4-resolution.svg)
+![Figure 5  Temperature decides whether PCS can resolve a model swap](figures/fig5-resolution.svg)
 
 **Table 14  Resolution under greedy vs sampled decoding**
 
