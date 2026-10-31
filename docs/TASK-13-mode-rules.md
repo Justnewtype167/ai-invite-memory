@@ -79,13 +79,25 @@
 与情绪模式 R2 相同：8 词封闭表
 ```
 
-### Q5 `advice_allowed` · 允许建议（**这是一条「取消限制」的规则**）
+### Q5 `advice_allowed` · 允许建议（**取消限制型规则，non-scored**）
 
 ```
 短句：该给建议时给建议
 判定：始终 pass —— 它的作用是显式声明「咨询模式下不再检查建议词」
 意义：把「模式差异」写进规则文件，而不是藏在代码分支里
+计分：non-scored（它不约束行为，无法被违反）
 ```
+
+**它真正的检验不是「某条回复能过」，而是跨模式对照**：
+
+```
+同一条带「建议 / 应该」的回复：
+  在 consult 模式下 → pass
+  在 support 模式下 → R6 fail
+```
+
+这个对照证明「取消限制」确实生效，比单条断言强得多。
+见 §5 的 Y7。
 
 ---
 
@@ -105,10 +117,14 @@
 ## 4. 咨询探针（20 条）
 
 ```
-形式   单轮提问，每题绑定 mode="consult" 与 Q1–Q5 中的一条
+数量   20 条 = Q1–Q4 各 5 条
+形式   单轮提问，每题绑定 mode="consult"
 题目   取材于真实咨询的类型：价格、条件、可行性、平台规则、材料清单
 禁区   不含真实公司名、平台名、人名；不引用任何原文
 ```
+
+**Q5 不设探针**：它是 non-scored 的取消限制型规则，没有「可被违反」的行为，
+因此不适合放进 accept/violation 的自检框架。它的检验放在 Y7。
 
 每条探针需带 `accept`（2–3 条）与 `violation`（1 条），
 **accept 必须通过对应规则，violation 必须不通过**——与 M8 的判定器自检同一套标准。
@@ -120,11 +136,12 @@
 | # | 测试 | 断言 |
 |---|---|---|
 | Y1 | `test_consult_rules` | 五条规则齐全；op 在允许清单内；`advice_allowed` 恒为 pass |
-| Y2 | `test_consult_probes` | 20 条探针 schema 合法；mode 字段存在；accept 全过、violation 全拒 |
+| Y2 | `test_consult_probes` | 20 条探针 schema 合法；mode 字段存在；rule ∈ Q1–Q4；accept 全过、violation 全拒 |
 | Y3 | `test_mode_routing` | `mode=support` 的探针只用 R1–R6；`mode=consult` 只用 Q1–Q5；无交叉 |
 | Y4 | `test_no_cross_mode_pcs` | 混合两个 mode 计算 PCS 时抛出 `E_PCS_MODE_MIX` |
 | Y5 | `test_consult_recompute` | 两个模型在咨询探针上的 C / A / PCS 可复现 |
 | Y6 | `test_all_regression` | 现有 **240 个测试仍全绿**；四个已封版包零 diff |
+| Y7 | `test_advice_cross_mode` | 同一条含「建议 / 应该」的回复：consult 下 pass，support 下 R6 fail；且 `advice_allowed` 对任意输入恒 pass |
 
 ---
 
