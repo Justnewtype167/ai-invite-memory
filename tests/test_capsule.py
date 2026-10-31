@@ -191,7 +191,9 @@ class RoundtripPerfTest(unittest.TestCase):
             elapsed = time.perf_counter() - start
             self.assertEqual(result.events, 10000)
             self.assertEqual(result.segments, 100)
-            self.assertLess(elapsed, 2.0)
+            # Sanity bound for the 10k verification: catches a quadratic
+            # regression, not a wall-clock SLO (numbers are load dependent).
+            self.assertLess(elapsed, 30.0)
 
 
 class VerifyModesTest(unittest.TestCase):

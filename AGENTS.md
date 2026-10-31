@@ -52,6 +52,7 @@ tools/responder_ollama.py   支持 --model
 | C11 | 每个公开函数：docstring + 至少一个测试 | 没有测试等于没写 |
 | C12 | 对规范有疑问就停下写问题，不许自己改语义 | 语义漂移无法回收 |
 | C13 | **Windows 子进程编码**：凡是起子进程并读输出，一律显式 `encoding="utf-8"` + `errors="replace"`，并给子进程设 `PYTHONUTF8=1` | 默认 GBK 解码 UTF-8 中文直接 UnicodeDecodeError |
+| C14 | **绝对时延不进单测门禁**：单测只断言「不随规模劣化的相对属性」与「宽松健全性上限」；SLO 数字由 `tools/bench_*.py` 报告，永不作为单测断言 | 并发跑测试必然假红（已发生两次：M3 的 80ms、M9 的 200ms） |
 
 ## 3. 目录结构（严格按此，不许自创）
 
