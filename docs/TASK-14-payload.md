@@ -91,15 +91,40 @@ manifest.json  新增 "format": 2，"blob_count": N
 
 ---
 
+### 5.1 唯一访问器（关键决定）
+
+上层**不许直接读原始 JSON 的 `text` 字段**——那是把模态写死在上层。
+证据层提供一个访问器，作为唯一入口：
+
+```python
+def event_text(data: dict[str, object]) -> str:
+    """返回事件的人类可读文本：v1 取 text，v2 取 summary。"""
+```
+
+**为什么不让 v2 同时写 `text=summary`**（曾考虑过的方案）：
+
+```
+· 两份真相：text 与 summary 可以不一致，而哈希只覆盖 summary
+· 篡改面：改 text 不会被链发现——直接违反 C1
+· 结论：宁可改三行上层，也不造第二份真相
+```
+
 ## 6. 上层如何消费
 
-| 层 | 读什么 | 影响 |
-|---|---|---|
-| `jian_recall` | 只读 `summary` | **零改动**，预算机制不变 |
-| `jian_kernel` | `modality=text` 时读完整 payload；其余模态本轮跳过 | 零改动（编译只认文本） |
-| `jian_pcs` | 不接触证据层 | 零改动 |
+**原文写的是「上层零 diff」——这条是我写错了。** 实测上层有三处直接读 `data.get("text")`，
+v2 禁止 `text` 之后它们必然取到空串。
 
-**判断标准：这四个包在本轮结束后必须零 diff。** 若有改动，说明载荷改造泄漏到了上层。
+| 文件 | 行 | 改动 |
+|---|---|---|
+| `jian_recall/index.py` | 443 | `data.get("text")` → `event_text(data)` |
+| `jian_kernel/compiler.py` | 161 | 同上 |
+| `jian_kernel/proposer.py` | 513 | 同上 |
+
+**除此之外，四个上层包的所有其它文件必须零 diff**，
+`jian_cn/` 与 `jian_pcs/` 完全零 diff。
+
+**判断标准改成：只允许这三处一行改动，且逐行可审计。**
+用一条脚本列出这四个包的 diff，行数必须正好是 3。
 
 ---
 
@@ -130,7 +155,7 @@ manifest.json  新增 "format": 2，"blob_count": N
 | N2 | `test_blob_store` | 内容寻址写入；重复内容只写一份；篡改 blob → `E_BLOB_MISMATCH`；删 blob → `E_BLOB_MISSING` |
 | N3 | `test_env_roundtrip` | export → import → export **逐字节一致**，且 blob 随包往返 |
 | N4 | `test_env_v1_compat` | v1 胶囊仍可 verify；只有 turn 的 v1 目录仍可 seal；**M1 的 31 个测试全绿** |
-| N5 | `test_upper_layers_untouched` | 四个上层包零 diff（用 sha256 比对，与既有 FROZEN_DIGESTS 同风格） |
+| N5 | `test_upper_layers_touch_limit` | 四个上层包的 diff **恰好 3 行**（`recall/index.py:443`、`kernel/compiler.py:161`、`kernel/proposer.py:513`）；其余文件 sha256 与基线一致；`jian_cn/`、`jian_pcs/` 完全零 diff |
 | N6 | `test_summary_only_retrieval` | 检索只用 `summary`：把 payload 换成等长随机字节，检索结果不变 |
 | N7 | `test_all_regression` | 现有 **246 个测试仍全绿** |
 
@@ -140,7 +165,7 @@ manifest.json  新增 "format": 2，"blob_count": N
 
 1. 不许在本轮解析音频/视频/动作（只保证能装能验）
 2. 不许改已有事件的哈希算法
-3. 不许让上层四个包产生任何一行改动
+3. 不许让上层产生第 4 处改动（已列的 3 行是上限，不是起点）
 4. 不许把 blob 塞进 `.index/`（载荷是证据的一部分，不是派生）
 5. 不许在 verify 里跳过 blob 校验以求快
 
