@@ -158,12 +158,12 @@ class TestConsultRecompute(unittest.TestCase):
         self.assertEqual(report.probes, 20)
         self.assertEqual(report.skipped, 0)
         self.assertAlmostEqual(report.model_a.c, 17 / 20, places=12)
-        self.assertAlmostEqual(report.model_b.c, 17 / 20, places=12)
-        self.assertAlmostEqual(report.agreement, 20 / 20, places=12)
-        self.assertAlmostEqual(report.pcs, 17 / 20, places=12)
+        self.assertAlmostEqual(report.model_b.c, 20 / 20, places=12)
+        self.assertAlmostEqual(report.agreement, 17 / 20, places=12)
+        self.assertAlmostEqual(report.pcs, (17 / 20) * (17 / 20), places=12)
         self.assertFalse(report.insufficient)
         per_rule = {item.rule: (item.probes, item.c_a, item.c_b) for item in report.per_rule}
-        self.assertEqual(per_rule["Q1"], (5, 2 / 5, 2 / 5))
+        self.assertEqual(per_rule["Q1"], (5, 2 / 5, 1.0))
         for rule in ("Q2", "Q3", "Q4"):
             self.assertEqual(per_rule[rule], (5, 1.0, 1.0))
 

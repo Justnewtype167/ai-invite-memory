@@ -231,10 +231,13 @@ def _parse_rule(data: object, index: int, mode: str) -> Rule:
         words = _string_list(args, "words")
         return Rule(rule_id, text, op, human, words=words, scored=scored, mode=mode)
     if op == "answer_directly":
-        if set(args) != {"words"}:
-            raise PcsError(E_PCS_SCHEMA, f"{rule_id} 的 args 只允许 words")
-        words = _string_list(args, "words")
-        return Rule(rule_id, text, op, human, words=words, scored=scored, mode=mode)
+        if set(args) != {"phrases"}:
+            raise PcsError(E_PCS_SCHEMA, f"{rule_id} 的 args 只允许 phrases")
+        phrases = _string_list(args, "phrases")
+        return Rule(
+            rule_id, text, op, human,
+            phrases=phrases, scored=scored, mode=mode,
+        )
     if op == "no_evasion":
         if set(args) != {"phrases"}:
             raise PcsError(E_PCS_SCHEMA, f"{rule_id} 的 args 只允许 phrases")

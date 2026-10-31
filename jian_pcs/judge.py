@@ -4,10 +4,11 @@ Only executable operators exist. There is no fuzzy or semantic matching:
 ``none_of`` is a closed word list, ``max_chars`` / ``max_sentences_and_questions``
 are counts, ``first_is_question`` reads the first sentence-final mark,
 ``shares_two_chars_with_source`` checks a two-character common substring with
-the probe's own source sentence, ``answer_directly`` reads the first mark plus
-a closed word list or an ASCII digit, ``no_evasion`` accepts only replies that
-cannot be spelled entirely from the evasion phrases, and ``advice_allowed``
-always passes because the consult mode deliberately drops the advice ban.
+the probe's own source sentence, ``answer_directly`` reads the first mark and
+rejects a closed list of evasion phrases, ``no_evasion`` accepts only replies
+that cannot be spelled entirely from the evasion phrases, and
+``advice_allowed`` always passes because the consult mode deliberately drops
+the advice ban.
 """
 
 from __future__ import annotations
@@ -21,7 +22,6 @@ UNKNOWN = "unknown"
 
 FINAL_MARKS = "。！？"
 QUESTION_MARKS = "？"
-DIGITS = "0123456789"
 EVASION_MAX_CHARS = 8
 ALLOWED_OPERATORS = (
     "first_is_question",
@@ -45,12 +45,11 @@ def judge_reply(text: str, expect: Expect) -> str:
     if expect.op == "first_is_question":
         return PASS if _first_is_question(body) else FAIL
     if expect.op == "answer_directly":
-        if not expect.words:
+        if not expect.phrases:
             raise PcsError(E_PCS_SCHEMA, "answer_directly 缺参数")
         if _first_is_question(body):
             return FAIL
-        direct = any(word in body for word in expect.words) or _has_digit(body)
-        return PASS if direct else FAIL
+        return FAIL if any(phrase in body for phrase in expect.phrases) else PASS
     if expect.op == "no_evasion":
         if not expect.phrases:
             raise PcsError(E_PCS_SCHEMA, "no_evasion 缺参数")
@@ -110,11 +109,6 @@ def _first_is_question(body: str) -> bool:
         if char in FINAL_MARKS:
             return char == QUESTION_MARKS
     return False
-
-
-def _has_digit(body: str) -> bool:
-    """True when the reply contains at least one ASCII digit."""
-    return any(char in DIGITS for char in body)
 
 
 def _is_evasion(text: str, phrases: tuple[str, ...]) -> bool:

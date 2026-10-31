@@ -1,8 +1,8 @@
 {"probe_id": "k01", "rule": "Q1", "prompt": "这个套餐一个月多少钱？", "expect": {"op": "answer_directly"}, "accept": ["是 299 元。", "一个月 299 元。", "需要 299 元每月。"], "violation": "要看情况，你觉得呢？", "mode": "consult"}
-{"probe_id": "k02", "rule": "Q1", "prompt": "申请这个服务需要什么条件？", "expect": {"op": "answer_directly"}, "accept": ["需要有近三个月的记录。", "条件是近三个月有记录。", "近三个月有记录就可以。"], "violation": "你需要什么条件？", "mode": "consult"}
+{"probe_id": "k02", "rule": "Q1", "prompt": "申请这个服务需要什么条件？", "expect": {"op": "answer_directly"}, "accept": ["需要有近三个月的记录。", "条件是近三个月有记录。", "无需条件，随时可用。"], "violation": "你需要什么条件？", "mode": "consult"}
 {"probe_id": "k03", "rule": "Q1", "prompt": "这个尺寸的箱子能带上车吗？", "expect": {"op": "answer_directly"}, "accept": ["可以，20 寸以内就行。", "能，20 寸以内没问题。", "20 寸以内可以带上车。"], "violation": "能不能带上车？", "mode": "consult"}
 {"probe_id": "k04", "rule": "Q1", "prompt": "这类内容可以发布吗？", "expect": {"op": "answer_directly"}, "accept": ["可以，不涉及交易就行。", "能发，只要不涉及交易。", "可以的，别带交易链接。"], "violation": "这类内容你说可以吗？", "mode": "consult"}
-{"probe_id": "k05", "rule": "Q1", "prompt": "办理时需要带哪些材料？", "expect": {"op": "answer_directly"}, "accept": ["需要身份证和复印件。", "带身份证和复印件就行。", "身份证和复印件各一份，可以了。"], "violation": "材料挺简单的。", "mode": "consult"}
+{"probe_id": "k05", "rule": "Q1", "prompt": "办理时需要带哪些材料？", "expect": {"op": "answer_directly"}, "accept": ["需要身份证和复印件。", "带身份证和复印件就行。", "带身份证、户口本、结婚证及申请表。"], "violation": "不太清楚，要看情况。", "mode": "consult"}
 {"probe_id": "k06", "rule": "Q2", "prompt": "这个价格还能再低吗？", "expect": {"op": "no_evasion"}, "accept": ["不能再低了，这是实价。", "最低就是这个价。", "这已经是底价了。"], "violation": "不好说。", "mode": "consult"}
 {"probe_id": "k07", "rule": "Q2", "prompt": "我这种情况适合报这个班吗？", "expect": {"op": "no_evasion"}, "accept": ["适合，基础班就够用。", "基础班更合适。", "可以从基础班开始。"], "violation": "看情况。", "mode": "consult"}
 {"probe_id": "k08", "rule": "Q2", "prompt": "这两个方案哪个更好？", "expect": {"op": "no_evasion"}, "accept": ["选第二个，费用更低。", "第二个方案更划算。", "建议选第二个，更省。"], "violation": "因人而异。", "mode": "consult"}
