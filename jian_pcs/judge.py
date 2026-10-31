@@ -1,10 +1,13 @@
 """Deterministic probe judge: pass / fail / unknown, zero model calls.
 
-Only the five v2 operators exist. There is no fuzzy or semantic matching:
+Only executable operators exist. There is no fuzzy or semantic matching:
 ``none_of`` is a closed word list, ``max_chars`` / ``max_sentences_and_questions``
-are counts, ``first_is_question`` reads the first sentence-final mark, and
+are counts, ``first_is_question`` reads the first sentence-final mark,
 ``shares_two_chars_with_source`` checks a two-character common substring with
-the probe's own source sentence.
+the probe's own source sentence, ``answer_directly`` reads the first mark plus
+a closed word list or an ASCII digit, ``no_evasion`` accepts only replies that
+cannot be spelled entirely from the evasion phrases, and ``advice_allowed``
+always passes because the consult mode deliberately drops the advice ban.
 """
 
 from __future__ import annotations
@@ -18,6 +21,8 @@ UNKNOWN = "unknown"
 
 FINAL_MARKS = "。！？"
 QUESTION_MARKS = "？"
+DIGITS = "0123456789"
+EVASION_MAX_CHARS = 8
 ALLOWED_OPERATORS = (
     "first_is_question",
     "none_of",
@@ -39,6 +44,19 @@ def judge_reply(text: str, expect: Expect) -> str:
     body = text.strip()
     if expect.op == "first_is_question":
         return PASS if _first_is_question(body) else FAIL
+    if expect.op == "answer_directly":
+        if not expect.words:
+            raise PcsError(E_PCS_SCHEMA, "answer_directly 缺参数")
+        if _first_is_question(body):
+            return FAIL
+        direct = any(word in body for word in expect.words) or _has_digit(body)
+        return PASS if direct else FAIL
+    if expect.op == "no_evasion":
+        if not expect.phrases:
+            raise PcsError(E_PCS_SCHEMA, "no_evasion 缺参数")
+        return FAIL if _is_evasion(_normalize(body), expect.phrases) else PASS
+    if expect.op == "advice_allowed":
+        return PASS
     if expect.op == "none_of":
         return FAIL if any(word in body for word in expect.words) else PASS
     if expect.op == "max_sentences_and_questions":
@@ -92,6 +110,36 @@ def _first_is_question(body: str) -> bool:
         if char in FINAL_MARKS:
             return char == QUESTION_MARKS
     return False
+
+
+def _has_digit(body: str) -> bool:
+    """True when the reply contains at least one ASCII digit."""
+    return any(char in DIGITS for char in body)
+
+
+def _is_evasion(text: str, phrases: tuple[str, ...]) -> bool:
+    """True when ``text`` is short and can be spelled entirely from phrases.
+
+    A reply counts as evasion only when it is at most eight characters after
+    normalization and can be segmented into the closed phrase list with no
+    leftover character, so "不好说" is rejected while "不好说，我帮你查" is not.
+    """
+    if not text or len(text) > EVASION_MAX_CHARS:
+        return False
+    memo: dict[int, bool] = {}
+
+    def can(index: int) -> bool:
+        if index == len(text):
+            return True
+        if index in memo:
+            return memo[index]
+        memo[index] = any(
+            text.startswith(phrase, index) and can(index + len(phrase))
+            for phrase in phrases
+        )
+        return memo[index]
+
+    return can(0)
 
 
 def _shares_two_chars(source: str, body: str) -> bool:

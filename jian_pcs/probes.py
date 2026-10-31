@@ -1,8 +1,9 @@
 """Probe set loading and schema validation for PCS.
 
-Scoring rules come from ``rules_v2.json`` only: each probe names a rule id
-(R1-R6) and carries no limits of its own, except the R5 candidate substrings
-that must be read from the probe's own input.
+Scoring rules come from a rule file: ``rules_v2.json`` for the support mode
+(R1-R6) and ``rules_consult.json`` for the consult mode (Q1-Q5). Each probe
+names a rule id and carries no limits of its own, except the R5 candidate
+substrings that must be read from the probe's own input.
 """
 
 from __future__ import annotations
@@ -18,8 +19,14 @@ DATA_PATH = Path(__file__).resolve().parent / "data" / "probes.jsonl"
 MORE_DATA_PATH = Path(__file__).resolve().parent / "data" / "probes_more.jsonl"
 REAL_DATA_PATH = Path(__file__).resolve().parent / "data" / "probes_real.jsonl"
 HARD_DATA_PATH = Path(__file__).resolve().parent / "data" / "probes_hard.jsonl"
+CONSULT_DATA_PATH = Path(__file__).resolve().parent / "data" / "probes_consult.jsonl"
 RULES_PATH = Path(__file__).resolve().parent / "data" / "rules_v2.json"
+CONSULT_RULES_PATH = Path(__file__).resolve().parent / "data" / "rules_consult.json"
 CALIBRATION_PATH = Path(__file__).resolve().parent / "data" / "calibration.json"
+
+MODE_SUPPORT = "support"
+MODE_CONSULT = "consult"
+MODES = (MODE_SUPPORT, MODE_CONSULT)
 
 
 def _count_probes(path: Path) -> int:
@@ -34,12 +41,14 @@ def _count_probes(path: Path) -> int:
 PROBE_COUNT = _count_probes(DATA_PATH)
 MORE_PROBE_COUNT = _count_probes(MORE_DATA_PATH)
 REAL_PROBE_COUNT = _count_probes(REAL_DATA_PATH)
+CONSULT_PROBE_COUNT = _count_probes(CONSULT_DATA_PATH)
 HARD_PROBE_COUNT = 18
 HARD_KINDS = ("multi_turn", "contradiction", "pressure")
 CALIBRATION_LOW = 0.50
 CALIBRATION_HIGH = 0.90
 RULE_MAX_CHARS = 120
 RULE_IDS = ("R1", "R2", "R3", "R4", "R5", "R6")
+CONSULT_RULE_IDS = ("Q1", "Q2", "Q3", "Q4", "Q5")
 V2_OPERATORS = (
     "first_is_question",
     "none_of",
@@ -47,7 +56,15 @@ V2_OPERATORS = (
     "max_chars",
     "shares_two_chars_with_source",
 )
+CONSULT_OPERATORS = (
+    "answer_directly",
+    "no_evasion",
+    "max_chars",
+    "none_of",
+    "advice_allowed",
+)
 PROBE_FIELDS = ("probe_id", "rule", "prompt", "expect", "accept", "violation")
+PROBE_OPTIONAL_FIELDS = ("mode",)
 HARD_FIELDS = ("probe_id", "kind", "rule", "turns", "expect_final", "accept", "violation")
 EXPECT_FIELDS = ("op", "echo_source")
 TURN_MIN = 2
@@ -71,10 +88,13 @@ class Rule:
     op: str
     human: str
     words: tuple[str, ...] = ()
+    phrases: tuple[str, ...] = ()
     sentences: int | None = None
     questions: int | None = None
     questions_exact: bool = False
     chars: int | None = None
+    scored: bool = True
+    mode: str = MODE_SUPPORT
 
 
 @dataclass(frozen=True)
@@ -89,6 +109,7 @@ class Expect:
 
     op: str
     words: tuple[str, ...] = ()
+    phrases: tuple[str, ...] = ()
     sentences: int | None = None
     questions: int | None = None
     questions_exact: bool = False
@@ -129,6 +150,7 @@ class Expect:
         return cls(
             op=rule.op,
             words=rule.words,
+            phrases=rule.phrases,
             sentences=rule.sentences,
             questions=rule.questions,
             questions_exact=rule.questions_exact,
@@ -155,6 +177,8 @@ class Probe:
     violation: str
     kind: str = "single_turn"
     turns: tuple[str, ...] = ()
+    mode: str = MODE_SUPPORT
+    scored: bool = True
 
 
 def validate_expect(payload: object, rule: Rule) -> None:
@@ -185,15 +209,19 @@ def _rule_arg(payload: dict[str, object], name: str, minimum: int) -> int:
     return value
 
 
-def _parse_rule(data: object, index: int) -> Rule:
+def _parse_rule(data: object, index: int, mode: str) -> Rule:
     if not isinstance(data, dict):
         raise PcsError(E_PCS_SCHEMA, f"第 {index} 条规则不是对象")
     rule_id = _require_text(data, "id")
     text = _require_text(data, "text")
     human = _require_text(data, "human")
     op = _require_text(data, "op")
-    if op not in V2_OPERATORS:
-        raise PcsError(E_PCS_SCHEMA, f"{rule_id} 的算子不在 v2 清单：{op}")
+    allowed_ops = CONSULT_OPERATORS if mode == MODE_CONSULT else V2_OPERATORS
+    if op not in allowed_ops:
+        raise PcsError(E_PCS_SCHEMA, f"{rule_id} 的算子不在 {mode} 清单：{op}")
+    scored = data.get("scored", True)
+    if not isinstance(scored, bool):
+        raise PcsError(E_PCS_SCHEMA, f"{rule_id} 的 scored 必须是布尔")
     args = data.get("args")
     if not isinstance(args, dict):
         raise PcsError(E_PCS_SCHEMA, f"{rule_id} 的 args 必须是对象")
@@ -201,7 +229,20 @@ def _parse_rule(data: object, index: int) -> Rule:
         if set(args) != {"words"}:
             raise PcsError(E_PCS_SCHEMA, f"{rule_id} 的 args 只允许 words")
         words = _string_list(args, "words")
-        return Rule(rule_id, text, op, human, words=words)
+        return Rule(rule_id, text, op, human, words=words, scored=scored, mode=mode)
+    if op == "answer_directly":
+        if set(args) != {"words"}:
+            raise PcsError(E_PCS_SCHEMA, f"{rule_id} 的 args 只允许 words")
+        words = _string_list(args, "words")
+        return Rule(rule_id, text, op, human, words=words, scored=scored, mode=mode)
+    if op == "no_evasion":
+        if set(args) != {"phrases"}:
+            raise PcsError(E_PCS_SCHEMA, f"{rule_id} 的 args 只允许 phrases")
+        phrases = _string_list(args, "phrases")
+        return Rule(
+            rule_id, text, op, human,
+            phrases=phrases, scored=scored, mode=mode,
+        )
     if op == "max_sentences_and_questions":
         allowed = {"sentences", "questions", "questions_exact"}
         if set(args) - allowed or not {"sentences", "questions"} <= set(args):
@@ -217,17 +258,24 @@ def _parse_rule(data: object, index: int) -> Rule:
             sentences=_rule_arg(args, "sentences", 1),
             questions=_rule_arg(args, "questions", 0),
             questions_exact=exact,
+            scored=scored,
+            mode=mode,
         )
     if op == "max_chars":
         if set(args) != {"chars"}:
             raise PcsError(E_PCS_SCHEMA, f"{rule_id} 的 args 只允许 chars")
-        return Rule(rule_id, text, op, human, chars=_rule_arg(args, "chars", 1))
+        return Rule(
+            rule_id, text, op, human,
+            chars=_rule_arg(args, "chars", 1),
+            scored=scored,
+            mode=mode,
+        )
     if args:
         raise PcsError(E_PCS_SCHEMA, f"{rule_id} 不接受参数")
-    return Rule(rule_id, text, op, human)
+    return Rule(rule_id, text, op, human, scored=scored, mode=mode)
 
 
-def _parse_rules(path: Path) -> tuple[Rule, ...]:
+def _parse_rules(path: Path, mode: str) -> tuple[Rule, ...]:
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except OSError as exc:
@@ -238,30 +286,49 @@ def _parse_rules(path: Path) -> tuple[Rule, ...]:
         raise PcsError(E_PCS_SCHEMA, "规则文件必须是对象")
     if payload.get("version") != 2:
         raise PcsError(E_PCS_SCHEMA, "规则文件 version 必须是 2")
+    declared = payload.get("mode")
+    if declared is not None and declared != mode:
+        raise PcsError(E_PCS_SCHEMA, f"规则文件 mode 必须是 {mode}，收到 {declared}")
+    expected = CONSULT_RULE_IDS if mode == MODE_CONSULT else RULE_IDS
     raw = payload.get("rules")
-    if not isinstance(raw, list) or len(raw) != len(RULE_IDS):
-        raise PcsError(E_PCS_SCHEMA, f"规则必须是 {len(RULE_IDS)} 条")
-    rules = tuple(_parse_rule(item, index) for index, item in enumerate(raw, start=1))
+    if not isinstance(raw, list) or len(raw) != len(expected):
+        raise PcsError(E_PCS_SCHEMA, f"规则必须是 {len(expected)} 条")
+    rules = tuple(
+        _parse_rule(item, index, mode) for index, item in enumerate(raw, start=1)
+    )
     ids = tuple(rule.rule_id for rule in rules)
-    if ids != RULE_IDS:
-        raise PcsError(E_PCS_SCHEMA, f"规则 id 必须依次是 {', '.join(RULE_IDS)}")
+    if ids != expected:
+        raise PcsError(E_PCS_SCHEMA, f"规则 id 必须依次是 {', '.join(expected)}")
     return rules
 
 
 @lru_cache(maxsize=1)
 def _default_rules() -> tuple[Rule, ...]:
-    return _parse_rules(RULES_PATH)
+    return _parse_rules(RULES_PATH, MODE_SUPPORT)
+
+
+@lru_cache(maxsize=1)
+def _default_consult_rules() -> tuple[Rule, ...]:
+    return _parse_rules(CONSULT_RULES_PATH, MODE_CONSULT)
 
 
 def load_rules_v2(path: Path | None = None) -> tuple[Rule, ...]:
-    """Return the six executable rules; ``rules_v2.json`` is the only source."""
+    """Return the six support-mode rules; ``rules_v2.json`` is the only source."""
     if path is None:
         return _default_rules()
-    return _parse_rules(Path(path))
+    return _parse_rules(Path(path), MODE_SUPPORT)
 
 
-def _rule_index() -> dict[str, Rule]:
-    return {rule.rule_id: rule for rule in load_rules_v2()}
+def load_consult_rules(path: Path | None = None) -> tuple[Rule, ...]:
+    """Return the five consult-mode rules from ``rules_consult.json``."""
+    if path is None:
+        return _default_consult_rules()
+    return _parse_rules(Path(path), MODE_CONSULT)
+
+
+def _rule_index(mode: str) -> dict[str, Rule]:
+    rules = load_consult_rules() if mode == MODE_CONSULT else load_rules_v2()
+    return {rule.rule_id: rule for rule in rules}
 
 
 def _turn_list(value: object, line_no: int) -> tuple[str, ...]:
@@ -304,25 +371,38 @@ def _accept_list(value: object, line_no: int) -> tuple[str, ...]:
     return tuple(items)
 
 
-def _resolve_rule(rule_id: str, line_no: int) -> Rule:
-    rule = _rule_index().get(rule_id)
+def _resolve_rule(rule_id: str, line_no: int, mode: str) -> Rule:
+    rule = _rule_index(mode).get(rule_id)
     if rule is None:
+        expected = CONSULT_RULE_IDS if mode == MODE_CONSULT else RULE_IDS
         raise PcsError(
-            E_PCS_SCHEMA, f"第 {line_no} 行 rule 必须是 R1-R6，收到 {rule_id}"
+            E_PCS_SCHEMA,
+            f"第 {line_no} 行 rule 必须是 {expected[0]}-{expected[-1]}，收到 {rule_id}",
         )
     return rule
+
+
+def _probe_mode(data: dict[str, object], line_no: int) -> str:
+    """Read the optional ``mode`` field; probes default to the support mode."""
+    value = data.get("mode")
+    if value is None:
+        return MODE_SUPPORT
+    if not isinstance(value, str) or value not in MODES:
+        raise PcsError(E_PCS_SCHEMA, f"第 {line_no} 行 mode 非法：{value}")
+    return value
 
 
 def _parse_single_probe(data: dict[str, object], line_no: int) -> Probe:
     missing = [name for name in PROBE_FIELDS if name not in data]
     if missing:
         raise PcsError(E_PCS_SCHEMA, f"第 {line_no} 行缺字段：{', '.join(missing)}")
-    extra = sorted(set(data) - set(PROBE_FIELDS))
+    extra = sorted(set(data) - set(PROBE_FIELDS) - set(PROBE_OPTIONAL_FIELDS))
     if extra:
         raise PcsError(E_PCS_SCHEMA, f"第 {line_no} 行有未知字段：{', '.join(extra)}")
     probe_id = _require_text(data, "probe_id")
     rule_id = _require_text(data, "rule")
-    rule = _resolve_rule(rule_id, line_no)
+    mode = _probe_mode(data, line_no)
+    rule = _resolve_rule(rule_id, line_no, mode)
     prompt = _require_text(data, "prompt")
     violation = _require_text(data, "violation")
     return Probe(
@@ -332,6 +412,8 @@ def _parse_single_probe(data: dict[str, object], line_no: int) -> Probe:
         expect=Expect.from_payload(data["expect"], rule),
         accept=_accept_list(data["accept"], line_no),
         violation=violation,
+        mode=mode,
+        scored=rule.scored,
     )
 
 
@@ -347,7 +429,7 @@ def _parse_hard_probe(data: dict[str, object], line_no: int) -> Probe:
     if kind not in HARD_KINDS:
         raise PcsError(E_PCS_SCHEMA, f"第 {line_no} 行 kind 非法：{kind}")
     rule_id = _require_text(data, "rule")
-    rule = _resolve_rule(rule_id, line_no)
+    rule = _resolve_rule(rule_id, line_no, MODE_SUPPORT)
     turns = _turn_list(data["turns"], line_no)
     violation = _require_text(data, "violation")
     return Probe(
@@ -359,6 +441,8 @@ def _parse_hard_probe(data: dict[str, object], line_no: int) -> Probe:
         violation=violation,
         kind=kind,
         turns=turns,
+        mode=MODE_SUPPORT,
+        scored=rule.scored,
     )
 
 
@@ -411,6 +495,11 @@ def load_more_probes(path: Path | None = None) -> tuple[Probe, ...]:
 def load_real_probes(path: Path | None = None) -> tuple[Probe, ...]:
     """Load the 20 probes shaped after real conversational input."""
     return _load_file(REAL_DATA_PATH if path is None else Path(path))
+
+
+def load_consult_probes(path: Path | None = None) -> tuple[Probe, ...]:
+    """Load the 20 consult-mode probes (Q1-Q4, five each)."""
+    return _load_file(CONSULT_DATA_PATH if path is None else Path(path))
 
 
 def load_hard_probes(path: Path | None = None) -> tuple[Probe, ...]:

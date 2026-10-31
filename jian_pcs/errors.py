@@ -4,8 +4,9 @@ from __future__ import annotations
 
 E_PCS_IO = "E_PCS_IO"
 E_PCS_SCHEMA = "E_PCS_SCHEMA"
+E_PCS_MODE_MIX = "E_PCS_MODE_MIX"
 
-ALL_CODES = (E_PCS_IO, E_PCS_SCHEMA)
+ALL_CODES = (E_PCS_IO, E_PCS_SCHEMA, E_PCS_MODE_MIX)
 
 
 class PcsError(Exception):

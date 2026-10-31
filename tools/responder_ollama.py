@@ -25,7 +25,15 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from jian_pcs.probes import load_hard_probes, load_probes, load_rules_v2  # noqa: E402
+from jian_pcs.probes import (  # noqa: E402
+    MODE_CONSULT,
+    MODE_SUPPORT,
+    load_consult_probes,
+    load_consult_rules,
+    load_hard_probes,
+    load_probes,
+    load_rules_v2,
+)
 
 ENDPOINT = "http://127.0.0.1:11434/api/generate"
 CHAT_ENDPOINT = "http://127.0.0.1:11434/api/chat"
@@ -110,7 +118,12 @@ def call_chat(
 
 
 def collect(
-    probe_path: Path, model: str, temp_milli: int, seed: int, multi: bool = False
+    probe_path: Path,
+    model: str,
+    temp_milli: int,
+    seed: int,
+    multi: bool = False,
+    mode: str = MODE_SUPPORT,
 ) -> tuple[list[dict[str, object]], list[str]]:
     """Run every probe once; a failed call becomes an unknown, not a lost round.
 
@@ -119,8 +132,14 @@ def collect(
     ``unknown`` and excludes from every denominator. Multi-turn probes replay
     the whole dialogue through /api/chat and keep each turn's reply.
     """
-    probes = load_hard_probes(probe_path) if multi else load_probes(probe_path)
-    rule_text = {rule.rule_id: rule.text for rule in load_rules_v2()}
+    if multi:
+        probes = load_hard_probes(probe_path)
+    elif mode == MODE_CONSULT:
+        probes = load_consult_probes(probe_path)
+    else:
+        probes = load_probes(probe_path)
+    rule_source = load_consult_rules() if mode == MODE_CONSULT else load_rules_v2()
+    rule_text = {rule.rule_id: rule.text for rule in rule_source}
     rules: list[str] = []
     for probe in probes:
         text = rule_text[probe.rule]
@@ -176,6 +195,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--probes", default=None, help="override probe JSONL")
     parser.add_argument(
+        "--mode", choices=(MODE_SUPPORT, MODE_CONSULT), default=MODE_SUPPORT,
+        help="rule set and default probe file to use",
+    )
+    parser.add_argument(
         "--multi", action="store_true",
         help="send turn lists through /api/chat and keep every turn",
     )
@@ -184,11 +207,14 @@ def main(argv: list[str] | None = None) -> int:
         probe_path = Path(args.probes)
     elif args.multi:
         probe_path = ROOT / "jian_pcs" / "data" / "probes_hard.jsonl"
+    elif args.mode == MODE_CONSULT:
+        probe_path = ROOT / "jian_pcs" / "data" / "probes_consult.jsonl"
     else:
         probe_path = ROOT / "jian_pcs" / "data" / "probes.jsonl"
     try:
         records, errors = collect(
-            probe_path, args.model, args.temp_milli, args.seed, args.multi
+            probe_path, args.model, args.temp_milli, args.seed, args.multi,
+            args.mode,
         )
     except Exception as exc:
         sys.stderr.write(f"E_PCS_RESPONDER: {exc}\n")

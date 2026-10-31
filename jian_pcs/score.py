@@ -6,7 +6,7 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-from jian_pcs.errors import E_PCS_IO, E_PCS_SCHEMA, PcsError
+from jian_pcs.errors import E_PCS_IO, E_PCS_MODE_MIX, E_PCS_SCHEMA, PcsError
 from jian_pcs.judge import FAIL, PASS, UNKNOWN, judge_reply
 from jian_pcs.probes import Probe
 
@@ -241,7 +241,19 @@ def compute_pcs(
     ``PCS = A * min(C(a), C(b))``. If ``min(C) < 0.5`` the score is forced to
     zero and flagged ``insufficient_conformance``: two models agreeing while
     both violate the persona is "consistent, not the same person".
+
+    Every probe must share one mode. Mixing support and consult probes raises
+    ``E_PCS_MODE_MIX`` instead of averaging two rule sets into one number.
+    Rules marked ``scored=False`` (the consult ``advice_allowed``) only
+    declare that a restriction is lifted; they are never counted.
     """
+    modes = {probe.mode for probe in probes}
+    if len(modes) > 1:
+        raise PcsError(
+            E_PCS_MODE_MIX,
+            f"跨模式混合计算：{', '.join(sorted(modes))}",
+        )
+    probes = tuple(probe for probe in probes if probe.scored)
     verdicts_a = _verdicts(probes, replies_a)
     verdicts_b = _verdicts(probes, replies_b)
     score_a = _model_score(verdicts_a, probes)

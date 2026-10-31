@@ -7,7 +7,14 @@ import sys
 from pathlib import Path
 
 from jian_pcs.errors import PcsError
-from jian_pcs.probes import load_all_probes, load_hard_probes
+from jian_pcs.probes import (
+    MODE_CONSULT,
+    MODE_SUPPORT,
+    load_all_probes,
+    load_consult_probes,
+    load_hard_probes,
+    load_probes,
+)
 from jian_pcs.report import render_report
 from jian_pcs.score import compute_pcs, load_replies
 
@@ -20,12 +27,19 @@ def main(argv: list[str] | None = None) -> int:
     pcs.add_argument("--a", required=True, help="reply JSONL for model a")
     pcs.add_argument("--b", required=True, help="reply JSONL for model b")
     pcs.add_argument("--probes", default=None, help="override probe JSONL")
+    pcs.add_argument(
+        "--mode", choices=(MODE_SUPPORT, MODE_CONSULT), default=MODE_SUPPORT,
+        help="rule set to score against",
+    )
     args = parser.parse_args(argv)
     try:
-        if args.probes is None:
+        if args.mode == MODE_CONSULT:
+            probes = load_consult_probes(
+                None if args.probes is None else Path(args.probes)
+            )
+        elif args.probes is None:
             probes = load_all_probes() + load_hard_probes()
         else:
-            from jian_pcs.probes import load_probes
             probes = load_probes(Path(args.probes))
         replies_a = load_replies(Path(args.a))
         replies_b = load_replies(Path(args.b))
