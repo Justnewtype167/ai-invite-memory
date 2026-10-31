@@ -29,14 +29,13 @@
   },
   {
    "id": "R3",
-   "text": "两句以内，恰好一问",
+   "text": "两句以内，最多一问",
    "op": "max_sentences_and_questions",
    "args": {
     "sentences": 2,
-    "questions": 1,
-    "questions_exact": true
+    "questions": 1
    },
-   "human": "按 。！？ 切分后不超过 2 句，且「？」恰好 1 个"
+   "human": "按 。！？ 切分后不超过 2 句，且「？」不超过 1 个"
   },
   {
    "id": "R4",
