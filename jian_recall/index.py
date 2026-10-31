@@ -440,7 +440,7 @@ def _parse_stored(line: str, path: Path) -> StoredEvent:
         raise RecallError(E_RC_IO, f"证据行无法解析：{path}") from exc
     event_id = data.get("id")
     stamp = data.get("t")
-    text = data.get("text")
+    text = __import__("jian.event", fromlist=("event_text",)).event_text(data)
     if not isinstance(event_id, str) or not isinstance(stamp, str) \
             or not isinstance(text, str):
         raise RecallError(E_RC_IO, f"证据字段缺失：{path}")

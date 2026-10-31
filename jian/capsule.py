@@ -11,36 +11,43 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping, Sequence
 
-from .canonical import _encode_string, dumps
+from .canonical import dumps
 from .chain import (
+    BLOBS_DIR,
+    BLOB_RE,
     Segment,
+    _FastPathMiss,
+    _blob_digests,
+    _render_revival,
+    _scan_canonical,
     chain_document,
     chain_matches,
     parse_chain,
-    segment_number,
+    put_blob,
+    read_blob,
     summarize,
     verify_evidence,
 )
 from .errors import (
+    E_BLOB_MISMATCH,
+    E_BLOB_MISSING,
     E_CHAIN_MISSING,
     E_HEADER_MISMATCH,
     E_IO,
     E_NOT_CANONICAL,
     E_SCHEMA,
-    E_TAMPER,
     JianError,
 )
 from .event import (
     GENESIS_PREV,
     SEGMENT_MAX_EVENTS,
     SEG_RE,
-    TEXT_MAX_CHARS,
     Event,
     new_event,
+    parse_event,
     parse_line,
     utc_now,
 )
-
 CAPSULE_SCHEMA = "jian.capsule/1"
 EVIDENCE_DIR = "evidence"
 CHAIN_PATH = "chain.json"
@@ -48,26 +55,7 @@ MANIFEST_PATH = "manifest.json"
 REVIVAL_PATH = "REVIVAL.md"
 
 _EVIDENCE_RE = re.compile(r"^evidence/(seg-[0-9]{4})\.jsonl$")
-_EVENT_HEAD_RE = (
-    r'^\{"ep":"seg-[0-9]{4}",'
-    r'"hash":"[0-9a-f]{64}",'
-    r'"id":"ev_[0-9]{6}",'
-    r'"prev":"[0-9a-f]{64}",'
-    r'"role":"(?:user|assistant)",'
-    r'"t":"[0-9]{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])'
-    r'T(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]Z",'
-    r'"text":'
-)
-_EVENT_TAIL_RE = r',"type":"turn","v":1\}$'
-_EVENT_TAIL_TEXT = ',"type":"turn","v":1}'
-_EVENT_PLAIN_RE = re.compile(_EVENT_HEAD_RE + r'"[^"\\\x00-\x1f]*"' + _EVENT_TAIL_RE)
-_EVENT_ESCAPED_RE = re.compile(
-    _EVENT_HEAD_RE + r'"(?:[^"\\\x00-\x1f]|\\["\\]|\\u00[0-9a-f]{2})*"' + _EVENT_TAIL_RE
-)
 
-
-class _FastPathMiss(Exception):
-    """Signal that canonical fast scanning cannot handle this evidence."""
 _MANIFEST_KEYS = {
     "capsule_version",
     "schema",
@@ -77,6 +65,7 @@ _MANIFEST_KEYS = {
     "files",
     "signature",
 }
+_MANIFEST_KEYS_V2 = _MANIFEST_KEYS | {"format", "blob_count"}
 
 
 @dataclass(frozen=True)
@@ -137,6 +126,8 @@ def append_event(
     chain = _read_chain(store, required=True)
     if chain is None:
         raise JianError(E_IO, "缺少 chain.json")
+    if "blobs" in chain:
+        raise JianError(E_SCHEMA, "该 store 是 v2 格式，不能写入 v1 事件")
     sealed_at = chain["sealed_at"]
     rows = chain["segments"]
     last = rows[-1] if rows else None
@@ -176,13 +167,89 @@ def append_event(
     return event
 
 
+def append_payload_event(
+    store: Path,
+    modality: str,
+    summary: str,
+    payload: bytes,
+    *,
+    role: str | None = None,
+    t: str | None = None,
+    type: str = "turn",
+    kind: str | None = None,
+    target: str | None = None,
+) -> Event:
+    """Append one v2 envelope event; its bytes live in the blob store."""
+    if not store.is_dir() or not (store / EVIDENCE_DIR).is_dir():
+        raise JianError(E_IO, f"存储目录未初始化：{store}")
+    chain = _read_chain(store, required=True)
+    if chain is None:
+        raise JianError(E_IO, "缺少 chain.json")
+    rows = chain["segments"]
+    if "blobs" in chain:
+        blobs = list(chain["blobs"])
+    elif rows:
+        raise JianError(E_SCHEMA, "该 store 是 v1 格式，不能写入 v2 事件")
+    else:
+        blobs = []
+    if not isinstance(payload, (bytes, bytearray)):
+        raise JianError(E_SCHEMA, "payload 必须是 bytes")
+    raw = bytes(payload)
+    digest = _sha256(raw)
+    sealed_at = chain["sealed_at"]
+    last = rows[-1] if rows else None
+    total = sum(int(row["count"]) for row in rows)
+    if sealed_at is not None or last is None or int(last["count"]) >= SEGMENT_MAX_EVENTS:
+        index = len(rows) + 1
+        if index > 9999:
+            raise JianError(E_SCHEMA, "段数量超出 seg-NNNN 范围")
+        episode = f"seg-{index:04d}"
+        new_segment = True
+    else:
+        episode = str(last["seg"])
+        new_segment = False
+    previous = str(last["last"]) if last else GENESIS_PREV
+    stamp = t if t is not None else utc_now()
+    event = new_event(
+        total + 1, episode, stamp, role, None, previous,
+        type=type, kind=kind, target=target,
+        modality=modality, payload=f"sha256:{digest}", summary=summary,
+    )
+    put_blob(store, raw)
+    _append_bytes(store / EVIDENCE_DIR / f"{episode}.jsonl", event.to_line())
+    if new_segment:
+        rows.append({
+            "seg": episode,
+            "count": 1,
+            "first": event.hash,
+            "last": event.hash,
+            "prev_seg": last["seg"] if last else None,
+        })
+    else:
+        last["count"] = int(last["count"]) + 1
+        last["last"] = event.hash
+    if digest not in blobs:
+        blobs.append(digest)
+    blobs.sort()
+    _write_bytes(
+        store / CHAIN_PATH,
+        dumps({"v": 1, "sealed_at": None, "segments": rows, "blobs": blobs}),
+    )
+    _remove_if_exists(store / MANIFEST_PATH)
+    return event
+
+
 def seal_store(store: Path) -> Verification:
     """Freeze the store by writing chain.json (with ``sealed_at``) and manifest.json."""
     evidence = _load_evidence(store)
-    count, head, segments = _verify_evidence(evidence)
+    count, head, segments, events = _verify_evidence(evidence)
+    blobs = _blob_digests(events)
+    if blobs is not None:
+        for digest in blobs:
+            read_blob(store, digest)
     sealed_at = utc_now()
-    _write_bytes(store / CHAIN_PATH, dumps(chain_document(sealed_at, segments)))
-    manifest = _build_manifest(store, sealed_at, head, evidence)
+    _write_bytes(store / CHAIN_PATH, dumps(chain_document(sealed_at, segments, blobs)))
+    manifest = _build_manifest(store, sealed_at, head, evidence, blobs)
     _write_bytes(store / MANIFEST_PATH, dumps(manifest))
     return Verification(count, len(segments), head, "sealed")
 
@@ -193,21 +260,25 @@ def export_capsule(store: Path, out: Path) -> Verification:
     if chain is None or chain["sealed_at"] is None:
         raise JianError(E_SCHEMA, "目录未封存，不能导出")
     evidence = _load_evidence(store)
-    count, head, segments = _verify_evidence(evidence)
-    if not chain_matches(chain, chain["sealed_at"], segments):
+    count, head, segments, events = _verify_evidence(evidence)
+    blobs = _blob_digests(events)
+    if not chain_matches(chain, chain["sealed_at"], segments, blobs):
         raise JianError(E_CHAIN_MISSING, "chain.json 与证据不符")
-    chain_bytes = dumps(chain_document(str(chain["sealed_at"]), segments))
-    revival = _render_revival(count, segments, head, str(chain["sealed_at"]))
+    chain_bytes = dumps(chain_document(str(chain["sealed_at"]), segments, blobs))
+    revival = _render_revival(count, segments, head, str(chain["sealed_at"]), blobs)
     entries: dict[str, bytes] = {
         f"evidence/{name}.jsonl": data for name, data in evidence.items()
     }
+    if blobs is not None:
+        for digest in blobs:
+            entries[f"blobs/{digest}"] = read_blob(store, digest)
     entries[CHAIN_PATH] = chain_bytes
     entries[REVIVAL_PATH] = revival.encode("utf-8")
     files = [
         {"path": name, "sha256": _sha256(data), "bytes": len(data)}
         for name, data in sorted(entries.items())
     ]
-    manifest = {
+    manifest: dict[str, object] = {
         "capsule_version": 1,
         "schema": CAPSULE_SCHEMA,
         "created": str(chain["sealed_at"]),
@@ -216,6 +287,9 @@ def export_capsule(store: Path, out: Path) -> Verification:
         "files": files,
         "signature": None,
     }
+    if blobs is not None:
+        manifest["format"] = 2
+        manifest["blob_count"] = len(blobs)
     entries[MANIFEST_PATH] = dumps(manifest)
     _write_zip(entries, out)
     return Verification(count, len(segments), head, "sealed")
@@ -278,14 +352,18 @@ def inspect_capsule(path: Path) -> CapsuleInfo:
 
 def _verify_store(store: Path) -> Verification:
     evidence = _load_evidence(store)
-    count, head, segments = _verify_evidence(evidence)
+    count, head, segments, events = _verify_evidence(evidence)
+    blobs = _blob_digests(events)
     chain = _read_chain(store, required=False)
     state = "unsealed"
     if chain is not None:
-        if not chain_matches(chain, chain["sealed_at"], segments):
+        if not chain_matches(chain, chain["sealed_at"], segments, blobs):
             raise JianError(E_CHAIN_MISSING, "chain.json 与证据不符")
         if chain["sealed_at"] is not None:
             state = "sealed"
+    if blobs is not None:
+        for digest in blobs:
+            read_blob(store, digest)
     if (store / MANIFEST_PATH).is_file():
         if chain is None:
             raise JianError(
@@ -297,7 +375,8 @@ def _verify_store(store: Path) -> Verification:
             )
         manifest = _decode_manifest(_read_bytes(store / MANIFEST_PATH))
         _check_manifest(
-            manifest, _store_entries(store, evidence), head, str(chain["sealed_at"])
+            manifest, _store_entries(store, evidence, blobs), head,
+            str(chain["sealed_at"]),
         )
     return Verification(count, len(segments), head, state)
 
@@ -317,7 +396,8 @@ def _verify_capsule(path: Path) -> Verification:
             evidence[match.group(1)] = data
     if not evidence:
         raise JianError(E_CHAIN_MISSING, "胶囊缺少证据段")
-    count, head, segments = _verify_evidence(evidence)
+    count, head, segments, events = _verify_evidence(evidence)
+    blobs = _blob_digests(events)
     chain_blob = entries.get(CHAIN_PATH)
     if chain_blob is None:
         raise JianError(E_HEADER_MISMATCH, "胶囊缺少 chain.json")
@@ -325,16 +405,37 @@ def _verify_capsule(path: Path) -> Verification:
     sealed_at = chain["sealed_at"]
     if sealed_at is None:
         raise JianError(E_HEADER_MISMATCH, "胶囊 chain.json 未封存")
-    if not chain_matches(chain, sealed_at, segments):
+    if not chain_matches(chain, sealed_at, segments, blobs):
         raise JianError(E_CHAIN_MISSING, "chain.json 与证据不符")
+    if blobs is not None:
+        _check_capsule_blobs(entries, blobs)
     others = {name: data for name, data in entries.items() if name != MANIFEST_PATH}
     _check_manifest(manifest, others, head, str(sealed_at))
     return Verification(count, len(segments), head, "sealed")
 
 
+def _check_capsule_blobs(entries: Mapping[str, bytes], digests: Sequence[str]) -> None:
+    expected = {f"{BLOBS_DIR}/{digest}" for digest in digests}
+    found = {name for name in entries if BLOB_RE.match(name)}
+    extra = found - expected
+    if extra:
+        raise JianError(E_HEADER_MISMATCH, f"胶囊含未登记的载荷：{sorted(extra)[0]}")
+    for digest in digests:
+        name = f"{BLOBS_DIR}/{digest}"
+        if name not in entries:
+            raise JianError(E_BLOB_MISSING, f"胶囊缺少载荷：{digest}")
+        if _sha256(entries[name]) != digest:
+            raise JianError(E_BLOB_MISMATCH, f"载荷内容与其哈希不符：{digest}")
+
+
 def _check_manifest(manifest: Mapping[str, object], entries: Mapping[str, bytes],
                     head: str, sealed_at: str) -> None:
-    if set(manifest) != _MANIFEST_KEYS:
+    keys = set(manifest)
+    if keys == _MANIFEST_KEYS:
+        capsule_format = 1
+    elif keys == _MANIFEST_KEYS_V2:
+        capsule_format = 2
+    else:
         raise JianError(E_HEADER_MISMATCH, "manifest 字段缺失或多余")
     version = manifest["capsule_version"]
     if isinstance(version, bool) or not isinstance(version, int) or version != 1:
@@ -344,11 +445,19 @@ def _check_manifest(manifest: Mapping[str, object], entries: Mapping[str, bytes]
     if manifest["hash_algo"] != "sha256":
         raise JianError(E_HEADER_MISMATCH, "hash_algo 必须是 sha256")
     if manifest["signature"] is not None:
-        raise JianError(E_HEADER_MISMATCH, "v1 的 signature 必须为 null")
+        raise JianError(E_HEADER_MISMATCH, "signature 必须为 null")
     if manifest["created"] != sealed_at:
         raise JianError(E_HEADER_MISMATCH, "created 必须等于 chain.sealed_at")
     if manifest["head"] != head:
         raise JianError(E_HEADER_MISMATCH, "manifest.head 与末条事件不符")
+    if capsule_format == 2:
+        fmt = manifest["format"]
+        if isinstance(fmt, bool) or not isinstance(fmt, int) or fmt != 2:
+            raise JianError(E_HEADER_MISMATCH, "manifest.format 必须为 2")
+        blob_count = manifest["blob_count"]
+        if isinstance(blob_count, bool) or not isinstance(blob_count, int) \
+                or blob_count < 0:
+            raise JianError(E_HEADER_MISMATCH, "manifest.blob_count 非法")
     files = manifest["files"]
     if not isinstance(files, list):
         raise JianError(E_HEADER_MISMATCH, "manifest.files 必须是数组")
@@ -378,16 +487,23 @@ def _check_manifest(manifest: Mapping[str, object], entries: Mapping[str, bytes]
     extra = set(entries) - set(listed) - {MANIFEST_PATH}
     if extra:
         raise JianError(E_HEADER_MISMATCH, f"胶囊含未登记条目：{sorted(extra)[0]}")
+    blob_paths = [path for path in listed if BLOB_RE.match(path)]
+    if capsule_format == 2:
+        if len(blob_paths) != manifest["blob_count"]:
+            raise JianError(E_HEADER_MISMATCH, "blob_count 与 files 不符")
+    elif blob_paths:
+        raise JianError(E_HEADER_MISMATCH, "v1 manifest 不得包含载荷条目")
 
 
 def _build_manifest(store: Path, created: str, head: str,
-                    evidence: Mapping[str, bytes] | None = None) -> dict[str, object]:
-    entries = _store_entries(store, evidence)
+                    evidence: Mapping[str, bytes] | None = None,
+                    blobs: Sequence[str] | None = None) -> dict[str, object]:
+    entries = _store_entries(store, evidence, blobs)
     files = [
         {"path": name, "sha256": _sha256(data), "bytes": len(data)}
         for name, data in sorted(entries.items())
     ]
-    return {
+    manifest: dict[str, object] = {
         "capsule_version": 1,
         "schema": CAPSULE_SCHEMA,
         "created": created,
@@ -396,101 +512,28 @@ def _build_manifest(store: Path, created: str, head: str,
         "files": files,
         "signature": None,
     }
+    if blobs is not None:
+        manifest["format"] = 2
+        manifest["blob_count"] = len(blobs)
+    return manifest
 
 
 def _verify_evidence(
     evidence: Mapping[str, bytes],
-) -> tuple[int, str, list[Segment]]:
+) -> tuple[int, str, list[Segment], list[Event] | None]:
     try:
-        return _scan_canonical(evidence)
+        count, head, segments = _scan_canonical(evidence)
+        return count, head, segments, None
     except _FastPathMiss:
         parsed = _parse_segments(evidence)
         count, head = verify_evidence(parsed)
-        return count, head, summarize(parsed)
+        segments = summarize(parsed)
+        events = [event for _, rows in parsed for event in rows]
+        return count, head, segments, events
 
 
-def _scan_canonical(evidence: Mapping[str, bytes]) -> tuple[int, str, list[Segment]]:
-    """Verify evidence with a canonical-layout scanner.
-
-    Each line is matched against the fixed canonical event layout; the hashed
-    body is then the line with its ``"hash"`` field sliced out (positions are
-    fixed because every other field has a fixed width). Lines outside that
-    layout raise ``_FastPathMiss`` so the strict parser handles them.
-    """
-    expected_prev = GENESIS_PREV
-    expected_seq = 1
-    expected_index = 1
-    previous_seg: str | None = None
-    segments: list[Segment] = []
-    for name in sorted(evidence):
-        if segment_number(name) != expected_index:
-            raise JianError(E_CHAIN_MISSING, f"缺少段：期望 seg-{expected_index:04d}")
-        try:
-            text = evidence[name].decode("utf-8")
-        except UnicodeDecodeError as exc:
-            raise JianError(E_SCHEMA, f"段 {name} 不是 UTF-8 编码") from exc
-        if not text.endswith("\n"):
-            raise JianError(E_SCHEMA, f"段 {name} 未以换行结尾")
-        lines = text.split("\n")[:-1]
-        if not lines:
-            raise JianError(E_CHAIN_MISSING, f"段 {name} 是空的")
-        if len(lines) > SEGMENT_MAX_EVENTS:
-            raise JianError(E_SCHEMA, f"段 {name} 超过 {SEGMENT_MAX_EVENTS} 条事件")
-        first_hash: str | None = None
-        last_hash = ""
-        for line in lines:
-            match = _EVENT_PLAIN_RE.match(line)
-            plain = match is not None
-            if not plain:
-                match = _EVENT_ESCAPED_RE.match(line)
-            if match is None:
-                raise _FastPathMiss()
-            if "seg-" + line[11:15] != name:
-                raise _FastPathMiss()
-            seq_text = line[100:106]
-            if int(seq_text) != expected_seq:
-                raise JianError(
-                    E_CHAIN_MISSING, f"事件序号不连续：ev_{seq_text}", f"ev_{seq_text}"
-                )
-            prev = line[116:180]
-            if prev != expected_prev:
-                raise JianError(
-                    E_CHAIN_MISSING, f"事件 ev_{seq_text} 的 prev 不接上一条", f"ev_{seq_text}"
-                )
-            text_start = line.find('"text":') + 7
-            raw_text = line[text_start:-len(_EVENT_TAIL_TEXT)]
-            text_body = raw_text[1:-1]
-            if not 1 <= len(text_body) <= TEXT_MAX_CHARS:
-                raise _FastPathMiss()
-            if not (plain and text_body.isascii()):
-                try:
-                    decoded = json.loads(raw_text)
-                except json.JSONDecodeError:
-                    raise _FastPathMiss()
-                if (not isinstance(decoded, str)
-                        or not 1 <= len(decoded) <= TEXT_MAX_CHARS
-                        or _encode_string(decoded) != raw_text):
-                    raise _FastPathMiss()
-            body = line[:17] + line[91:]
-            digest = hashlib.sha256(
-                expected_prev.encode("ascii") + b"\n" + body.encode("utf-8")
-            ).hexdigest()
-            if digest != line[25:89]:
-                raise JianError(
-                    E_TAMPER, f"事件 ev_{seq_text} 内容与 hash 不符", f"ev_{seq_text}"
-                )
-            if first_hash is None:
-                first_hash = digest
-            last_hash = digest
-            expected_prev = digest
-            expected_seq += 1
-        segments.append(Segment(name, len(lines), first_hash or "", last_hash, previous_seg))
-        previous_seg = name
-        expected_index += 1
-    return expected_seq - 1, expected_prev, segments
-
-
-def _store_entries(store: Path, evidence: Mapping[str, bytes] | None = None) -> dict[str, bytes]:
+def _store_entries(store: Path, evidence: Mapping[str, bytes] | None = None,
+                   blobs: Sequence[str] | None = None) -> dict[str, bytes]:
     if evidence is None:
         evidence = _load_evidence(store)
     entries = {f"evidence/{name}.jsonl": data for name, data in evidence.items()}
@@ -498,6 +541,9 @@ def _store_entries(store: Path, evidence: Mapping[str, bytes] | None = None) -> 
         path = store / name
         if path.is_file():
             entries[name] = _read_bytes(path)
+    if blobs is not None:
+        for digest in blobs:
+            entries[f"{BLOBS_DIR}/{digest}"] = read_blob(store, digest)
     return entries
 
 
@@ -583,41 +629,9 @@ def _entry_kind(name: str) -> str | None:
         return "meta"
     if _EVIDENCE_RE.match(name):
         return "evidence"
+    if BLOB_RE.match(name):
+        return "blob"
     return None
-
-
-def _render_revival(count: int, segments: Sequence[Segment], head: str,
-                    sealed_at: str) -> str:
-    lines = [
-        "# Jian capsule revival guide",
-        "",
-        f"events: {count}",
-        f"segments: {len(segments)}",
-        f"head: {head}",
-        f"sealed_at: {sealed_at}",
-        "",
-        "## Event fields",
-        "- v: always 1",
-        "- id: ev_ + six decimal digits, globally increasing",
-        "- ep: segment name such as seg-0001",
-        "- t: UTC timestamp YYYY-MM-DDTHH:MM:SSZ",
-        "- type: turn, feedback, directive, milestone or checkpoint",
-        "- role: user or assistant (turn only; forbidden for other types)",
-        "- kind: praise or correction (feedback), lock/unlock/rule (directive)",
-        "- target: optional event id, feedback only",
-        "- text: 1-8000 characters",
-        "- prev: hash of the previous event; 64 zeros for the first event",
-        "- hash: sha256(prev_ascii + LF + canonical_json_without_hash)",
-        "",
-        "## Revival without this code (five steps, standard library only)",
-        "1. Open memory.aiem with zipfile and read every evidence/seg-*.jsonl entry.",
-        "2. Read each line in file order and parse it with json.loads.",
-        "3. Rebuild the body by dropping hash, sorting keys, using no spaces, UTF-8.",
-        "4. Check sha256(prev.encode('ascii') + b'\\n' + body) == hash and prev == last hash.",
-        "5. Append text in event order; stop on the first mismatch and report that id.",
-        "",
-    ]
-    return "\n".join(lines)
 
 
 def _write_zip(entries: Mapping[str, bytes], out: Path) -> None:

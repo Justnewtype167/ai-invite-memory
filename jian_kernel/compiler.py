@@ -158,7 +158,7 @@ def _parse_event(line: str, path: Path) -> EvidenceEvent:
         raise KernelError(E_KN_IO, f"证据行不是对象：{path}")
     event_id = data.get("id")
     stamp = data.get("t")
-    text = data.get("text")
+    text = __import__("jian.event", fromlist=("event_text",)).event_text(data)
     event_type = data.get("type", "turn")
     kind = data.get("kind")
     target = data.get("target")

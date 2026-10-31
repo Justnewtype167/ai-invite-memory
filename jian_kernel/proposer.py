@@ -510,7 +510,7 @@ def _parse_proposal(line: str, path: Path) -> Proposal:
         raise KernelError(E_KN_IO, f"提案行无法解析：{path}") from exc
     if not isinstance(data, dict):
         raise KernelError(E_KN_IO, f"提案行不是对象：{path}")
-    text = data.get("text")
+    text = __import__("jian.event", fromlist=("event_text",)).event_text(data)
     kind = data.get("kind", "note")
     evidence = data.get("evidence", [])
     if not isinstance(text, str) or not text:

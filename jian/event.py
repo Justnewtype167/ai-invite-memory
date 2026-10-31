@@ -19,6 +19,7 @@ from .errors import E_SCHEMA, JianError
 SEGMENT_MAX_EVENTS = 100
 TEXT_MAX_CHARS = 8000
 PROPOSAL_TEXT_MAX_CHARS = 500
+SUMMARY_MAX_CHARS = 200
 MODEL_MAX_CHARS = 64
 PROMPT_SHA_MAX_CHARS = 64
 QUANT_MAX_CHARS = 32
@@ -35,8 +36,10 @@ HEX_RE = re.compile(r"^[0-9a-f]{64}$")
 PROMPT_SHA_RE = re.compile(r"^[0-9a-fA-F]{1,64}$")
 WEIGHTS_SHA_RE = re.compile(r"^[0-9a-fA-F]{1,64}$")
 TIME_RE = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$")
+PAYLOAD_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
 
 ROLES = ("user", "assistant")
+MODALITIES = ("text", "audio", "vision", "action", "sensor")
 EVENT_TYPES = ("turn", "feedback", "directive", "milestone", "checkpoint", "proposal")
 FIELDS = (
     "v", "id", "ep", "t", "type", "role", "text", "prev", "hash", "kind",
@@ -44,6 +47,9 @@ FIELDS = (
 )
 
 COMMON_FIELDS = frozenset({"v", "id", "ep", "t", "type", "text", "prev", "hash"})
+COMMON_FIELDS_V2 = frozenset({
+    "v", "id", "ep", "t", "type", "modality", "payload", "summary", "prev", "hash",
+})
 _TYPE_FIELDS: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
     "turn": (("role",), ()),
     "feedback": (("kind",), ("target",)),
@@ -82,6 +88,9 @@ class Event:
     weights_sha: str | None = None
     temp_milli: int | None = None
     seed: int | None = None
+    modality: str | None = None
+    payload: str | None = None
+    summary: str | None = None
 
     def body(self) -> dict[str, object]:
         """Return the hashed view of this event; the ``hash`` field is excluded."""
@@ -91,9 +100,14 @@ class Event:
             "ep": self.ep,
             "t": self.t,
             "type": self.type,
-            "text": self.text,
             "prev": self.prev,
         }
+        if self.v == 2:
+            body["modality"] = self.modality
+            body["payload"] = self.payload
+            body["summary"] = self.summary
+        else:
+            body["text"] = self.text
         if self.role is not None:
             body["role"] = self.role
         if self.kind is not None:
@@ -141,6 +155,20 @@ def event_digest(event: Event) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
+def event_text(data: dict[str, object]) -> str:
+    """Return the retrieval text of a decoded event.
+
+    v1 events carry ``text``; v2 events carry ``summary`` only. The accessor
+    is the single entry point so upper layers never read a modality-specific
+    field directly. Events with neither field yield the empty string.
+    """
+    if data.get("v") == 2:
+        value = data.get("summary")
+    else:
+        value = data.get("text")
+    return value if isinstance(value, str) else ""
+
+
 def normalize_time(value: str) -> str:
     """Convert a timezone-aware ISO 8601 string to ``YYYY-MM-DDTHH:MM:SSZ``."""
     if not isinstance(value, str):
@@ -174,7 +202,7 @@ def new_event(
     ep: str,
     stamp: str,
     role: str | None,
-    text: str,
+    text: str | None,
     prev: str,
     *,
     type: str = "turn",
@@ -186,13 +214,33 @@ def new_event(
     weights_sha: str | None = None,
     temp_milli: int | None = None,
     seed: int | None = None,
+    modality: str | None = None,
+    payload: str | None = None,
+    summary: str | None = None,
 ) -> Event:
-    """Build and hash a new event after validating every field."""
-    (event_type, role, kind, target, model, prompt_sha, quant, weights_sha,
-     temp_milli, seed) = _validate_fields(
-        type, role, text, kind, target, model, prompt_sha,
-        quant, weights_sha, temp_milli, seed,
-    )
+    """Build and hash a new event after validating every field.
+
+    Without ``modality``/``payload``/``summary`` the M1 envelope (v1) is
+    written with ``text``. With all three the v2 envelope is written and
+    ``text`` must be None, because v2 forbids it.
+    """
+    if modality is None and payload is None and summary is None:
+        version = 1
+        (event_type, role, kind, target, model, prompt_sha, quant, weights_sha,
+         temp_milli, seed) = _validate_fields(
+            type, role, text, kind, target, model, prompt_sha,
+            quant, weights_sha, temp_milli, seed,
+        )
+    else:
+        if text is not None:
+            raise JianError(E_SCHEMA, "v2 事件禁止 text 字段")
+        version = 2
+        (event_type, role, kind, target, model, prompt_sha, quant, weights_sha,
+         temp_milli, seed) = _validate_typed_fields(
+            type, role, kind, target, model, prompt_sha,
+            quant, weights_sha, temp_milli, seed,
+        )
+        _check_v2_content(modality, payload, summary)
     if not SEG_RE.match(ep):
         raise JianError(E_SCHEMA, f"非法段名：{ep}")
     if not HEX_RE.match(prev):
@@ -200,14 +248,19 @@ def new_event(
     normalized = normalize_time(stamp)
     event_id = format_id(seq)
     body: dict[str, object] = {
-        "v": 1,
+        "v": version,
         "id": event_id,
         "ep": ep,
         "t": normalized,
         "type": event_type,
-        "text": text,
         "prev": prev,
     }
+    if version == 2:
+        body["modality"] = modality
+        body["payload"] = payload
+        body["summary"] = summary
+    else:
+        body["text"] = text
     if role is not None:
         body["role"] = role
     if kind is not None:
@@ -228,8 +281,12 @@ def new_event(
         body["seed"] = seed
     digest = compute_hash(prev, body)
     return Event(
-        1, event_id, ep, normalized, event_type, role, text, prev, digest, kind,
-        target, model, prompt_sha, quant, weights_sha, temp_milli, seed,
+        version, event_id, ep, normalized, event_type, role, text if version == 1 else "",
+        prev, digest, kind, target, model, prompt_sha, quant, weights_sha,
+        temp_milli, seed,
+        modality if version == 2 else None,
+        payload if version == 2 else None,
+        summary if version == 2 else None,
     )
 
 
@@ -241,15 +298,18 @@ def parse_event(data: object) -> Event:
     if not isinstance(event_type, str) or event_type not in EVENT_TYPES:
         raise JianError(E_SCHEMA, f"未知事件类型：{event_type}")
     required, optional = _TYPE_FIELDS[event_type]
-    allowed = COMMON_FIELDS | set(required) | set(optional)
-    if not set(data) <= allowed or not COMMON_FIELDS <= set(data):
+    version = data.get("v")
+    if isinstance(version, bool) or not isinstance(version, int) or version not in (1, 2):
+        raise JianError(E_SCHEMA, "v 必须为整数 1 或 2")
+    if version == 2 and "text" in data:
+        raise JianError(E_SCHEMA, "v2 事件禁止 text 字段")
+    common = COMMON_FIELDS_V2 if version == 2 else COMMON_FIELDS
+    allowed = common | set(required) | set(optional)
+    if not set(data) <= allowed or not common <= set(data):
         raise JianError(E_SCHEMA, f"{event_type} 事件字段缺失或多余")
     missing = [name for name in required if name not in data]
     if missing:
         raise JianError(E_SCHEMA, f"{event_type} 事件缺少字段 {missing[0]}")
-    version = data["v"]
-    if isinstance(version, bool) or not isinstance(version, int) or version != 1:
-        raise JianError(E_SCHEMA, "v 必须为整数 1")
     event_id = _string_field(data, "id")
     if not ID_RE.match(event_id):
         raise JianError(E_SCHEMA, f"非法事件 id：{event_id}", event_id)
@@ -259,11 +319,26 @@ def parse_event(data: object) -> Event:
     stamp = _string_field(data, "t")
     if not TIME_RE.match(stamp):
         raise JianError(E_SCHEMA, f"事件 {event_id} 的时间格式非法", event_id)
-    text = _string_field(data, "text")
-    if not 1 <= len(text) <= TEXT_MAX_CHARS:
-        raise JianError(E_SCHEMA, f"事件 {event_id} 的 text 长度越界", event_id)
-    if event_type == "proposal" and len(text) > PROPOSAL_TEXT_MAX_CHARS:
-        raise JianError(E_SCHEMA, f"事件 {event_id} 的 text 超过提案上限", event_id)
+    modality: str | None = None
+    payload: str | None = None
+    summary: str | None = None
+    if version == 2:
+        text = ""
+        modality = _string_field(data, "modality")
+        if modality not in MODALITIES:
+            raise JianError(E_SCHEMA, f"事件 {event_id} 的 modality 非法", event_id)
+        payload = _string_field(data, "payload")
+        if not PAYLOAD_RE.match(payload):
+            raise JianError(E_SCHEMA, f"事件 {event_id} 的 payload 非法", event_id)
+        summary = _string_field(data, "summary")
+        if not 1 <= len(summary) <= SUMMARY_MAX_CHARS:
+            raise JianError(E_SCHEMA, f"事件 {event_id} 的 summary 长度越界", event_id)
+    else:
+        text = _string_field(data, "text")
+        if not 1 <= len(text) <= TEXT_MAX_CHARS:
+            raise JianError(E_SCHEMA, f"事件 {event_id} 的 text 长度越界", event_id)
+        if event_type == "proposal" and len(text) > PROPOSAL_TEXT_MAX_CHARS:
+            raise JianError(E_SCHEMA, f"事件 {event_id} 的 text 超过提案上限", event_id)
     prev = _string_field(data, "prev")
     if not HEX_RE.match(prev):
         raise JianError(E_SCHEMA, f"事件 {event_id} 的 prev 非法", event_id)
@@ -284,8 +359,9 @@ def parse_event(data: object) -> Event:
         temp_milli = None
         seed = None
     return Event(
-        1, event_id, segment, stamp, event_type, role, text, prev, digest, kind,
+        version, event_id, segment, stamp, event_type, role, text, prev, digest, kind,
         target, model, prompt_sha, quant, weights_sha, temp_milli, seed,
+        modality, payload, summary,
     )
 
 
@@ -316,10 +392,34 @@ def _validate_fields(
 ]:
     if not isinstance(event_type, str) or event_type not in EVENT_TYPES:
         raise JianError(E_SCHEMA, f"未知事件类型：{event_type}")
-    required, optional = _TYPE_FIELDS[event_type]
     limit = PROPOSAL_TEXT_MAX_CHARS if event_type == "proposal" else TEXT_MAX_CHARS
     if not isinstance(text, str) or not 1 <= len(text) <= limit:
         raise JianError(E_SCHEMA, f"text 长度必须是 1-{limit} 字符")
+    return _validate_typed_fields(
+        event_type, role, kind, target, model, prompt_sha,
+        quant, weights_sha, temp_milli, seed,
+    )
+
+
+def _validate_typed_fields(
+    event_type: Any,
+    role: Any,
+    kind: Any,
+    target: Any,
+    model: Any,
+    prompt_sha: Any,
+    quant: Any,
+    weights_sha: Any,
+    temp_milli: Any,
+    seed: Any,
+) -> tuple[
+    str, str | None, str | None, str | None, str | None, str | None,
+    str | None, str | None, int | None, int | None,
+]:
+    """Validate the type-specific fields shared by both envelope versions."""
+    if not isinstance(event_type, str) or event_type not in EVENT_TYPES:
+        raise JianError(E_SCHEMA, f"未知事件类型：{event_type}")
+    required, optional = _TYPE_FIELDS[event_type]
     for name, value in (
         ("role", role), ("kind", kind), ("target", target),
         ("model", model), ("prompt_sha", prompt_sha),
@@ -341,6 +441,16 @@ def _validate_fields(
     if target is not None and not ID_RE.match(str(target)):
         raise JianError(E_SCHEMA, f"target 必须是事件 id：{target}")
     return event_type, role, kind, target, None, None, None, None, None, None
+
+
+def _check_v2_content(modality: Any, payload: Any, summary: Any) -> None:
+    """Validate the three required fields of the v2 envelope."""
+    if not isinstance(modality, str) or modality not in MODALITIES:
+        raise JianError(E_SCHEMA, f"modality 非法：{modality}")
+    if not isinstance(payload, str) or not PAYLOAD_RE.match(payload):
+        raise JianError(E_SCHEMA, "payload 必须是 sha256:<64 位小写十六进制>")
+    if not isinstance(summary, str) or not 1 <= len(summary) <= SUMMARY_MAX_CHARS:
+        raise JianError(E_SCHEMA, f"summary 长度必须是 1-{SUMMARY_MAX_CHARS} 字符")
 
 
 def _checked_proposal_fields(
