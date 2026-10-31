@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="430" viewBox="0 0 760 430">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<defs><marker id="ah" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#333"/></marker></defs>
+<text x="380.0" y="30" font-family="Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="16" text-anchor="middle" fill="#111" font-weight="bold">图 1  三层架构与单向派生</text>
+<rect x="280" y="55" width="200" height="46" rx="6" fill="#eef5ff" stroke="#333"/>
+<text x="380.0" y="72.0" font-family="Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="14" text-anchor="middle" fill="#111" font-weight="bold">对话 / 模型输出</text>
+<text x="380.0" y="92.0" font-family="Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="11" text-anchor="middle" fill="#555" font-weight="normal">append only</text>
+<line x1="380" y1="101" x2="380" y2="131" stroke="#333" stroke-width="1.6" marker-end="url(#ah)"/>
+<rect x="200" y="131" width="360" height="64" rx="6" fill="#e8f5e9" stroke="#333"/>
+<text x="380.0" y="157.0" font-family="Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="14" text-anchor="middle" fill="#111" font-weight="bold">L0 证据层</text>
+<text x="380.0" y="177.0" font-family="Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="11" text-anchor="middle" fill="#555" font-weight="normal">追加写入 · 哈希链 · 可导出胶囊 · 不可改</text>
+<line x1="380" y1="195" x2="380" y2="225" stroke="#333" stroke-width="1.6" marker-end="url(#ah)"/>
+<text x="386.0" y="204.0" font-family="Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="11" text-anchor="start" fill="#333" font-weight="normal">derive(L0) 纯函数</text>
+<rect x="200" y="225" width="360" height="64" rx="6" fill="#fff8e1" stroke="#333"/>
+<text x="380.0" y="251.0" font-family="Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="14" text-anchor="middle" fill="#111" font-weight="bold">L1 内核层</text>
+<text x="380.0" y="271.0" font-family="Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="11" text-anchor="middle" fill="#555" font-weight="normal">canon / state / graph / self → kid</text>
+<line x1="380" y1="289" x2="380" y2="319" stroke="#333" stroke-width="1.6" marker-end="url(#ah)"/>
+<rect x="200" y="319" width="360" height="54" rx="6" fill="#f3e5f5" stroke="#333"/>
+<text x="380.0" y="340.0" font-family="Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="14" text-anchor="middle" fill="#111" font-weight="bold">L2 投影层</text>
+<text x="380.0" y="360.0" font-family="Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="11" text-anchor="middle" fill="#555" font-weight="normal">每模型 / 每载体适配（本文不展开）</text>
+<text x="60" y="180" font-family="Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="12" text-anchor="start" fill="#2e7d32" font-weight="bold">证据</text>
+<line x1="200" y1="160" x2="120" y2="160" stroke="#2e7d32" stroke-width="1.6" marker-end="url(#ah)"/>
+<text x="60" y="250" font-family="Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="12" text-anchor="start" fill="#2e7d32" font-weight="bold">证据</text>
+<text x="60" y="268" font-family="Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="11" text-anchor="start" fill="#666" font-weight="normal">只读</text>
+<line x1="200" y1="350" x2="120" y2="350" stroke="#8e24aa" stroke-width="1.6" marker-end="url(#ah)"/>
+<text x="600" y="380" font-family="Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="11" text-anchor="start" fill="#666" font-weight="normal">提案不直接改人格：</text>
+<text x="600" y="396" font-family="Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="11" text-anchor="start" fill="#666" font-weight="normal">先进 L0，再由规则提交</text>
+</svg>
