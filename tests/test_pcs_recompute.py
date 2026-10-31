@@ -15,8 +15,8 @@ from jian_pcs.score import compute_pcs, load_replies
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 QWEN_MAIN = ROOT / "pcs_out" / "replies_qwen3.5_9b_80.jsonl"
 GLM_MAIN = ROOT / "pcs_out" / "replies_glm4_9b_80.jsonl"
-QWEN_HARD = ROOT / "m7_qwen.jsonl"
-GLM_HARD = ROOT / "m7_glm.jsonl"
+QWEN_HARD = ROOT / "experiments" / "replies" / "m7_qwen.jsonl"
+GLM_HARD = ROOT / "experiments" / "replies" / "m7_glm.jsonl"
 
 
 class TestPcsRecompute(unittest.TestCase):

@@ -1,14 +1,78 @@
 # 竹简 / Jian
 
-面向 AI 伴侣的本地记忆内核。**当前阶段：M1（容器与信任根）。**
+面向 AI 伴侣的**本地记忆内核与人格层**。
 
-- 规格：[docs/TASK-01-capsule.md](docs/TASK-01-capsule.md)（唯一权威）
-- 约束：[docs/SPEC-CONSTRAINTS.md](docs/SPEC-CONSTRAINTS.md)
-- 规则：[AGENTS.md](AGENTS.md)
+> 人格不活在权重里，而活在一份可以重算的产物 + 一组可以验证的测试里。
+
+**当前状态**：`v1.0.0-paper` · 240 个测试全绿 · 11 个里程碑 · 0 第三方依赖
+
+论文：[中文](docs/PAPER.md) · [English](docs/PAPER-en.md)
+
+---
+
+## 它能回答什么问题
+
+| 问题 | 机制 | 实测 |
+|---|---|---|
+| 记忆有没有被改过？ | 追加链 + 哈希链 | 改 1 字节即被发现 |
+| 换设备还能用吗？ | 单一胶囊文件，人格到岸重算 | 设备 B 重算 kid 相同 |
+| 换模型还是同一个人吗？ | 内容身份 kid + 行为身份 PCS | PCS = 0.649（95% CI [0.522, 0.754]） |
+| 上下文会很贵吗？ | 预算装配（4k 上限） | 20 万条记忆 p50 13 ms |
+| 中文能零模型解析吗？ | 规则层（称谓 / 时间 / 俚语） | 留出集 14/14 |
+
+## 一条命令跑起来
 
 ```bash
-python -m unittest discover -s tests -v
+python -m unittest discover -s tests -v     # 240 tests，期望全绿
 ```
 
-零第三方依赖，Python 3.11+。
+零第三方依赖，Python 3.11+。核心库不联网、不调模型——网络与模型调用只出现在 `tools/`。
 
+## 目录
+
+```
+jian/          证据层：容器、哈希链、字节可复现
+jian_cn/       中文规则层：称谓图、相对时间、梗时效、繁简
+jian_recall/   检索与预算装配：FTS5 + 二元切分 + 4k 上限
+jian_kernel/   人格内核：确定性编译、门控、历史、提案
+jian_pcs/      行为身份：PCS、可执行规则、坍塌深度
+tools/         外部适配器（网络只在这里）：提案器、回复采集、矩阵实验
+experiments/   实验产物：回复集与矩阵结果
+docs/          规格、验收记录、结果、论文
+```
+
+## 关键文档
+
+| 文档 | 内容 |
+|---|---|
+| [docs/PAPER.md](docs/PAPER.md) | 论文正文（中文） |
+| [docs/PAPER-en.md](docs/PAPER-en.md) | 论文正文（English） |
+| [docs/RESULTS-rater-comparison.md](docs/RESULTS-rater-comparison.md) | 模型 vs 真人：同一套规则的通过率 |
+| [docs/RESULTS-judge-validity.md](docs/RESULTS-judge-validity.md) | 判定器效度：κ 的四轮递进 |
+| [docs/RESULTS-variance.md](docs/RESULTS-variance.md) | 方差与分辨力：采样下 PCS 测不出差异 |
+| [docs/SPEC-CHECKLIST.md](docs/SPEC-CHECKLIST.md) | 规格自检清单 |
+| [AGENTS.md](AGENTS.md) | 开发约束与里程碑状态 |
+| [CHANGELOG.md](CHANGELOG.md) | 11 个里程碑的来龙去脉 |
+
+## 证据一览
+
+```
+内容身份   跨进程 kid 一致 / 删内核重建一致 / 换设备一致 / 提案删了 kid 回来
+行为身份   PCS = A × min(C)；80 条可执行规则探针；判定器 κ = 0.690（60 条留出集）
+人类基线   191 条真人发言：R1 通过 10%、R5 通过 98% —— 规则是对 AI 的规定，不是人类行为描述
+多轮坍塌   R = 0.389 / 0.556；D = 0.657 / 0.635
+性能       20 万事件建索引 12 s；装配 p50 13 ms
+```
+
+## 明确没有的东西
+
+- 没有真实长期用户数据（全部为合成场景 + 模型生成）
+- 没有跨月回放
+- 没有与其他记忆系统的横向实验
+- 结论只适用于情绪支持模式（咨询模式规则集未做）
+
+这些限制在论文 §7.2 逐条列出。
+
+## 许可
+
+待定。

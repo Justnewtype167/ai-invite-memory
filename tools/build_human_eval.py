@@ -66,7 +66,7 @@ def gather() -> list[dict[str, object]]:
     for source, probes, path in (
         ("qwen_base", base, ROOT / "pcs_out" / "replies_qwen3.5_9b.jsonl"),
         ("glm_base", base, ROOT / "pcs_out" / "replies_glm4_9b.jsonl"),
-        ("qwen_hi", base, ROOT / "c.jsonl"),
+        ("qwen_hi", base, ROOT / "experiments" / "replies" / "c.jsonl"),
     ):
         if not path.exists():
             continue
@@ -88,7 +88,7 @@ def gather() -> list[dict[str, object]]:
                 "echo_source": probe.expect.echo_source,
             })
 
-    hard_path = ROOT / "m7_qwen.jsonl"
+    hard_path = ROOT / "experiments" / "replies" / "m7_qwen.jsonl"
     if hard_path.exists():
         replies = load_replies(hard_path)
         for probe in hard:
