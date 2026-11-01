@@ -69,13 +69,7 @@ EDITS = {
             ('    text = event_text(data)\n', '    text = data.get("text")\n'),
         ],
     },
-    "jian_kernel/compiler.py": {
-        "added": ["from jian.capsule import event_full_text\n"],
-        "replaced": [
-            ('    text = event_full_text(path.parent.parent, data)\n',
-             '    text = data.get("text")\n'),
-        ],
-    },
+
     "jian_kernel/proposer.py": {
         "added": ["    event_text,\n"],
         "replaced": [
@@ -84,9 +78,13 @@ EDITS = {
     },
 }
 
-# M12 adds two kernel modules and touches three kernel files for the snapshot
-# API. Their current bytes are pinned here; any later drift fails N5 and must
-# be declared again. The M10 line-level restore check below stays unchanged.
+# M12 adds two kernel modules and touches kernel files for the snapshot API;
+# M12.1 adds verify-on-CLI. Their current bytes are pinned here; any later
+# drift fails N5 and must be declared again.
+#
+# compiler.py moved here from EDITS: it now carries two milestones of edits
+# (M10 full-text reads, M12.1 verify_evidence), so the line-level restore
+# check no longer reproduces the M10 baseline.
 M12_ADDITIONS = {
     "jian_kernel/incremental.py": (
         "219bad591635174a9c77509d7188ea2fae0a836fd403e66e2539a17ad1bd6a5d"
@@ -99,11 +97,15 @@ M12_EDITS = {
     "jian_kernel/__init__.py": (
         "e6b96cf565c8efafa86fc5812a7a3dc05c3eb31608219607de8eb8cc7005c4a5"
     ),
+    # M12.1: --no-verify flag, verify_evidence, E_KN_TAMPER
     "jian_kernel/cli.py": (
-        "ddab7b658f1476fe8d210fac3ff7463f5c9e217c670b4246367745996c4443ed"
+        "7e9c3091597e20287060416e498b969456c2742c2726fc2ff34d4390d101fc5f"
+    ),
+    "jian_kernel/compiler.py": (
+        "b8117d33e59a3d21f5787f8fbc0c7480f7f5057aeafac03b428cea036f89bb9e"
     ),
     "jian_kernel/errors.py": (
-        "77082b8366b58a42987e730093876b03de2044c3ed8efefdd6e7baf64df54f4d"
+        "de6ffacb29752d23d4eae28931f80ca8fd1eacde11dc47ddef3f1a6ee0f4274c"
     ),
 }
 
@@ -368,9 +370,12 @@ class TestUpperLayersTouchLimit(unittest.TestCase):
                 [name for name in changed if name.startswith(package + "/")],
                 f"{package} must stay byte-identical",
             )
+        # M10 touched three files with one functional line each; M12.1 added
+        # the verify gate, which moved compiler.py to the whole-file pin above.
         self.assertEqual(len(changed), 6)
         replaced = sum(len(entry["replaced"]) for entry in EDITS.values())
-        self.assertEqual(replaced, 3, "exactly three M10 functional line edits")
+        self.assertEqual(replaced, 2, "two remaining M10 line-level edits")
+        self.assertIn("jian_kernel/compiler.py", M12_EDITS, "compiler.py must stay pinned")
 
 
 class TestSummaryOnlyRetrieval(unittest.TestCase):

@@ -105,7 +105,12 @@ class TestHistory(unittest.TestCase):
         self.assertEqual(cli.main(["diff", str(self.root), "--a", "1",
                                    "--b", str(version)]), 0)
         self.assertEqual(cli.main(["history", str(self.root)]), 0)
-        self.assertEqual(cli.main(["compile", str(self.root), "--now", NOW]), 0)
+        # The fixture store is synthetic (hand-built bodies), so it is not
+        # chain-valid; the CLI verifies by default, so this one uses the
+        # explicit fast path. Real stores come from append_event.
+        self.assertEqual(
+            cli.main(["compile", str(self.root), "--now", NOW, "--no-verify"]), 0
+        )
 
 
 if __name__ == "__main__":

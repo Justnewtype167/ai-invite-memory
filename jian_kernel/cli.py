@@ -48,10 +48,10 @@ def main(argv: list[str] | None = None) -> int:
                 allow_fallback=args.allow_fallback,
                 force_fallback=failed > 0,
             )
-            compile_one = (
-                compile_kernel_incremental if args.incremental else compile_kernel
-            )
-            kernel = compile_one(store, policy)
+            if args.incremental:
+                kernel = compile_kernel_incremental(store, policy)
+            else:
+                kernel = compile_kernel(store, policy, verify=not args.no_verify)
             _emit({
                 "canon": len(kernel.canon),
                 "head": kernel.head,
@@ -127,6 +127,7 @@ def _parser() -> argparse.ArgumentParser:
     compile_command.add_argument("--proposer-timeout", type=int, default=200)
     compile_command.add_argument("--strict-proposals", action="store_true")
     compile_command.add_argument("--incremental", action="store_true")
+    compile_command.add_argument("--no-verify", action="store_true")
     record = commands.add_parser("record")
     record.add_argument("store")
     record.add_argument("--now", default=None)

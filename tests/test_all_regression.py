@@ -124,11 +124,11 @@ ALLOWED_CHANGES = {
     "jian/capsule.py": "M10: payload API, v2 seal/export/import, event_full_text",
     "jian/errors.py": "M10: E_BLOB_MISSING and E_BLOB_MISMATCH",
     "jian_recall/index.py": "M10: retrieval reads summary through event_text",
-    "jian_kernel/compiler.py": "M10: identity layer reads full text through event_full_text",
+    "jian_kernel/compiler.py": "M10: full text via event_full_text; M12.1: verify_evidence and --no-verify",
     "jian_kernel/proposer.py": "M10: proposal text goes through event_text",
-    "jian_kernel/errors.py": "M12: E_KN_SNAPSHOT and E_KN_DRIFT",
+    "jian_kernel/errors.py": "M12: E_KN_SNAPSHOT, E_KN_DRIFT; M12.1: E_KN_TAMPER",
     "jian_kernel/__init__.py": "M12: export the incremental and reconcile API",
-    "jian_kernel/cli.py": "M12: compile --incremental and the reconcile command",
+    "jian_kernel/cli.py": "M12: compile --incremental and reconcile; M12.1: --no-verify",
 }
 
 

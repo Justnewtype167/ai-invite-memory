@@ -12,7 +12,7 @@
 
 | Question | Mechanism | Measured |
 |---|---|---|
-| Has this memory been tampered with? | append-only chain + hash chain | one changed byte is **detectable** (`jian verify`) |
+| Has this memory been tampered with? | append-only chain + hash chain | one changed byte is caught; `jian-kernel compile` verifies the chain by default (`E_KN_TAMPER`) |
 | Can it move to another device? | one capsule file, persona recomputed on arrival | identical `kid` on device B |
 | Is it still the same person after a model swap? | content identity `kid` + behavioral identity PCS | PCS = 0.649 (95% CI [0.522, 0.754]); PCS is an **evaluation result**, not carried in the capsule |
 | Does context get expensive? | budgeted assembly (4k cap) | 200k memories, p50 13 ms |
