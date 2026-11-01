@@ -68,7 +68,7 @@ kid = hash(self_md, canon_md, state, graph, origin, models)
 | 约束 | 值 |
 |---|---|
 | 同时生效上限 | **5 条** |
-| 冲突 | 必须显式解决，并在 `self.md` 写明哪条胜出 |
+| 冲突 | 必须显式解决，并写进 **`PersonaView.self_md`**（L2 渲染）；**内核 `self.md` 一字不许动** |
 | 高风险 | 非允许模式下一律不生效（毒舌禁入咨询/客诉） |
 
 ---
@@ -143,6 +143,10 @@ kid = hash(self_md, canon_md, state, graph, origin, models)
 没有证据的字段留空，而不是猜。
 
 ### 4.3 三条硬规则
+
+> **更正（2026-11-02）**：原文写「写进 `self.md`」有歧义。
+> 内核的 `self.md` 是 kid 的输入之一，写进去就等于改身份。
+> 因此一切与特质/风格/用户卡有关的文字，只许出现在 `PersonaView.self_md`（L2 渲染）。
 
 ```
 ① 可重算：同一份证据 → 同一张卡（字节级相同）
