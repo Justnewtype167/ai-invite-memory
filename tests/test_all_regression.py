@@ -115,13 +115,15 @@ FROZEN_DIGESTS = {
 ALLOWED_ADDITIONS = {
     "jian_kernel/incremental.py": "M12: incremental compile and reconcile",
     "jian_kernel/snapshot.py": "M12: throwaway snapshot payload and digest",
+    "jian_projection/emit.py": "M13: the only emit path, gate before sink",
+    "jian_projection/gate.py": "M13: pure actuation gate over trace and kernel",
 }
 
 # Every deviation from the baseline must be declared here with a reason.
 ALLOWED_CHANGES = {
-    "jian/event.py": "M10: envelope v2 fields and the event_text accessor",
-    "jian/chain.py": "M10: optional chain blobs, blob store, fast scan, revival v2",
-    "jian/capsule.py": "M10: payload API, v2 seal/export/import, event_full_text",
+    "jian/event.py": "M10: envelope v2 fields and event_text; M13: refusal type and trace",
+    "jian/chain.py": "M10: optional chain blobs, blob store, fast scan, revival v2; M13: segment slot helpers",
+    "jian/capsule.py": "M10: payload API, v2 seal/export/import, event_full_text; M13: append_refusal",
     "jian/errors.py": "M10: E_BLOB_MISSING and E_BLOB_MISMATCH",
     "jian_recall/index.py": "M10: retrieval reads summary through event_text",
     "jian_kernel/compiler.py": "M10: full text via event_full_text; M12.1: verify_evidence and --no-verify",
@@ -129,6 +131,8 @@ ALLOWED_CHANGES = {
     "jian_kernel/errors.py": "M12: E_KN_SNAPSHOT, E_KN_DRIFT; M12.1: E_KN_TAMPER",
     "jian_kernel/__init__.py": "M12: export the incremental and reconcile API",
     "jian_kernel/cli.py": "M12: compile --incremental and reconcile; M12.1: --no-verify",
+    "jian_projection/__init__.py": "M13: export gate and emit",
+    "jian_projection/errors.py": "M13: E_PR_GATE_RULES and E_PR_GATE_SCOPE",
 }
 
 

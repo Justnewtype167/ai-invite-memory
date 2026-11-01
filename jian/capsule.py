@@ -18,6 +18,8 @@ from .chain import (
     _FastPathMiss,
     _blob_digests,
     _check_capsule_blobs,
+    _commit_segment,
+    _open_segment,
     _read_bytes,
     _render_revival,
     _scan_canonical,
@@ -112,6 +114,7 @@ def append_event(
     type: str | None = None,
     kind: str | None = None,
     target: str | None = None,
+    trace: str | None = None,
 ) -> Event:
     """Append one event to the open segment and reset ``sealed_at``.
 
@@ -120,7 +123,8 @@ def append_event(
 
     The M1 call form ``append_event(store, role, text, t)`` still works and
     writes a ``turn``. The typed form passes ``type`` (and ``kind``/
-    ``target`` where the type allows them) as keywords.
+    ``target`` where the type allows them) as keywords. ``trace`` is only
+    legal on ``refusal`` events.
     """
     if not store.is_dir() or not (store / EVIDENCE_DIR).is_dir():
         raise JianError(E_IO, f"存储目录未初始化：{store}")
@@ -129,43 +133,40 @@ def append_event(
         raise JianError(E_IO, "缺少 chain.json")
     if "blobs" in chain:
         raise JianError(E_SCHEMA, "该 store 是 v2 格式，不能写入 v1 事件")
-    sealed_at = chain["sealed_at"]
-    rows = chain["segments"]
-    last = rows[-1] if rows else None
-    total = sum(int(row["count"]) for row in rows)
-    if sealed_at is not None or last is None or int(last["count"]) >= SEGMENT_MAX_EVENTS:
-        index = len(rows) + 1
-        if index > 9999:
-            raise JianError(E_SCHEMA, "段数量超出 seg-NNNN 范围")
-        episode = f"seg-{index:04d}"
-        new_segment = True
-    else:
-        episode = str(last["seg"])
-        new_segment = False
-    previous = str(last["last"]) if last else GENESIS_PREV
+    rows, last, episode, new_segment, seq, previous = _open_segment(chain)
     stamp = t if t is not None else utc_now()
     if text is None:
         raise JianError(E_SCHEMA, "text 不能为空")
     event_type = type if type is not None else "turn"
     event = new_event(
-        total + 1, episode, stamp, role, text, previous,
-        type=event_type, kind=kind, target=target,
+        seq, episode, stamp, role, text, previous,
+        type=event_type, kind=kind, target=target, trace=trace,
     )
     _append_bytes(store / EVIDENCE_DIR / f"{episode}.jsonl", event.to_line())
-    if new_segment:
-        rows.append({
-            "seg": episode,
-            "count": 1,
-            "first": event.hash,
-            "last": event.hash,
-            "prev_seg": last["seg"] if last else None,
-        })
-    else:
-        last["count"] = int(last["count"]) + 1
-        last["last"] = event.hash
+    _commit_segment(rows, last, episode, new_segment, event.hash)
     _write_bytes(store / CHAIN_PATH, dumps({"v": 1, "sealed_at": None, "segments": rows}))
     _remove_if_exists(store / MANIFEST_PATH)
     return event
+
+
+def append_refusal(
+    store: Path,
+    target: str,
+    text: str,
+    trace: str,
+    t: str | None = None,
+) -> Event:
+    """Append one ``refusal`` event: a gate rule stopped a trace from being emitted.
+
+    ``target`` is ``text`` / ``action`` / ``both``, ``text`` is the name of the
+    matching gate rule, and ``trace`` is ``sha256:<hex>`` of the refused
+    trace's canonical bytes. A refusal joins the hash chain like any other
+    event, because the refusal itself is evidence.
+    """
+    return append_event(
+        store, t=t, type="refusal", kind="gate", target=target, text=text,
+        trace=trace,
+    )
 
 
 def append_payload_event(
@@ -197,38 +198,16 @@ def append_payload_event(
         raise JianError(E_SCHEMA, "payload 必须是 bytes")
     raw = bytes(payload)
     digest = _sha256(raw)
-    sealed_at = chain["sealed_at"]
-    last = rows[-1] if rows else None
-    total = sum(int(row["count"]) for row in rows)
-    if sealed_at is not None or last is None or int(last["count"]) >= SEGMENT_MAX_EVENTS:
-        index = len(rows) + 1
-        if index > 9999:
-            raise JianError(E_SCHEMA, "段数量超出 seg-NNNN 范围")
-        episode = f"seg-{index:04d}"
-        new_segment = True
-    else:
-        episode = str(last["seg"])
-        new_segment = False
-    previous = str(last["last"]) if last else GENESIS_PREV
+    rows, last, episode, new_segment, seq, previous = _open_segment(chain)
     stamp = t if t is not None else utc_now()
     event = new_event(
-        total + 1, episode, stamp, role, None, previous,
+        seq, episode, stamp, role, None, previous,
         type=type, kind=kind, target=target,
         modality=modality, payload=f"sha256:{digest}", summary=summary,
     )
     put_blob(store, raw)
     _append_bytes(store / EVIDENCE_DIR / f"{episode}.jsonl", event.to_line())
-    if new_segment:
-        rows.append({
-            "seg": episode,
-            "count": 1,
-            "first": event.hash,
-            "last": event.hash,
-            "prev_seg": last["seg"] if last else None,
-        })
-    else:
-        last["count"] = int(last["count"]) + 1
-        last["last"] = event.hash
+    _commit_segment(rows, last, episode, new_segment, event.hash)
     if digest not in blobs:
         blobs.append(digest)
     blobs.sort()

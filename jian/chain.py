@@ -43,6 +43,50 @@ _EVENT_HEAD_RE = (
     r'T(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]Z",'
     r'"text":'
 )
+
+
+def _open_segment(
+    chain: dict[str, object],
+) -> tuple[list[dict[str, object]], dict[str, object] | None, str, bool, int, str]:
+    """Return rows, last row, target segment, newness, next sequence and prev hash."""
+    rows = chain["segments"]
+    sealed_at = chain["sealed_at"]
+    last = rows[-1] if rows else None
+    total = sum(int(row["count"]) for row in rows)
+    if sealed_at is not None or last is None or int(last["count"]) >= SEGMENT_MAX_EVENTS:
+        index = len(rows) + 1
+        if index > 9999:
+            raise JianError(E_SCHEMA, "段数量超出 seg-NNNN 范围")
+        episode = f"seg-{index:04d}"
+        new_segment = True
+    else:
+        episode = str(last["seg"])
+        new_segment = False
+    previous = str(last["last"]) if last else GENESIS_PREV
+    return rows, last, episode, new_segment, total + 1, previous
+
+
+def _commit_segment(
+    rows: list[dict[str, object]],
+    last: dict[str, object] | None,
+    episode: str,
+    new_segment: bool,
+    digest: str,
+) -> None:
+    """Update the chain rows after one event has been written."""
+    if new_segment:
+        rows.append({
+            "seg": episode,
+            "count": 1,
+            "first": digest,
+            "last": digest,
+            "prev_seg": last["seg"] if last else None,
+        })
+    else:
+        last["count"] = int(last["count"]) + 1
+        last["last"] = digest
+
+
 _EVENT_TAIL_RE = r',"type":"turn","v":1\}$'
 _EVENT_TAIL_TEXT = ',"type":"turn","v":1}'
 _EVENT_PLAIN_RE = re.compile(_EVENT_HEAD_RE + r'"[^"\\\x00-\x1f]*"' + _EVENT_TAIL_RE)

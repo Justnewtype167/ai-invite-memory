@@ -8,7 +8,15 @@ from jian_projection.action import (
     load_action_map,
     project_action,
 )
+from jian_projection.emit import EMIT_MODES, emit, trace_digest
 from jian_projection.errors import E_PR_UNKNOWN_PROJECTOR, ProjectionError
+from jian_projection.gate import (
+    GateRule,
+    GateRules,
+    Verdict,
+    check,
+    load_gate_rules,
+)
 from jian_projection.text import project_text
 from jian_projection.trace import (
     ACTION_WHITELIST,
@@ -22,15 +30,23 @@ __all__ = [
     "ACTION_WHITELIST",
     "ActionMap",
     "ActionRule",
+    "EMIT_MODES",
+    "GateRule",
+    "GateRules",
     "PROJECTORS",
     "ProjectionError",
     "SEGMENT_KINDS",
     "Segment",
     "Trace",
+    "Verdict",
+    "check",
+    "emit",
     "load_action_map",
+    "load_gate_rules",
     "project",
     "project_action",
     "project_text",
+    "trace_digest",
 ]
 
 

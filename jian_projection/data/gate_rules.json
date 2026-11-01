@@ -1,0 +1,17 @@
+{
+  "禁称呼": {
+    "canon_keywords": ["叫我", "称呼"],
+    "forbid_text": ["宝贝", "亲亲", "小可爱"],
+    "scope": "text"
+  },
+  "不主动联系": {
+    "canon_keywords": ["不主动", "别老联系"],
+    "forbid_action": ["message_user", "call_user"],
+    "scope": "action"
+  },
+  "简短": {
+    "canon_keywords": ["短", "简洁", "少说"],
+    "max_text_chars": 40,
+    "scope": "text"
+  }
+}

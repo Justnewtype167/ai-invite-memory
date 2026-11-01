@@ -1,6 +1,6 @@
 """Event model, field validation and event hashing.
 
-``turn`` keeps its M1 shape exactly. Four further types share the same
+``turn`` keeps its M1 shape exactly. Six further types share the same
 canonical body and hash rule, so old capsules keep verifying byte for byte.
 """
 
@@ -19,6 +19,7 @@ from .errors import E_SCHEMA, JianError
 SEGMENT_MAX_EVENTS = 100
 TEXT_MAX_CHARS = 8000
 PROPOSAL_TEXT_MAX_CHARS = 500
+REFUSAL_TEXT_MAX_CHARS = 40
 SUMMARY_MAX_CHARS = 200
 MODEL_MAX_CHARS = 64
 PROMPT_SHA_MAX_CHARS = 64
@@ -37,13 +38,18 @@ PROMPT_SHA_RE = re.compile(r"^[0-9a-fA-F]{1,64}$")
 WEIGHTS_SHA_RE = re.compile(r"^[0-9a-fA-F]{1,64}$")
 TIME_RE = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$")
 PAYLOAD_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
+TRACE_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
 
 ROLES = ("user", "assistant")
 MODALITIES = ("text", "audio", "vision", "action", "sensor")
-EVENT_TYPES = ("turn", "feedback", "directive", "milestone", "checkpoint", "proposal")
+REFUSAL_TARGETS = ("text", "action", "both")
+EVENT_TYPES = (
+    "turn", "feedback", "directive", "milestone", "checkpoint", "proposal", "refusal",
+)
 FIELDS = (
     "v", "id", "ep", "t", "type", "role", "text", "prev", "hash", "kind",
     "target", "model", "prompt_sha", "quant", "weights_sha", "temp_milli", "seed",
+    "trace",
 )
 
 COMMON_FIELDS = frozenset({"v", "id", "ep", "t", "type", "text", "prev", "hash"})
@@ -60,10 +66,12 @@ _TYPE_FIELDS: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
         ("target", "model", "prompt_sha"),
         ("quant", "weights_sha", "temp_milli", "seed"),
     ),
+    "refusal": (("kind", "target", "trace"), ()),
 }
 KIND_VALUES: dict[str, tuple[str, ...]] = {
     "feedback": ("praise", "correction"),
     "directive": ("lock", "unlock", "rule"),
+    "refusal": ("gate",),
 }
 
 
@@ -91,6 +99,7 @@ class Event:
     modality: str | None = None
     payload: str | None = None
     summary: str | None = None
+    trace: str | None = None
 
     def body(self) -> dict[str, object]:
         """Return the hashed view of this event; the ``hash`` field is excluded."""
@@ -126,6 +135,8 @@ class Event:
             body["temp_milli"] = self.temp_milli
         if self.seed is not None:
             body["seed"] = self.seed
+        if self.trace is not None:
+            body["trace"] = self.trace
         return body
 
     def as_dict(self) -> dict[str, object]:
@@ -217,28 +228,30 @@ def new_event(
     modality: str | None = None,
     payload: str | None = None,
     summary: str | None = None,
+    trace: str | None = None,
 ) -> Event:
     """Build and hash a new event after validating every field.
 
     Without ``modality``/``payload``/``summary`` the M1 envelope (v1) is
     written with ``text``. With all three the v2 envelope is written and
-    ``text`` must be None, because v2 forbids it.
+    ``text`` must be None, because v2 forbids it. ``trace`` is required by
+    ``refusal`` and forbidden everywhere else.
     """
     if modality is None and payload is None and summary is None:
         version = 1
         (event_type, role, kind, target, model, prompt_sha, quant, weights_sha,
-         temp_milli, seed) = _validate_fields(
+         temp_milli, seed, trace) = _validate_fields(
             type, role, text, kind, target, model, prompt_sha,
-            quant, weights_sha, temp_milli, seed,
+            quant, weights_sha, temp_milli, seed, trace,
         )
     else:
         if text is not None:
             raise JianError(E_SCHEMA, "v2 事件禁止 text 字段")
         version = 2
         (event_type, role, kind, target, model, prompt_sha, quant, weights_sha,
-         temp_milli, seed) = _validate_typed_fields(
+         temp_milli, seed, trace) = _validate_typed_fields(
             type, role, kind, target, model, prompt_sha,
-            quant, weights_sha, temp_milli, seed,
+            quant, weights_sha, temp_milli, seed, trace,
         )
         _check_v2_content(modality, payload, summary)
     if not SEG_RE.match(ep):
@@ -279,6 +292,8 @@ def new_event(
         body["temp_milli"] = temp_milli
     if seed is not None:
         body["seed"] = seed
+    if trace is not None:
+        body["trace"] = trace
     digest = compute_hash(prev, body)
     return Event(
         version, event_id, ep, normalized, event_type, role, text if version == 1 else "",
@@ -287,6 +302,7 @@ def new_event(
         modality if version == 2 else None,
         payload if version == 2 else None,
         summary if version == 2 else None,
+        trace,
     )
 
 
@@ -337,6 +353,8 @@ def parse_event(data: object) -> Event:
         text = _string_field(data, "text")
         if not 1 <= len(text) <= TEXT_MAX_CHARS:
             raise JianError(E_SCHEMA, f"事件 {event_id} 的 text 长度越界", event_id)
+        if event_type == "refusal" and len(text) > REFUSAL_TEXT_MAX_CHARS:
+            raise JianError(E_SCHEMA, f"事件 {event_id} 的 text 超过拒绝上限", event_id)
         if event_type == "proposal" and len(text) > PROPOSAL_TEXT_MAX_CHARS:
             raise JianError(E_SCHEMA, f"事件 {event_id} 的 text 超过提案上限", event_id)
     prev = _string_field(data, "prev")
@@ -347,9 +365,23 @@ def parse_event(data: object) -> Event:
         raise JianError(E_SCHEMA, f"事件 {event_id} 的 hash 非法", event_id)
     role = _optional_role(data, event_id)
     kind = _optional_kind(data, event_type, event_id)
+    trace: str | None = None
     if event_type == "proposal":
         (target, model, prompt_sha,
          quant, weights_sha, temp_milli, seed) = _proposal_fields(data, event_id)
+    elif event_type == "refusal":
+        target = _string_field(data, "target")
+        if target not in REFUSAL_TARGETS:
+            raise JianError(E_SCHEMA, f"事件 {event_id} 的 target 非法", event_id)
+        trace = _string_field(data, "trace")
+        if not TRACE_RE.match(trace):
+            raise JianError(E_SCHEMA, f"事件 {event_id} 的 trace 非法", event_id)
+        model = None
+        prompt_sha = None
+        quant = None
+        weights_sha = None
+        temp_milli = None
+        seed = None
     else:
         target = _optional_target(data, event_id)
         model = None
@@ -361,7 +393,7 @@ def parse_event(data: object) -> Event:
     return Event(
         version, event_id, segment, stamp, event_type, role, text, prev, digest, kind,
         target, model, prompt_sha, quant, weights_sha, temp_milli, seed,
-        modality, payload, summary,
+        modality, payload, summary, trace,
     )
 
 
@@ -386,18 +418,24 @@ def _validate_fields(
     weights_sha: Any,
     temp_milli: Any,
     seed: Any,
+    trace: Any,
 ) -> tuple[
     str, str | None, str | None, str | None, str | None, str | None,
-    str | None, str | None, int | None, int | None,
+    str | None, str | None, int | None, int | None, str | None,
 ]:
     if not isinstance(event_type, str) or event_type not in EVENT_TYPES:
         raise JianError(E_SCHEMA, f"未知事件类型：{event_type}")
-    limit = PROPOSAL_TEXT_MAX_CHARS if event_type == "proposal" else TEXT_MAX_CHARS
+    if event_type == "proposal":
+        limit = PROPOSAL_TEXT_MAX_CHARS
+    elif event_type == "refusal":
+        limit = REFUSAL_TEXT_MAX_CHARS
+    else:
+        limit = TEXT_MAX_CHARS
     if not isinstance(text, str) or not 1 <= len(text) <= limit:
         raise JianError(E_SCHEMA, f"text 长度必须是 1-{limit} 字符")
     return _validate_typed_fields(
         event_type, role, kind, target, model, prompt_sha,
-        quant, weights_sha, temp_milli, seed,
+        quant, weights_sha, temp_milli, seed, trace,
     )
 
 
@@ -412,9 +450,10 @@ def _validate_typed_fields(
     weights_sha: Any,
     temp_milli: Any,
     seed: Any,
+    trace: Any,
 ) -> tuple[
     str, str | None, str | None, str | None, str | None, str | None,
-    str | None, str | None, int | None, int | None,
+    str | None, str | None, int | None, int | None, str | None,
 ]:
     """Validate the type-specific fields shared by both envelope versions."""
     if not isinstance(event_type, str) or event_type not in EVENT_TYPES:
@@ -424,7 +463,7 @@ def _validate_typed_fields(
         ("role", role), ("kind", kind), ("target", target),
         ("model", model), ("prompt_sha", prompt_sha),
         ("quant", quant), ("weights_sha", weights_sha),
-        ("temp_milli", temp_milli), ("seed", seed),
+        ("temp_milli", temp_milli), ("seed", seed), ("trace", trace),
     ):
         if value is not None and name not in required and name not in optional:
             raise JianError(E_SCHEMA, f"{event_type} 事件不允许字段 {name}")
@@ -433,14 +472,20 @@ def _validate_typed_fields(
     if "kind" in required:
         if kind not in KIND_VALUES[event_type]:
             raise JianError(E_SCHEMA, f"{event_type} 事件的 kind 非法")
+    if event_type == "refusal":
+        if target not in REFUSAL_TARGETS:
+            raise JianError(E_SCHEMA, f"refusal 事件的 target 非法：{target}")
+        if not isinstance(trace, str) or not TRACE_RE.match(trace):
+            raise JianError(E_SCHEMA, "refusal 事件的 trace 必须是 sha256:<64 位小写十六进制>")
+        return event_type, role, kind, str(target), None, None, None, None, None, None, trace
     if event_type == "proposal":
         checked = _checked_proposal_fields(
             target, model, prompt_sha, quant, weights_sha, temp_milli, seed
         )
-        return event_type, role, kind, *checked
+        return event_type, role, kind, *checked, None
     if target is not None and not ID_RE.match(str(target)):
         raise JianError(E_SCHEMA, f"target 必须是事件 id：{target}")
-    return event_type, role, kind, target, None, None, None, None, None, None
+    return event_type, role, kind, target, None, None, None, None, None, None, None
 
 
 def _check_v2_content(modality: Any, payload: Any, summary: Any) -> None:
