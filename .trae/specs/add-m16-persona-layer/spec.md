@@ -48,7 +48,9 @@
 6. 验收：上述每种各写 100 条（共 600 条），`kid` 逐字节不变。
 7. 特质胜负落在 `PersonaView.self_md`（规格已改成这个，commit f264013）；内核 `self.md` 是 kid 输入，
    写进去就是改身份。追加断言：写入特质 / 风格卡 / 用户卡后 `kernel.self_md` 与之前**逐字节相同**。
-8. 只有人格事件推进时，`record_kernel` 产生**同 kid 的新版本**，并在 `HISTORY` 备注 `persona_only`。
+8. 只有人格事件推进时，`record_kernel` **不产生新版本**（`written=False`，版本号与 HISTORY
+   字节不变）；特质增删只留痕在证据链，不进版本账本。`docs/ACCEPT-M16.md` MUST 显式写明
+   这一取舍：宪章 A2 的「性格改动可追溯」在本层由证据链承担，版本账本只记录内核身份变化。
 
 ## ADDED Requirements
 
@@ -283,20 +285,20 @@ D  特质段 + 风格卡段 + 用户卡段
 ### Requirement: 只被人格事件推进时的记录行为（record_kernel）
 
 当证据只新增了跳过清单里的人格事件（`kid` 与 `head` 都不变）时，
-`record_kernel` SHALL 产出**一个新版本、沿用同一个 kid**，并在 `HISTORY.jsonl` 该行备注
-`persona_only`，使「什么时候加过特质 / 换过卡」有据可查。
+`record_kernel` SHALL **保持版本账本不变**：返回 `written=False`，版本号不递增，
+`HISTORY.jsonl` 一个字节都不变。特质 / 风格卡 / 用户卡的增删只留痕在证据链，
+由 `PersonaView` 重新派生；它们不进入版本账本。
 
 - 判定：`entries` 非空、未 heal、`kernel.kid == latest.kid`，且证据里最后一条事件 id
   大于 `latest.head`（说明确实追加了事件，只是全被跳过）。
-- 行为：`version = latest.version + 1`，`delta = Delta(0,0,0)`，`append = True`，
-  HISTORY 行多出 `"note": "persona_only"`；`META.json` 的 `version` 同步递增。
-- 未追加任何事件时行为不变：不产生新版本（`written=False`），HISTORY 字节不变。
-- 既有非人格记录行的字节 MUST 不变（`note` 字段只在非空时出现）。
+- 行为：`version = latest.version`，`delta = Delta(0,0,0)`，`append = False`，
+  `META.json` 的 `version` 不变（已被记录的内核文件逐字节不变）。
+- 理由：内核身份没变；人格产物的追溯由证据链承担，见 `docs/ACCEPT-M16.md`。
 
-#### Scenario: 加过特质有据可查
+#### Scenario: 加过特质只留痕在证据链
 - **WHEN** 记录一次内核后，只追加一条 `directive(kind="trait")`，再 `record_kernel`
-- **THEN** 版本号 +1、`kid` 不变、`delta` 全 0，HISTORY 最后一行含 `"note": "persona_only"`；
-  `verify_kernel` 通过，`restore(新版本)` 重算 kid 与记录一致
+- **THEN** 版本号不变、`written=False`、HISTORY 字节不变；`verify_kernel` 通过，
+  特质仍可从证据链重新派生
 
 #### Scenario: 没有新证据
 - **WHEN** 不追加任何事件，再次 `record_kernel`
@@ -333,16 +335,16 @@ D  特质段 + 风格卡段 + 用户卡段
 
 - `test_persona_events_keep_kid`：六种各 100 条，kid 逐字节不变 + `self_md`/`canon_md`/`state`/`graph` 逐字节不变 + 增量/对账同样不变
 - `test_refusal_compiles`：`refusal` 入链后照常编译
-- `test_record_persona_only`：只加人格事件后 `record_kernel` 出同 kid 新版本 + `persona_only` 备注；无新证据时字节不变
+- `test_record_persona_only_keeps_version`：只加人格事件后 `record_kernel` 版本号与 HISTORY 字节不变（`written=False`），`verify_kernel` 通过
 - `test_persona_not_in_pcs`：人格文本不进 PCS 规则集，`jian_persona` 不 import `jian_pcs`
 
 ## 棘轮（必须同时改）
 
-- `tests/test_all_regression.py`：包元组加 `jian_persona`；`ALLOWED_ADDITIONS` 加 7 个
-  `jian_persona/*.py`；`ALLOWED_CHANGES` 新增 `jian_kernel/gate.py`、`jian_kernel/kernel.py`、
-  `jian_kernel/history.py`（`jian/event.py`、`jian/capsule.py`、`jian_kernel/compiler.py` 已有声明，需更新理由文字）。
+- `tests/test_all_regression.py`：包元组加 `jian_persona`（已完成）；`ALLOWED_ADDITIONS` 加 7 个
+  `jian_persona/*.py`；`ALLOWED_CHANGES` 新增 `jian_kernel/gate.py`、`jian_kernel/kernel.py`
+  （已在 P0 完成；`jian_kernel/history.py` 不动）。
 - `tests/test_env_v2.py`：`M12_ADDITIONS` 更新 `incremental.py` 摘要；`M12_EDITS` 更新
-  `compiler.py` 摘要并新增 `gate.py`、`kernel.py`、`history.py` 三条；`len(changed)` 由 10 改为 13。
+  `compiler.py` 摘要并新增 `gate.py`、`kernel.py` 两条；`len(changed)` 由 10 改为 12（已在 P0 完成）。
 
 ## DoD
 

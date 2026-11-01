@@ -12,6 +12,7 @@ Two guarantees are under test here:
 from __future__ import annotations
 
 import hashlib
+import json
 import pathlib
 import shutil
 import tempfile
@@ -20,9 +21,19 @@ from datetime import datetime, timedelta, timezone
 
 from jian.canonical import dumps
 from jian.capsule import append_event, append_refusal, init_store
-from jian_kernel.compiler import compile_kernel
+from jian_kernel.compiler import compile_kernel, read_evidence
+from jian_kernel.history import record_kernel, verify_kernel
 from jian_kernel.incremental import compile_kernel_incremental, reconcile
-from jian_kernel.kernel import Policy
+from jian_kernel.kernel import HISTORY_FILE, KERNEL_DIR, Policy
+from jian_persona.errors import (
+    E_PERSONA_TRAIT_CAP,
+    E_PERSONA_TRAIT_CONFLICT,
+    E_PERSONA_TRAIT_MODE,
+    E_PERSONA_TRAIT_SCHEMA,
+    E_PERSONA_UNAPPROVED,
+    PersonaError,
+)
+from jian_persona.traits import load_vocabulary, resolve_traits
 
 NOW = "2026-01-05T10:00:00+08:00"
 TRACE = "sha256:" + hashlib.sha256(b"trace").hexdigest()
@@ -153,6 +164,182 @@ class TestPersonaSkip(unittest.TestCase):
         self.assertEqual(report.head, before.head)
         self.assertEqual(report.events, SEED_EVENTS)
         self.assertEqual(report.kid, before.kid)
+
+    def test_record_persona_only_keeps_version(self) -> None:
+        """A trait-only advance leaves the version ledger byte-identical."""
+        store = self._store("record")
+        first = record_kernel(store, Policy(now=NOW))
+        self.assertEqual(first.version, 1)
+        self.assertTrue(first.written)
+        ledger = store / KERNEL_DIR / HISTORY_FILE
+        before_bytes = ledger.read_bytes()
+
+        append_event(
+            store, None, "人格特质写入", "2026-01-05T09:00:00Z",
+            type="directive", kind="trait",
+        )
+
+        second = record_kernel(store, Policy(now=NOW))
+        print(
+            f"M16 persona-only version={second.version} written={second.written} "
+            f"kid_stable={second.kid == first.kid}"
+        )
+        self.assertEqual(second.version, 1)
+        self.assertEqual(second.kid, first.kid)
+        self.assertFalse(second.written)
+        self.assertEqual(ledger.read_bytes(), before_bytes)
+
+        report = verify_kernel(store)
+        self.assertEqual(report.version, 1)
+        self.assertEqual(report.kid, first.kid)
+
+        events = read_evidence(store)
+        self.assertEqual(events[-1].type, "directive")
+        self.assertEqual(events[-1].kind, "trait")
+
+
+class TestTraits(unittest.TestCase):
+    VOCAB = ("可爱", "毒舌", "闷骚", "温柔", "高冷", "话痨")
+
+    def setUp(self) -> None:
+        self.root = pathlib.Path(tempfile.mkdtemp(prefix="jian_traits_"))
+        self.addCleanup(shutil.rmtree, self.root, True)
+
+    def _store(self) -> pathlib.Path:
+        store = self.root / "store"
+        init_store(store)
+        return store
+
+    def _vocab_file(self, payload: object) -> pathlib.Path:
+        path = self.root / "vocab.json"
+        path.write_text(
+            json.dumps(payload, ensure_ascii=False), encoding="utf-8"
+        )
+        return path
+
+    def _enable(self, store: pathlib.Path, name: str, offset: int) -> None:
+        append_event(
+            store, None, f"启用特质 {name}", _stamp(offset),
+            type="directive", kind="trait",
+        )
+
+    def test_traits_schema(self) -> None:
+        """Vocabulary entries are validated field by field."""
+        vocabulary = load_vocabulary()
+        self.assertEqual(sorted(vocabulary), sorted(self.VOCAB))
+        cases = (
+            (
+                {"x": _entry(modes=["party"])},
+                E_PERSONA_TRAIT_MODE,
+            ),
+            (
+                {"x": _entry(conflicts=["不存在"])},
+                E_PERSONA_TRAIT_CONFLICT,
+            ),
+            (
+                {"x": {"conflicts": [], "modes": ["support"], "risk": "low"}},
+                E_PERSONA_TRAIT_SCHEMA,
+            ),
+            (
+                {"x": _entry(risk="extreme")},
+                E_PERSONA_TRAIT_SCHEMA,
+            ),
+        )
+        for payload, code in cases:
+            path = self._vocab_file(payload)
+            with self.assertRaises(PersonaError) as caught:
+                load_vocabulary(path)
+            self.assertEqual(caught.exception.code, code)
+        print(f"M16 traits vocabulary={len(vocabulary)} schema_cases={len(cases)}")
+
+    def test_trait_cap_and_conflict(self) -> None:
+        """The sixth active trait is rejected; 可爱 beats 毒舌."""
+        vocabulary = load_vocabulary()
+        store = self._store()
+        for index, name in enumerate(self.VOCAB):
+            self._enable(store, name, index)
+        with self.assertRaises(PersonaError) as caught:
+            resolve_traits(read_evidence(store), vocabulary, "support")
+        self.assertEqual(caught.exception.code, E_PERSONA_TRAIT_CAP)
+
+        store = self._store_conflict()
+        resolution = resolve_traits(read_evidence(store), vocabulary, "support")
+        names = [item.name for item in resolution.active]
+        print(f"M16 traits conflict active={names} cap={E_PERSONA_TRAIT_CAP}")
+        self.assertIn("可爱", names)
+        self.assertNotIn("毒舌", names)
+        self.assertEqual(len(resolution.conflicts), 1)
+        item = resolution.conflicts[0]
+        self.assertEqual(item.winner, "可爱")
+        self.assertEqual(item.loser, "毒舌")
+        self.assertIn("### Conflicts", resolution.conflicts_md())
+        self.assertIn("可爱", resolution.conflicts_md())
+        self.assertIn("毒舌", resolution.conflicts_md())
+
+    def _store_conflict(self) -> pathlib.Path:
+        store = self.root / "conflict"
+        init_store(store)
+        self._enable(store, "可爱", 10)
+        self._enable(store, "毒舌", 11)
+        return store
+
+    def test_trait_requires_event(self) -> None:
+        """No trait event means no trait; an unapproved proposal fails."""
+        vocabulary = load_vocabulary()
+        store = self._store()
+        self.assertEqual(resolve_traits([], vocabulary, "support").active, ())
+
+        proposal = append_event(
+            store, None, "提议特质 毒舌", _stamp(20),
+            type="proposal", target="self.trait", model=MODEL,
+            prompt_sha=PROMPT_SHA,
+        )
+        with self.assertRaises(PersonaError) as caught:
+            resolve_traits(read_evidence(store), vocabulary, "support")
+        self.assertEqual(caught.exception.code, E_PERSONA_UNAPPROVED)
+
+        append_event(
+            store, None, "提议特质 毒舌", _stamp(21),
+            type="directive", kind="trait", target=proposal.id,
+        )
+        resolution = resolve_traits(read_evidence(store), vocabulary, "banter")
+        names = [item.name for item in resolution.active]
+        print(f"M16 traits approved proposal={proposal.id} active={names}")
+        self.assertEqual(names, ["毒舌"])
+        self.assertEqual(resolution.active[0].origin, "approved_proposal")
+        self.assertEqual(resolution.active[0].event_id, proposal.id)
+
+    def test_trait_mode_gate(self) -> None:
+        """A high-risk trait outside its modes is dropped with a reason."""
+        vocabulary = load_vocabulary()
+        store = self._store()
+        self._enable(store, "毒舌", 30)
+        events = read_evidence(store)
+        consult = resolve_traits(events, vocabulary, "consult")
+        banter = resolve_traits(events, vocabulary, "banter")
+        print(
+            f"M16 traits mode consult={[i.name for i in consult.active]} "
+            f"banter={[i.name for i in banter.active]}"
+        )
+        self.assertEqual(consult.active, ())
+        self.assertTrue(consult.reasons)
+        self.assertTrue(any("毒舌" in item and "consult" in item
+                            for item in consult.reasons))
+        self.assertEqual([item.name for item in banter.active], ["毒舌"])
+
+
+def _entry(
+    guidance: str = "guidance",
+    conflicts: list[str] | None = None,
+    modes: list[str] | None = None,
+    risk: str = "low",
+) -> dict[str, object]:
+    return {
+        "guidance": guidance,
+        "conflicts": conflicts if conflicts is not None else [],
+        "modes": modes if modes is not None else ["support"],
+        "risk": risk,
+    }
 
 
 if __name__ == "__main__":

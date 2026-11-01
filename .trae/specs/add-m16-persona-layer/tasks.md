@@ -2,7 +2,8 @@
 
 > 执行约束：只用 Python 3.11+ 标准库（unittest，零第三方依赖）；源码 ASCII；单文件 ≤700 行；
 > 不许 `TODO` / `pass` / `NotImplementedError`；不许 skip 测试；不许降低验收标准。
-> 未经用户明确要求不执行 git commit。
+> 提交边界（用户指令）：Task 3 / Task 4+5 / Task 6+7 各一次提交，每次提交前跑全量。
+> `record_kernel` 的人格事件留痕测试随 Task 3 批次提交。
 
 - [ ] Task 1: 事件层与胶囊写入扩展
   - [ ] SubTask 1.1: `jian/event.py` 的 `KIND_VALUES["directive"]` 增加 `"trait"` / `"trait_off"`（不动其它校验）
@@ -18,11 +19,10 @@
   - [ ] SubTask 2.6: 验证：`python -m unittest discover -s tests` 全绿且总数 = 315 + 2 = 317
   - [ ] SubTask 2.7: **单独一次提交**（P0 提交），提交后立即向用户报告 317 全绿，等确认再往下
 
-- [ ] Task 2B: 只被人格事件推进时的记录行为（依赖 Task 2）
-  - [ ] SubTask 2B.1: `HistoryEntry` 增加可选 `note`（只在非空时写进 payload，保证既有行字节不变）；`_entry_from` 读可选 `note`
-  - [ ] SubTask 2B.2: `record_kernel`：`kid` 不变且证据末事件 id > `latest.head` 时，`version+1`、`delta=0`、写 `note="persona_only"`；无新事件时行为不变（`written=False`）
-  - [ ] SubTask 2B.3: 新增 `test_record_persona_only`（同 kid 新版本 + `persona_only` 备注 + `verify_kernel` 通过 + `restore` 一致 + 无新证据时 HISTORY 字节不变）
-  - [ ] SubTask 2B.4: 棘轮补 `jian_kernel/history.py`（两条棘轮），`len(changed)` 12 → 13；全量全绿 = 318
+- [ ] Task 2C: 只被人格事件推进时的记录行为（依赖 Task 2；随 Task 3 批次提交）
+  - [ ] SubTask 2C.1: 不改 `jian_kernel/history.py`；按实测钉死行为：`record_kernel` 不产生新版本（`written=False`、版本号与 HISTORY 字节不变）
+  - [ ] SubTask 2C.2: 新增 `test_record_persona_only_keeps_version`（版本号不变 + HISTORY 字节不变 + `verify_kernel` 通过 + 人格事件仍在证据链里）
+  - [ ] SubTask 2C.3: `docs/ACCEPT-M16.md` 写明：特质增删只留痕在证据链，不进版本账本（宪章 A2 的可追溯性由证据链承担）
 
 
 - [ ] Task 3: 特质表（依赖 Task 2）
@@ -60,10 +60,10 @@
 # Task Dependencies
 
 - Task 2 依赖 Task 1（没有 `trait` kind 与 proposal 溯源字段，写不出被测事件）
-- Task 2B 依赖 Task 2（persona-only 判定建立在 `core_events` 之上）
+- Task 2C 依赖 Task 2（人格事件留痕建立在实测行为之上，不改 history.py）
 - Task 3 / 4 / 5 依赖 Task 2（所有派生都建立在 `core_events` 之上）；Task 3、4、5 之间互不依赖，可并行
 - Task 6 依赖 Task 3、4、5
 - Task 7 依赖 Task 6
 - Task 8 依赖全部
-- 用户要求：Task 2 单独一次提交，先报告 315+2=317 全绿，确认后再继续 Task 2B 及之后
-- 若单次改动超过 800 行，按 Task 1+2 / Task 2B+3–6 / Task 7–8 三处边界拆分落地
+- 用户要求：P0 已单独提交并验收通过 317 全绿；之后按 Task 3 / Task 4+5 / Task 6+7 三批提交
+- 若单次改动超过 800 行，按上述三批边界继续拆分落地

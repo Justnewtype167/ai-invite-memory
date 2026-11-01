@@ -123,13 +123,17 @@ ALLOWED_ADDITIONS = {
     "jian_succession/model.py": "M15: capsule constants, letters and kid recomputation",
     "jian_succession/archive.py": "M15: zip, evidence and blob primitives",
     "jian_succession/legacy.py": "M15: export, verify and import a legacy capsule",
+    "jian_persona/__init__.py": "M16: export the persona derivation API",
+    "jian_persona/errors.py": "M16: fixed E_PERSONA_* codes",
+    "jian_persona/model.py": "M16: trait definitions, activations and conflicts",
+    "jian_persona/traits.py": "M16: vocabulary validation and deterministic resolution",
 }
 
 # Every deviation from the baseline must be declared here with a reason.
 ALLOWED_CHANGES = {
     "jian/event.py": (
         "M10: envelope v2 fields and event_text; M13: refusal type and trace; "
-        "M16: trait / trait_off directive kinds"
+        "M16: trait / trait_off directive kinds and optional approval target"
     ),
     "jian/chain.py": "M10: optional chain blobs, blob store, fast scan, revival v2; M13: segment slot helpers",
     "jian/capsule.py": (

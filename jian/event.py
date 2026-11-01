@@ -59,7 +59,7 @@ COMMON_FIELDS_V2 = frozenset({
 _TYPE_FIELDS: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
     "turn": (("role",), ()),
     "feedback": (("kind",), ("target",)),
-    "directive": (("kind",), ()),
+    "directive": (("kind",), ("target",)),
     "milestone": ((), ()),
     "checkpoint": ((), ()),
     "proposal": (
