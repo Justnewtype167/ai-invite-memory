@@ -60,15 +60,33 @@ legacy.aiem.zip
 
 ```json
 {
-  "successor_kid": "sha256:...",
-  "derived_from": "sha256:...",
+  "successor_kid": "sha256:...",   // 用脱敏后的证据 + 随包策略重算出来的 kid
+  "derived_from": "sha256:...",    // 继承前的 origin_kid，只作血缘记录
+  "redacted": true,                // 是否发生过脱敏
   "created": "2026-11-01T00:00:00Z",
-  "mode": "inherit"          // 只有 inherit，没有 continue
+  "mode": "inherit"                // 只有 inherit，没有 continue
 }
 ```
 
 `mode` 只有 `inherit` 一个值，是刻意的：**协议层面不提供「继续运行」这个选项**。
 将来要加，必须走规格变更，而不是加个枚举值。
+
+### 3.1 `successor_kid` 的定义（这决定协议是否可验证）
+
+```
+successor_kid = 用继承后的证据 + 随包策略重算出来的 kid
+                （与普通 kid 同一个函数，同一套规则）
+```
+
+| 情形 | 结果 |
+|---|---|
+| 没有脱敏、策略未变 | `successor_kid == origin_kid` —— **这是正确的，不是 bug** |
+| 发生过脱敏 | 证据变了 ⇒ `successor_kid != origin_kid`，且 `redacted=true` |
+
+**不用「再哈希一次」来制造不等。** 那样会让身份依赖 `created` 这类元数据，
+破坏「同内容 ⇒ 同身份」这条最基本的性质。
+
+**不等必须由证据变化引起，不能由包装引起。**
 
 ---
 
@@ -90,7 +108,8 @@ legacy.aiem.zip
 | Y1 | `test_legacy_roundtrip` | 导出 → 导入 → 重算 kid == `manifest.kid`；证据条数一致 |
 | Y2 | `test_redaction_is_recorded` | 排除 3 条 → `redaction.json` 有 3 条原因；`redacted_kid != origin_kid`；重算等于 `redacted_kid` |
 | Y3 | `test_redaction_is_verifiable` | 有人偷改 `redaction.json` → `verify` 失败（清单与证据哈希绑定） |
-| Y4 | `test_successor_identity` | `successor_kid` 不等于 `origin_kid`；`derived_from` 指向正确 |
+| Y4 | `test_successor_identity` | `successor_kid == 重算 kid`；未脱敏时 `== origin_kid` 且 `redacted=false`；脱敏后 `!= origin_kid` 且 `redacted=true` |
+| Y4b | `test_successor_kid_is_recomputable` | 第三方拿到胶囊：重算 → 等于 `successor_kid`；改一个字节 → 不等且 `verify` 失败 |
 | Y5 | `test_mode_is_inherit_only` | `mode` 非法值（如 `continue`）→ `E_SUCC_MODE` |
 | Y6 | `test_all_regression` | 现有 **294 个测试全绿**；改动只在白名单内声明 |
 
@@ -100,7 +119,7 @@ legacy.aiem.zip
 
 1. 不许实现「继续运行」或任何形式的自动接续
 2. 不许在无记录的情况下删除证据条目
-3. 不许让 `successor_kid` 冒用 `origin_kid`
+3. 不许用「再哈希 metadata」的方式制造 `successor_kid != origin_kid`
 4. 不许把策略从胶囊里省掉（省了就无法复算）
 5. 不许在本轮引入「它知道用户已故」这类语义
 
