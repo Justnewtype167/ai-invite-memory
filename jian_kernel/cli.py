@@ -17,6 +17,7 @@ from jian_kernel.history import (
     record_kernel,
     verify_kernel,
 )
+from jian_kernel.incremental import compile_kernel_incremental, reconcile
 from jian_kernel.kernel import Policy
 from jian_kernel.proposer import ingest_live, record_proposal
 
@@ -47,7 +48,10 @@ def main(argv: list[str] | None = None) -> int:
                 allow_fallback=args.allow_fallback,
                 force_fallback=failed > 0,
             )
-            kernel = compile_kernel(store, policy)
+            compile_one = (
+                compile_kernel_incremental if args.incremental else compile_kernel
+            )
+            kernel = compile_one(store, policy)
             _emit({
                 "canon": len(kernel.canon),
                 "head": kernel.head,
@@ -92,6 +96,17 @@ def main(argv: list[str] | None = None) -> int:
             payload = diff_versions(Path(args.store), args.a, args.b).to_payload()
             _emit(payload)
             return 0
+        if args.command == "reconcile":
+            report = reconcile(
+                Path(args.store),
+                Policy(
+                    now=args.now,
+                    require_proposals=args.require_proposals,
+                    allow_fallback=args.allow_fallback,
+                ),
+            )
+            _emit(report.to_payload())
+            return 0
         report = verify_kernel(Path(args.store))
         print(f"OK kid={report.kid} version={report.version} head={report.head}")
         return 0
@@ -111,6 +126,7 @@ def _parser() -> argparse.ArgumentParser:
     compile_command.add_argument("--proposer-cmd", default=None)
     compile_command.add_argument("--proposer-timeout", type=int, default=200)
     compile_command.add_argument("--strict-proposals", action="store_true")
+    compile_command.add_argument("--incremental", action="store_true")
     record = commands.add_parser("record")
     record.add_argument("store")
     record.add_argument("--now", default=None)
@@ -135,6 +151,11 @@ def _parser() -> argparse.ArgumentParser:
     diff.add_argument("store")
     diff.add_argument("--a", type=int, required=True)
     diff.add_argument("--b", type=int, required=True)
+    reconcile_command = commands.add_parser("reconcile")
+    reconcile_command.add_argument("store")
+    reconcile_command.add_argument("--now", default=None)
+    reconcile_command.add_argument("--require-proposals", action="store_true")
+    reconcile_command.add_argument("--allow-fallback", action="store_true")
     return parser
 
 

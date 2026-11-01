@@ -13,6 +13,11 @@ from jian_kernel.history import (
     restore,
     verify_kernel,
 )
+from jian_kernel.incremental import (
+    ReconcileReport,
+    compile_kernel_incremental,
+    reconcile,
+)
 from jian_kernel.kernel import (
     Anchor,
     CanonEntry,
@@ -55,18 +60,21 @@ __all__ = [
     "Policy",
     "Proposal",
     "Proposer",
+    "ReconcileReport",
     "RecordResult",
     "ReplayProposer",
     "StyleProposal",
     "SubprocessProposer",
     "VerifyReport",
     "compile_kernel",
+    "compile_kernel_incremental",
     "diff_versions",
     "evidence_summary",
     "history",
     "ingest_live",
     "prompt_sha_for",
     "read_evidence",
+    "reconcile",
     "record_kernel",
     "record_proposal",
     "restore",

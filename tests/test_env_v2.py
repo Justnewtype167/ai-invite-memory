@@ -84,6 +84,29 @@ EDITS = {
     },
 }
 
+# M12 adds two kernel modules and touches three kernel files for the snapshot
+# API. Their current bytes are pinned here; any later drift fails N5 and must
+# be declared again. The M10 line-level restore check below stays unchanged.
+M12_ADDITIONS = {
+    "jian_kernel/incremental.py": (
+        "219bad591635174a9c77509d7188ea2fae0a836fd403e66e2539a17ad1bd6a5d"
+    ),
+    "jian_kernel/snapshot.py": (
+        "71489979a001867a03ccdce5ea71250ff9025a5f7fcca9b7527a956511fe2d40"
+    ),
+}
+M12_EDITS = {
+    "jian_kernel/__init__.py": (
+        "e6b96cf565c8efafa86fc5812a7a3dc05c3eb31608219607de8eb8cc7005c4a5"
+    ),
+    "jian_kernel/cli.py": (
+        "ddab7b658f1476fe8d210fac3ff7463f5c9e217c670b4246367745996c4443ed"
+    ),
+    "jian_kernel/errors.py": (
+        "77082b8366b58a42987e730093876b03de2044c3ed8efefdd6e7baf64df54f4d"
+    ),
+}
+
 
 def _load(name: str):
     path = ROOT / "tests" / f"{name}.py"
@@ -309,18 +332,22 @@ class TestEnvV1Compat(unittest.TestCase):
 
 
 class TestUpperLayersTouchLimit(unittest.TestCase):
-    """N5: exactly three declared sites in the upper packages, nothing else moved."""
+    """N5: the M10 line edits plus the declared M12 additions, nothing else."""
 
     def test_upper_layers_touch_limit(self) -> None:
-        """N5: only the declared lines differ; restoring them reproduces the baseline."""
+        """N5: only declared files differ; restoring the M10 lines rebuilds baseline."""
         found = {
             path.relative_to(ROOT).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
             for package in ("jian_cn", "jian_recall", "jian_kernel", "jian_pcs")
             for path in sorted((ROOT / package).rglob("*.py"))
         }
-        self.assertEqual(sorted(found), sorted(BASELINE))
+        self.assertEqual(sorted(found), sorted(list(BASELINE) + list(M12_ADDITIONS)))
+        for name, digest in M12_ADDITIONS.items():
+            self.assertEqual(found[name], digest, f"undeclared change in {name}")
         changed = [name for name in BASELINE if found[name] != BASELINE[name]]
-        self.assertEqual(sorted(changed), sorted(EDITS))
+        self.assertEqual(sorted(changed), sorted(list(EDITS) + list(M12_EDITS)))
+        for name, digest in M12_EDITS.items():
+            self.assertEqual(found[name], digest, f"undeclared change in {name}")
         for name in sorted(EDITS):
             text = (ROOT / name).read_text(encoding="utf-8")
             restored = text
@@ -341,9 +368,9 @@ class TestUpperLayersTouchLimit(unittest.TestCase):
                 [name for name in changed if name.startswith(package + "/")],
                 f"{package} must stay byte-identical",
             )
-        self.assertEqual(len(changed), 3)
+        self.assertEqual(len(changed), 6)
         replaced = sum(len(entry["replaced"]) for entry in EDITS.values())
-        self.assertEqual(replaced, 3, "exactly three functional line edits")
+        self.assertEqual(replaced, 3, "exactly three M10 functional line edits")
 
 
 class TestSummaryOnlyRetrieval(unittest.TestCase):

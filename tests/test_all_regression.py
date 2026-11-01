@@ -1,4 +1,4 @@
-"""S6: all 178 frozen M1-M5.2 tests stay green after M6, and three packages stay byte-identical."""
+"""R7: all 178 frozen M1-M5.2 tests stay green and the six packages stay byte-identical."""
 
 from __future__ import annotations
 
@@ -53,8 +53,8 @@ MODULES = (
 )
 FROZEN_COUNT = 178
 
-# sha256 of every source file in the four packages at the M10 baseline; an edit
-# must be declared in ALLOWED_CHANGES below, otherwise the ratchet fails.
+# sha256 of every source file in the six packages before M10; an
+# edit must be declared in ALLOWED_CHANGES below, otherwise the ratchet fails.
 FROZEN_DIGESTS = {
     "jian/__init__.py": "bde7ba3f7b2d7cecac8b284a0f4b4958ef7c463d86be8bd9dfe51bbfb30874bf",
     "jian/canonical.py": "a271683dd6bc9d5edaedce274249ff594122123b7eb120d2317517158445b757",
@@ -86,6 +86,35 @@ FROZEN_DIGESTS = {
     "jian_recall/retrieve.py": "f551191730355077f40fc7cd80cba89b6190cb3975dc3e2a1a38c1799566082b",
     "jian_recall/tokenizer.py": "c815698f2e448734111fbbda6ce6613fcf68f162276dde91a30dfdc9e30ccfe4",
     "jian_recall/trigger.py": "4f198c620461a3ab204eb9b21a2f9438a2d0ff75af1bfb6b78fc8945c81fca92",
+    "jian_pcs/__init__.py": "250a01df396288b8752489db1dd0ec7c90a493a9c9a7c171f82612f6aefab6f9",
+    "jian_pcs/cli.py": "9f2f4d9ad39875d90365c3616f5d512013a4eb0f54ab0010943436141fe68c99",
+    "jian_pcs/errors.py": "6efdc1fca8edad3078bfbd5fbaaf5277ad8d077434bf9ccc7741d92ee5ac0928",
+    "jian_pcs/judge.py": "45b1cfb63c21d5b867e4638c2d6e6674e3eefb13f7445a45a0d72d127816a412",
+    "jian_pcs/probes.py": "4de3b690641c236cc94ce37507e310b421731d5df2941eef3add13c7f1de047e",
+    "jian_pcs/report.py": "26633cb51d822e729158da133b68ac336b934232b4a12b30135913b373700bdc",
+    "jian_pcs/score.py": "28fe4f226ce8e7d052d80ee8409763c062f114ed7921adad964a8b1a7b08d88b",
+    "jian_projection/__init__.py": (
+        "2918c12193c4a9327ea12b49dc10e0fc3fe137650d918a3705b175747467d11f"
+    ),
+    "jian_projection/action.py": (
+        "2bb135820646c05e3362bb96f851395efd3802a6b7eebce27f8247833d38fae7"
+    ),
+    "jian_projection/errors.py": (
+        "d87cb2b0f0150dbc78d90ec92ca692bf34da7d5ba340a934decbb021fd3ac9b9"
+    ),
+    "jian_projection/text.py": (
+        "3b79d162e686f364bc7c19eab9ad53e7311bedb75f1a1b09c60675601ef878fb"
+    ),
+    "jian_projection/trace.py": (
+        "b91e9d343c863a4db73a6234d40d55a681b21e4828f5638c5474528b855921e9"
+    ),
+}
+
+# New source files are not covered by the baseline; each one must be declared
+# here with a reason so that nothing appears in a package unnoticed.
+ALLOWED_ADDITIONS = {
+    "jian_kernel/incremental.py": "M12: incremental compile and reconcile",
+    "jian_kernel/snapshot.py": "M12: throwaway snapshot payload and digest",
 }
 
 # Every deviation from the baseline must be declared here with a reason.
@@ -97,6 +126,9 @@ ALLOWED_CHANGES = {
     "jian_recall/index.py": "M10: retrieval reads summary through event_text",
     "jian_kernel/compiler.py": "M10: identity layer reads full text through event_full_text",
     "jian_kernel/proposer.py": "M10: proposal text goes through event_text",
+    "jian_kernel/errors.py": "M12: E_KN_SNAPSHOT and E_KN_DRIFT",
+    "jian_kernel/__init__.py": "M12: export the incremental and reconcile API",
+    "jian_kernel/cli.py": "M12: compile --incremental and the reconcile command",
 }
 
 
@@ -134,10 +166,18 @@ class TestAllRegression(unittest.TestCase):
             path.relative_to(ROOT).as_posix(): hashlib.sha256(
                 path.read_bytes()
             ).hexdigest()
-            for package in ("jian", "jian_cn", "jian_recall", "jian_kernel")
+            for package in (
+                "jian",
+                "jian_cn",
+                "jian_recall",
+                "jian_kernel",
+                "jian_pcs",
+                "jian_projection",
+            )
             for path in sorted((ROOT / package).rglob("*.py"))
         }
-        self.assertEqual(sorted(found), sorted(FROZEN_DIGESTS))
+        declared = sorted(list(FROZEN_DIGESTS) + list(ALLOWED_ADDITIONS))
+        self.assertEqual(sorted(found), declared)
         changed = {
             name for name, digest in FROZEN_DIGESTS.items() if found[name] != digest
         }
