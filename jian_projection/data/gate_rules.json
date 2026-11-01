@@ -9,6 +9,11 @@
     "forbid_action": ["message_user", "call_user"],
     "scope": "action"
   },
+  "不复述": {
+    "canon_keywords": ["别复述", "不要复述"],
+    "forbid_action": ["nod"],
+    "scope": "action"
+  },
   "简短": {
     "canon_keywords": ["短", "简洁", "少说"],
     "max_text_chars": 40,

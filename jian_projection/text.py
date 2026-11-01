@@ -14,13 +14,19 @@ def project_text(kernel: object) -> Trace:
     """Project a kernel object into text segments only.
 
     The projector reads ``self_md`` and ``canon`` from the kernel object and
-    never receives a store, a path or evidence. Unmatched state is ignored on
-    purpose: the narrative template already embeds it.
+    never receives a store, a path or evidence. This is a diagnostic view:
+    the narrative is ``description`` and every canon restatement is
+    ``constraint``, so a gate judging spoken words never mistakes "I obey
+    this rule" for saying the forbidden word.
     """
     segments: list[Segment] = []
     narrative = str(kernel.self_md).strip()
     if narrative:
-        segments.append(Segment("text", NARRATIVE_PREFIX + narrative, None))
+        segments.append(
+            Segment(
+                "text", NARRATIVE_PREFIX + narrative, None, role="description"
+            )
+        )
     for entry in kernel.canon:
         segments.append(
             Segment(
@@ -28,6 +34,7 @@ def project_text(kernel: object) -> Trace:
                 CONSTRAINT_PREFIX + f"{entry.kind}: {entry.text}",
                 None,
                 entry.text,
+                role="constraint",
             )
         )
     if not segments:

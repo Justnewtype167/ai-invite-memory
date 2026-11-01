@@ -132,7 +132,10 @@ ALLOWED_CHANGES = {
     "jian_kernel/__init__.py": "M12: export the incremental and reconcile API",
     "jian_kernel/cli.py": "M12: compile --incremental and reconcile; M12.1: --no-verify",
     "jian_projection/__init__.py": "M13: export gate and emit",
+    "jian_projection/action.py": "M13: carry the segment role through projection",
     "jian_projection/errors.py": "M13: E_PR_GATE_RULES and E_PR_GATE_SCOPE",
+    "jian_projection/text.py": "M13: mark narrative as description and canon as constraint",
+    "jian_projection/trace.py": "M13: Segment.role (speech / description / constraint)",
 }
 
 

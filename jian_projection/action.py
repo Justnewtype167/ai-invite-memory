@@ -124,7 +124,7 @@ def project_action(kernel: object) -> Trace:
         text = entry.text
         for segment in _rule_for(text, mapping):
             segments.append(
-                Segment(segment.kind, segment.value, segment.dur_ms, text)
+                Segment(segment.kind, segment.value, segment.dur_ms, text, segment.role)
             )
     return Trace(
         kid=kernel.kid, projector=PROJECTOR, segments=tuple(segments)

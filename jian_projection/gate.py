@@ -176,11 +176,18 @@ def check(trace: Trace, kernel: object) -> Verdict:
 
 
 def _first_violation(rule: GateRule, trace: Trace) -> tuple[int, str] | None:
-    """Return the first violating segment index and a reason, or None."""
+    """Return the first violating speech segment index and a reason, or None.
+
+    ``description`` and ``constraint`` segments are diagnostic text: they say
+    what the persona is or what it obeys, not what it is about to say. Only
+    ``speech`` segments can violate a rule.
+    """
     check_text = rule.scope in ("text", "both")
     check_action = rule.scope in ("action", "both")
     text_total = 0
     for index, segment in enumerate(trace.segments):
+        if segment.role != "speech":
+            continue
         if segment.kind == "text" and check_text:
             for word in rule.forbid_text:
                 if word in segment.value:

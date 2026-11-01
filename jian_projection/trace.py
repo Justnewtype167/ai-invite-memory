@@ -22,6 +22,7 @@ from jian_projection.errors import (
 )
 
 SEGMENT_KINDS = ("text", "action", "wait")
+SEGMENT_ROLES = ("speech", "description", "constraint")
 ACTION_WHITELIST = ("hold", "idle", "neutral_face", "nod", "step_back")
 PROJECTORS = ("action_v1", "text_v1")
 DUR_MIN = 1
@@ -42,18 +43,32 @@ def _check_duration(kind: str, dur_ms: int | None) -> None:
 
 @dataclass(frozen=True)
 class Segment:
-    """One typed fragment of a trace."""
+    """One typed fragment of a trace.
+
+    ``role`` says what the fragment is for: ``speech`` is meant to be emitted,
+    ``description`` narrates the persona and ``constraint`` restates canon.
+    Diagnostic text must never be judged as something the persona would say,
+    so the gate only inspects ``speech`` segments. Action and wait segments
+    are always ``speech``: they are the actuation itself.
+    """
 
     kind: str
     value: str
     dur_ms: int | None
     source: str | None = None
+    role: str = "speech"
 
     def __post_init__(self) -> None:
         """Validate the segment against the trace contract."""
         if self.kind not in SEGMENT_KINDS:
             raise ProjectionError(
                 E_PR_SCHEMA, f"未知片段类型：{self.kind}"
+            )
+        if self.role not in SEGMENT_ROLES:
+            raise ProjectionError(E_PR_SCHEMA, f"未知片段角色：{self.role}")
+        if self.kind != "text" and self.role != "speech":
+            raise ProjectionError(
+                E_PR_SCHEMA, "只有 text 片段可以是 description 或 constraint"
             )
         if not isinstance(self.value, str):
             raise ProjectionError(E_PR_SCHEMA, "片段 value 必须是字符串")
@@ -75,6 +90,7 @@ class Segment:
         return {
             "dur_ms": self.dur_ms,
             "kind": self.kind,
+            "role": self.role,
             "source": self.source,
             "value": self.value,
         }

@@ -73,6 +73,10 @@ class TestTraceSchema(unittest.TestCase):
         self.assert_code(E_PR_SCHEMA, Segment, "text", "x", 100)
         self.assert_code(E_PR_SCHEMA, Segment, "action", 7, 100)
         self.assert_code(E_PR_SCHEMA, Segment, "text", "x", None, 7)
+        self.assert_code(E_PR_SCHEMA, Segment, "text", "x", None, None, "narration")
+        self.assert_code(
+            E_PR_SCHEMA, Segment, "action", "nod", 600, None, "description"
+        )
         self.assert_code(E_PR_UNKNOWN_ACTION, Segment, "action", "wave", 100)
         self.assert_code(E_PR_BAD_DURATION, Segment, "action", "nod", None)
         self.assert_code(E_PR_BAD_DURATION, Segment, "wait", "", None)
@@ -106,13 +110,19 @@ class TestTraceSchema(unittest.TestCase):
         self.assertEqual(sorted(payload), ["kid", "projector", "segments"])
         self.assertEqual(
             payload["segments"][0],
-            {"dur_ms": 600, "kind": "action", "source": None, "value": "nod"},
+            {
+                "dur_ms": 600,
+                "kind": "action",
+                "role": "speech",
+                "source": None,
+                "value": "nod",
+            },
         )
         self.assertEqual(
             trace.to_bytes(),
             b'{"kid":"kid","projector":"action_v1","segments":['
-            b'{"dur_ms":600,"kind":"action","source":null,"value":"nod"},'
-            b'{"dur_ms":800,"kind":"wait","source":null,"value":""}]}',
+            b'{"dur_ms":600,"kind":"action","role":"speech","source":null,"value":"nod"},'
+            b'{"dur_ms":800,"kind":"wait","role":"speech","source":null,"value":""}]}',
         )
 
 
@@ -248,6 +258,7 @@ class TestActionMap(unittest.TestCase):
                     (expected.kind, expected.value, expected.dur_ms),
                 )
                 self.assertEqual(got.source, keyword)
+                self.assertEqual(got.role, "speech")
         hits = [
             text for text in STYLE_TEXTS
             if any(any(keyword in text for keyword in rule.keywords)
