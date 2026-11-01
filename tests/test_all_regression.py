@@ -127,6 +127,9 @@ ALLOWED_ADDITIONS = {
     "jian_persona/errors.py": "M16: fixed E_PERSONA_* codes",
     "jian_persona/model.py": "M16: trait definitions, activations and conflicts",
     "jian_persona/traits.py": "M16: vocabulary validation and deterministic resolution",
+    "jian_persona/style_card.py": "M16: style card validation, recording and echo guard",
+    "jian_persona/user_card.py": "M16: mechanical user card with pinned assembly",
+    "jian_persona/view.py": "M16: shared persona view and four prompt groups",
 }
 
 # Every deviation from the baseline must be declared here with a reason.
