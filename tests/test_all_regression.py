@@ -127,20 +127,31 @@ ALLOWED_ADDITIONS = {
 
 # Every deviation from the baseline must be declared here with a reason.
 ALLOWED_CHANGES = {
-    "jian/event.py": "M10: envelope v2 fields and event_text; M13: refusal type and trace",
+    "jian/event.py": (
+        "M10: envelope v2 fields and event_text; M13: refusal type and trace; "
+        "M16: trait / trait_off directive kinds"
+    ),
     "jian/chain.py": "M10: optional chain blobs, blob store, fast scan, revival v2; M13: segment slot helpers",
-    "jian/capsule.py": "M10: payload API, v2 seal/export/import, event_full_text; M13: append_refusal",
+    "jian/capsule.py": (
+        "M10: payload API, v2 seal/export/import, event_full_text; M13: append_refusal; "
+        "M16: provenance keywords on both append paths"
+    ),
     "jian/errors.py": "M10: E_BLOB_MISSING and E_BLOB_MISMATCH",
     "jian_recall/index.py": "M10: retrieval reads summary through event_text",
     "jian_recall/errors.py": "M14: E_RC_STREAM for chunk boundary violations",
     "jian_recall/__init__.py": "M14: export the stream session API",
     "jian_recall/trigger.py": "M14.1: split triggers into per-predicate parts for caching",
     "jian_recall/assemble.py": "M14.1: share the pool-to-context step with the stream session",
-    "jian_kernel/compiler.py": "M10: full text via event_full_text; M12.1: verify_evidence and --no-verify",
+    "jian_kernel/compiler.py": (
+        "M10: full text via event_full_text; M12.1: verify_evidence and --no-verify; "
+        "M16: refusal type and the persona skip list"
+    ),
     "jian_kernel/proposer.py": "M10: proposal text goes through event_text",
     "jian_kernel/errors.py": "M12: E_KN_SNAPSHOT, E_KN_DRIFT; M12.1: E_KN_TAMPER",
     "jian_kernel/__init__.py": "M12: export the incremental and reconcile API",
     "jian_kernel/cli.py": "M12: compile --incremental and reconcile; M12.1: --no-verify",
+    "jian_kernel/gate.py": "M16: accept persona targets for direct callers of check_proposals",
+    "jian_kernel/kernel.py": "M16: persona target and directive-kind constants",
     "jian_projection/__init__.py": "M13: export gate and emit",
     "jian_projection/action.py": "M13: carry the segment role through projection",
     "jian_projection/errors.py": "M13: E_PR_GATE_RULES and E_PR_GATE_SCOPE",
@@ -191,6 +202,7 @@ class TestAllRegression(unittest.TestCase):
                 "jian_pcs",
                 "jian_projection",
                 "jian_succession",
+                "jian_persona",
             )
             for path in sorted((ROOT / package).rglob("*.py"))
         }

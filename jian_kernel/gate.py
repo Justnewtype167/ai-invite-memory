@@ -14,6 +14,7 @@ from jian_kernel.errors import (
     KernelError,
 )
 from jian_kernel.kernel import (
+    PERSONA_TARGETS,
     STATE_STEP_LIMIT,
     STYLE_TARGETS,
     CanonEntry,
@@ -71,14 +72,19 @@ def check_proposals(events: list[EvidenceEvent]) -> None:
 
     G5a and G5b are hard failures, not silent rejections: a bad target or a
     missing model means the writer is buggy or probing, so compilation stops.
+
+    Persona targets are allowed for direct callers, but the compiler only
+    passes ``core_events`` here, so persona proposals never reach G5 and can
+    never influence ``origin``, ``models`` or the kid.
     """
+    allowed = STYLE_TARGETS + PERSONA_TARGETS
     for event in events:
         if event.type != "proposal":
             continue
-        if event.target not in STYLE_TARGETS:
+        if event.target not in allowed:
             raise KernelError(
                 E_KN_BAD_TARGET,
-                f"提案 target 不在白名单：{event.target}（允许 {STYLE_TARGETS}）",
+                f"提案 target 不在白名单：{event.target}（允许 {allowed}）",
             )
         if not event.model or not event.prompt_sha:
             raise KernelError(

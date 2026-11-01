@@ -87,7 +87,7 @@ EDITS = {
 # check no longer reproduces the M10 baseline.
 M12_ADDITIONS = {
     "jian_kernel/incremental.py": (
-        "219bad591635174a9c77509d7188ea2fae0a836fd403e66e2539a17ad1bd6a5d"
+        "ac8061b37e98ee9509b600713707f90d9498f121d22054daa31a7f934ff9525c"
     ),
     "jian_kernel/snapshot.py": (
         "71489979a001867a03ccdce5ea71250ff9025a5f7fcca9b7527a956511fe2d40"
@@ -104,11 +104,19 @@ M12_EDITS = {
     "jian_kernel/cli.py": (
         "7e9c3091597e20287060416e498b969456c2742c2726fc2ff34d4390d101fc5f"
     ),
+    # M16: refusal event type and the persona skip list
     "jian_kernel/compiler.py": (
-        "b8117d33e59a3d21f5787f8fbc0c7480f7f5057aeafac03b428cea036f89bb9e"
+        "33883fb06716680551c3a285f93b52872817321ded30f963ca410869c36c87ea"
     ),
     "jian_kernel/errors.py": (
         "de6ffacb29752d23d4eae28931f80ca8fd1eacde11dc47ddef3f1a6ee0f4274c"
+    ),
+    # M16: persona targets join the proposal whitelist and kernel constants
+    "jian_kernel/gate.py": (
+        "4614f640dc02b4f0ac95a5c30ffff1a873ef711a04236a22139e84ea62000c03"
+    ),
+    "jian_kernel/kernel.py": (
+        "8c4bf6aa9799680101e12772f6059690b00c6ff232036df7acbd78469f8d416a"
     ),
     # M14: E_RC_STREAM and the stream session exports
     "jian_recall/errors.py": (
@@ -390,8 +398,9 @@ class TestUpperLayersTouchLimit(unittest.TestCase):
         # M10 touched three files with one functional line each; M12.1 added
         # the verify gate, which moved compiler.py to the whole-file pin above;
         # M14 touched two recall files for the stream session; M14.1 touched
-        # trigger.py and assemble.py so the session can cache sub-queries.
-        self.assertEqual(len(changed), 10)
+        # trigger.py and assemble.py so the session can cache sub-queries;
+        # M16 touched compiler.py, gate.py and kernel.py for the persona skip.
+        self.assertEqual(len(changed), 12)
         replaced = sum(len(entry["replaced"]) for entry in EDITS.values())
         self.assertEqual(replaced, 2, "two remaining M10 line-level edits")
         self.assertIn("jian_kernel/compiler.py", M12_EDITS, "compiler.py must stay pinned")

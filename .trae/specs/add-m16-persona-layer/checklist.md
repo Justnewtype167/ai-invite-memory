@@ -5,6 +5,8 @@
 - [ ] `refusal` 事件不再导致 `E_KN_IO: 未知事件类型 refusal`，`compile_kernel` 正常返回
 - [ ] 跳过清单恰好六种形态：`refusal` / `directive(trait)` / `directive(trait_off)` / `proposal(self.trait)` / `proposal(self.style_card)` / `proposal(self.user_card)`，既不多也不漏
 - [ ] 六种各 100 条写入后，`kid` 与写入前逐字节相同；`head` 停在最后一条内核事件
+- [ ] 六种各 100 条写入后，`kernel.self_md` / `canon_md` / `state` / `graph` 与写入前逐字节相同
+- [ ] 只追加人格事件后 `record_kernel` 产生同 kid 的新版本，HISTORY 该行含 `"note": "persona_only"`；无新证据时 `written=False` 且 HISTORY 字节不变
 - [ ] 追加人格事件后 `compile_kernel_incremental` 与 `compile_kernel` 的 kid 相同，`reconcile` 返回 `ok`
 - [ ] `moment` / `models` / `style` / `state` / `graph` / `self.md` 全部只由内核事件计算，人格事件不参与
 
@@ -38,8 +40,8 @@
 
 ## 棘轮与全量
 
-- [ ] `tests/test_all_regression.py`：包元组含 `jian_persona`；8 个新文件在 `ALLOWED_ADDITIONS`；`jian_kernel/gate.py`、`jian_kernel/kernel.py` 在 `ALLOWED_CHANGES`
-- [ ] `tests/test_env_v2.py`：`incremental.py`/`compiler.py` 摘要更新，`gate.py`/`kernel.py` 新钉值，`len(changed) == 12`
+- [ ] `tests/test_all_regression.py`：包元组含 `jian_persona`；7 个新文件在 `ALLOWED_ADDITIONS`；`jian_kernel/gate.py`、`jian_kernel/kernel.py`、`jian_kernel/history.py` 在 `ALLOWED_CHANGES`
+- [ ] `tests/test_env_v2.py`：`incremental.py`/`compiler.py` 摘要更新，`gate.py`/`kernel.py`/`history.py` 新钉值，`len(changed) == 13`
 - [ ] `python -m unittest discover -s tests -v` 全绿、0 skipped、0 errors，总数 ≥ 330
 - [ ] 无 `TODO` / `pass` / `NotImplementedError`；无 skip；无第三方依赖；单文件 ≤700 行
 

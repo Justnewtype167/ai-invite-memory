@@ -36,6 +36,14 @@ STYLE_TEXT_MAX = 120
 STYLE_TOTAL_MAX = 800
 STYLE_MAX_PER_TARGET = 8
 
+# M16 persona artifacts never reach the kernel: these targets and directive
+# kinds are recognised only so the compiler can skip them explicitly.
+TRAIT_TARGET = "self.trait"
+STYLE_CARD_TARGET = "self.style_card"
+USER_CARD_TARGET = "self.user_card"
+PERSONA_TARGETS = (TRAIT_TARGET, STYLE_CARD_TARGET, USER_CARD_TARGET)
+PERSONA_DIRECTIVE_KINDS = ("trait", "trait_off")
+
 ORIGIN_RULE_ONLY = "rule_only"
 ORIGIN_WITH_PROPOSALS = "with_proposals"
 ORIGIN_RULE_FALLBACK = "rule_fallback"

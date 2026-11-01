@@ -115,6 +115,12 @@ def append_event(
     kind: str | None = None,
     target: str | None = None,
     trace: str | None = None,
+    model: str | None = None,
+    prompt_sha: str | None = None,
+    quant: str | None = None,
+    weights_sha: str | None = None,
+    temp_milli: int | None = None,
+    seed: int | None = None,
 ) -> Event:
     """Append one event to the open segment and reset ``sealed_at``.
 
@@ -124,7 +130,8 @@ def append_event(
     The M1 call form ``append_event(store, role, text, t)`` still works and
     writes a ``turn``. The typed form passes ``type`` (and ``kind``/
     ``target`` where the type allows them) as keywords. ``trace`` is only
-    legal on ``refusal`` events.
+    legal on ``refusal`` events; the six provenance keywords are only legal
+    on ``proposal`` events, so a proposal can carry its model and prompt hash.
     """
     if not store.is_dir() or not (store / EVIDENCE_DIR).is_dir():
         raise JianError(E_IO, f"存储目录未初始化：{store}")
@@ -141,6 +148,8 @@ def append_event(
     event = new_event(
         seq, episode, stamp, role, text, previous,
         type=event_type, kind=kind, target=target, trace=trace,
+        model=model, prompt_sha=prompt_sha, quant=quant,
+        weights_sha=weights_sha, temp_milli=temp_milli, seed=seed,
     )
     _append_bytes(store / EVIDENCE_DIR / f"{episode}.jsonl", event.to_line())
     _commit_segment(rows, last, episode, new_segment, event.hash)
@@ -180,8 +189,19 @@ def append_payload_event(
     type: str = "turn",
     kind: str | None = None,
     target: str | None = None,
+    model: str | None = None,
+    prompt_sha: str | None = None,
+    quant: str | None = None,
+    weights_sha: str | None = None,
+    temp_milli: int | None = None,
+    seed: int | None = None,
 ) -> Event:
-    """Append one v2 envelope event; its bytes live in the blob store."""
+    """Append one v2 envelope event; its bytes live in the blob store.
+
+    The six provenance keywords follow the same rules as in
+    :func:`append_event`: they are only legal on ``proposal`` events, which
+    is how a style card larger than the v1 text limit is recorded.
+    """
     if not store.is_dir() or not (store / EVIDENCE_DIR).is_dir():
         raise JianError(E_IO, f"存储目录未初始化：{store}")
     chain = _read_chain(store, required=True)
@@ -204,6 +224,8 @@ def append_payload_event(
         seq, episode, stamp, role, None, previous,
         type=type, kind=kind, target=target,
         modality=modality, payload=f"sha256:{digest}", summary=summary,
+        model=model, prompt_sha=prompt_sha, quant=quant,
+        weights_sha=weights_sha, temp_milli=temp_milli, seed=seed,
     )
     put_blob(store, raw)
     _append_bytes(store / EVIDENCE_DIR / f"{episode}.jsonl", event.to_line())

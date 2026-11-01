@@ -31,6 +31,8 @@ from jian_kernel.kernel import (
     ORIGIN_RULE_FALLBACK,
     ORIGIN_RULE_ONLY,
     ORIGIN_WITH_PROPOSALS,
+    PERSONA_DIRECTIVE_KINDS,
+    PERSONA_TARGETS,
     STATE_MAX,
     STATE_MIN,
     STYLE_MAX_PER_TARGET,
@@ -50,7 +52,7 @@ from jian_kernel.kernel import (
 )
 from jian_kernel.proposer import Proposal, Proposer, ReplayProposer
 
-EVENT_TYPES = ("turn", "directive", "milestone", "feedback", "proposal")
+EVENT_TYPES = ("turn", "directive", "milestone", "feedback", "proposal", "refusal")
 PROMISE_DONE = ("已完成", "已办", "做到了")
 FEEDBACK_TRUST = {"correction": -50, "praise": 20}
 FIRST_DAY_INTIMACY = 5
@@ -79,6 +81,26 @@ def verify_evidence(store: Path) -> None:
         verify_path(store)
     except JianError as error:
         raise KernelError(E_KN_TAMPER, f"证据未通过校验：{error}") from error
+
+
+def is_persona_event(event: EvidenceEvent) -> bool:
+    """Return True for an event the kernel must skip byte for byte.
+
+    The M16 skip list is closed and explicit: a refusal, a trait directive
+    (enable or disable), and a proposal aimed at a trait, style card or user
+    card. These four shapes plus their two proposal targets are all persona
+    artifacts; anything else still compiles into the kernel.
+    """
+    if event.type == "refusal":
+        return True
+    if event.type == "directive" and event.kind in PERSONA_DIRECTIVE_KINDS:
+        return True
+    return event.type == "proposal" and (event.target or "") in PERSONA_TARGETS
+
+
+def core_events(events: list[EvidenceEvent]) -> list[EvidenceEvent]:
+    """Return every event that is allowed to shape the kernel."""
+    return [event for event in events if not is_persona_event(event)]
 
 
 def compile_kernel(
@@ -122,13 +144,16 @@ def _compile(
     source = proposer if proposer is not None else ReplayProposer()
     if not events:
         raise KernelError(E_KN_IO, "证据目录为空")
-    moment = chosen.resolved_now(events[-1].stamp)
-    check_proposals(events)
-    style, rejected, groups = _select_style(events)
+    core = core_events(events)
+    if not core:
+        raise KernelError(E_KN_IO, "没有可编译的内核证据（只有人格事件）")
+    moment = chosen.resolved_now(core[-1].stamp)
+    check_proposals(core)
+    style, rejected, groups = _select_style(core)
     origin = _resolve_origin(chosen, style)
-    models = _model_ids(events)
+    models = _model_ids(core)
     proposals = source.propose(store, chosen)
-    content = [event for event in events if event.type != "proposal"]
+    content = [event for event in core if event.type != "proposal"]
     canon = _build_canon(content, proposals)
     state = _compute_state(content)
     edges, anchors = _build_graph(content)
@@ -141,7 +166,7 @@ def _compile(
     kid = kernel_kid(self_md, canon_md, state, graph, origin, models)
     return Kernel(
         kid=kid,
-        head=events[-1].event_id,
+        head=core[-1].event_id,
         canon=canon,
         edges=edges,
         anchors=anchors,

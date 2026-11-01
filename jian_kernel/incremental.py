@@ -37,6 +37,7 @@ from jian_kernel.compiler import (
     _select_style,
     _top_kinship,
     compile_kernel,
+    core_events,
     read_evidence,
 )
 from jian_kernel.errors import (
@@ -114,21 +115,24 @@ def compile_kernel_incremental(
     """
     chosen = policy if policy is not None else Policy()
     events = read_evidence(store)
+    core = core_events(events)
+    if not core:
+        raise KernelError(E_KN_IO, "没有可编译的内核证据（只有人格事件）")
     snapshot = load_snapshot(store)
     if snapshot is None:
-        return _compile_full(store, chosen, events, counter)
-    if not any(event.event_id == snapshot.head for event in events):
+        return _compile_full(store, chosen, core, counter)
+    if not any(event.event_id == snapshot.head for event in core):
         raise KernelError(
             E_KN_STALE, f"快照 head 不在证据中（证据被截断或回滚）：{snapshot.head}"
         )
     if policy_digest(chosen) != snapshot.policy_digest:
-        return _compile_full(store, chosen, events, counter)
+        return _compile_full(store, chosen, core, counter)
     head = _sequence(snapshot.head)
-    delta = [event for event in events if _sequence(event.event_id) > head]
+    delta = [event for event in core if _sequence(event.event_id) > head]
     if not delta:
         _record(counter, 0)
-        return _kernel_from_snapshot(snapshot, chosen, events)
-    kernel, context = _apply_delta(snapshot, delta, chosen, events)
+        return _kernel_from_snapshot(snapshot, chosen, core)
+    kernel, context = _apply_delta(snapshot, delta, chosen, core)
     write_snapshot(store, snapshot_from(kernel, chosen, context))
     _record(counter, len(delta))
     return kernel
@@ -148,7 +152,10 @@ def reconcile(store: Path, policy: Policy | None = None) -> ReconcileReport:
     if snapshot is None:
         raise KernelError(E_KN_SNAPSHOT, "没有快照可对账，请先跑一次增量编译")
     events = read_evidence(store)
-    if not any(event.event_id == snapshot.head for event in events):
+    core = core_events(events)
+    if not core:
+        raise KernelError(E_KN_IO, "没有可编译的内核证据（只有人格事件）")
+    if not any(event.event_id == snapshot.head for event in core):
         raise KernelError(E_KN_STALE, f"快照 head 不在证据中：{snapshot.head}")
     kernel = compile_kernel(store, chosen)
     if snapshot.head != kernel.head:
@@ -156,7 +163,7 @@ def reconcile(store: Path, policy: Policy | None = None) -> ReconcileReport:
             E_KN_DRIFT, f"快照 head 落后于证据：{snapshot.head} != {kernel.head}"
         )
     _compare(snapshot, kernel)
-    return ReconcileReport(kernel.kid, kernel.head, len(events))
+    return ReconcileReport(kernel.kid, kernel.head, len(core))
 
 
 def _compare(snapshot: Snapshot, kernel: Kernel) -> None:
@@ -176,12 +183,12 @@ def _compare(snapshot: Snapshot, kernel: Kernel) -> None:
 
 
 def _compile_full(
-    store: Path, policy: Policy, events: list[EvidenceEvent], counter: list[int] | None
+    store: Path, policy: Policy, core: list[EvidenceEvent], counter: list[int] | None
 ) -> Kernel:
-    """Compile every event, then seed the snapshot from the result."""
+    """Compile every core event, then seed the snapshot from the result."""
     kernel = compile_kernel(store, policy)
-    write_snapshot(store, snapshot_from(kernel, policy, _build_context(events)))
-    _record(counter, len(events))
+    write_snapshot(store, snapshot_from(kernel, policy, _build_context(core)))
+    _record(counter, len(core))
     return kernel
 
 
@@ -195,9 +202,9 @@ def _apply_delta(
     snapshot: Snapshot,
     delta: list[EvidenceEvent],
     policy: Policy,
-    events: list[EvidenceEvent],
+    core: list[EvidenceEvent],
 ) -> tuple[Kernel, SnapshotContext]:
-    """Continue the snapshot aggregates with only the new events."""
+    """Continue the snapshot aggregates with only the new core events."""
     content = [event for event in delta if event.type != "proposal"]
     check_proposals(delta)
     accepted, rejected, groups, used, counts = _continue_style(snapshot.context, delta)
@@ -208,14 +215,15 @@ def _apply_delta(
         snapshot.context, content, delta, seen_days, accepted, rejected,
         groups, used, counts,
     )
-    moment = policy.resolved_now(events[-1].stamp)
+    moment = policy.resolved_now(core[-1].stamp)
+    head = core[-1].event_id
     origin = _resolve_origin(policy, accepted)
     self_md = _render_self_stats(context, moment, edges)
     canon_md = render_canon(canon)
     graph = graph_payload(edges, anchors)
     kernel = Kernel(
         kid=kernel_kid(self_md, canon_md, state, graph, origin, context.models),
-        head=events[-1].event_id,
+        head=head,
         canon=canon,
         edges=edges,
         anchors=anchors,
@@ -401,10 +409,10 @@ def _render_self_stats(
 
 
 def _kernel_from_snapshot(
-    snapshot: Snapshot, policy: Policy, events: list[EvidenceEvent]
+    snapshot: Snapshot, policy: Policy, core: list[EvidenceEvent]
 ) -> Kernel:
     """Rebuild an unchanged kernel from snapshot bytes; verify its kid."""
-    moment = policy.resolved_now(events[-1].stamp)
+    moment = policy.resolved_now(core[-1].stamp)
     canon = parse_canon(snapshot.canon_md)
     edges = edges_from(snapshot.graph)
     anchors = anchors_from(snapshot.graph)
@@ -437,10 +445,10 @@ def _kernel_from_snapshot(
     )
 
 
-def _build_context(events: list[EvidenceEvent]) -> SnapshotContext:
-    """Derive the continuation context from a full compile."""
-    content = [event for event in events if event.type != "proposal"]
-    accepted, rejected, sections = _select_style(events)
+def _build_context(core: list[EvidenceEvent]) -> SnapshotContext:
+    """Derive the continuation context from the core events of a full compile."""
+    content = [event for event in core if event.type != "proposal"]
+    accepted, rejected, sections = _select_style(core)
     groups = {
         target: tuple(sections.get(target, ())) for target, _ in STYLE_SECTIONS
     }
@@ -462,7 +470,7 @@ def _build_context(events: list[EvidenceEvent]) -> SnapshotContext:
         used=used,
         counts=counts,
         rejected=rejected,
-        models=_model_ids(events),
+        models=_model_ids(core),
     )
 
 

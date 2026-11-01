@@ -13,9 +13,17 @@
   - [ ] SubTask 2.1: `jian_kernel/compiler.py`：`EVENT_TYPES` 加 `"refusal"`；新增 `PERSONA_TARGETS`、`PERSONA_DIRECTIVE_KINDS`、`is_persona_event`、`core_events`；`_compile` 全程改用 `core`（`moment`/`check_proposals`/`_select_style`/`_model_ids`/`content`/`head`），`core` 为空抛 `E_KN_IO`
   - [ ] SubTask 2.2: `jian_kernel/incremental.py`：`core_events` 过滤、`delta` 只取 core、`_apply_delta`/`_kernel_from_snapshot`/`_compile_full` 的 `moment`、`head`、`_build_context(core)` 全部改用 core
   - [ ] SubTask 2.3: `jian_kernel/kernel.py`：新增 `PERSONA_TARGETS` / `PERSONA_DIRECTIVE_KINDS` 常量（L1 定义，L2 引用，避免上层反向依赖）；`jian_kernel/gate.py` 白名单改为 `STYLE_TARGETS + PERSONA_TARGETS`
-  - [ ] SubTask 2.4: 新建 `tests/test_persona.py`，先写 `test_refusal_compiles` 与 `test_persona_events_keep_kid`（六种各 100 条，kid 逐字节不变 + 增量 kid 相同 + `reconcile` ok）
-  - [ ] SubTask 2.5: 两处棘轮：`tests/test_all_regression.py` 包元组加 `jian_persona` 与 8 个 `ALLOWED_ADDITIONS`、`ALLOWED_CHANGES` 加 `jian_kernel/gate.py` + `jian_kernel/kernel.py`；`tests/test_env_v2.py` 更新 `incremental.py`/`compiler.py` 摘要，新增 `gate.py`/`kernel.py` 钉值，`len(changed)` 10 → 12
-  - [ ] SubTask 2.6: 验证：`python -m unittest discover -s tests` 全绿且总数 = 315 + 2
+  - [ ] SubTask 2.4: 新建 `tests/test_persona.py`，先写 `test_refusal_compiles` 与 `test_persona_events_keep_kid`（六种各 100 条：kid 逐字节不变 + `self_md`/`canon_md`/`state`/`graph` 逐字节不变 + 增量 kid 相同 + `reconcile` ok）
+  - [ ] SubTask 2.5: 棘轮（此步只声明 `gate.py` + `kernel.py`）：`tests/test_all_regression.py` 包元组加 `jian_persona` 与 7 个 `ALLOWED_ADDITIONS`、`ALLOWED_CHANGES` 新增两条；`tests/test_env_v2.py` 更新 `incremental.py`/`compiler.py` 摘要，新增 `gate.py`/`kernel.py` 钉值，`len(changed)` 10 → 12
+  - [ ] SubTask 2.6: 验证：`python -m unittest discover -s tests` 全绿且总数 = 315 + 2 = 317
+  - [ ] SubTask 2.7: **单独一次提交**（P0 提交），提交后立即向用户报告 317 全绿，等确认再往下
+
+- [ ] Task 2B: 只被人格事件推进时的记录行为（依赖 Task 2）
+  - [ ] SubTask 2B.1: `HistoryEntry` 增加可选 `note`（只在非空时写进 payload，保证既有行字节不变）；`_entry_from` 读可选 `note`
+  - [ ] SubTask 2B.2: `record_kernel`：`kid` 不变且证据末事件 id > `latest.head` 时，`version+1`、`delta=0`、写 `note="persona_only"`；无新事件时行为不变（`written=False`）
+  - [ ] SubTask 2B.3: 新增 `test_record_persona_only`（同 kid 新版本 + `persona_only` 备注 + `verify_kernel` 通过 + `restore` 一致 + 无新证据时 HISTORY 字节不变）
+  - [ ] SubTask 2B.4: 棘轮补 `jian_kernel/history.py`（两条棘轮），`len(changed)` 12 → 13；全量全绿 = 318
+
 
 - [ ] Task 3: 特质表（依赖 Task 2）
   - [ ] SubTask 3.1: 新建 `jian_persona/{__init__.py,errors.py,model.py,traits.py}`，错误码按 spec 固定
@@ -52,8 +60,10 @@
 # Task Dependencies
 
 - Task 2 依赖 Task 1（没有 `trait` kind 与 proposal 溯源字段，写不出被测事件）
+- Task 2B 依赖 Task 2（persona-only 判定建立在 `core_events` 之上）
 - Task 3 / 4 / 5 依赖 Task 2（所有派生都建立在 `core_events` 之上）；Task 3、4、5 之间互不依赖，可并行
 - Task 6 依赖 Task 3、4、5
 - Task 7 依赖 Task 6
 - Task 8 依赖全部
-- 若单次改动超过 800 行，按 Task 1+2 / Task 3–6 / Task 7–8 三处边界拆分落地
+- 用户要求：Task 2 单独一次提交，先报告 315+2=317 全绿，确认后再继续 Task 2B 及之后
+- 若单次改动超过 800 行，按 Task 1+2 / Task 2B+3–6 / Task 7–8 三处边界拆分落地
