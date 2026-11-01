@@ -117,6 +117,7 @@ ALLOWED_ADDITIONS = {
     "jian_kernel/snapshot.py": "M12: throwaway snapshot payload and digest",
     "jian_projection/emit.py": "M13: the only emit path, gate before sink",
     "jian_projection/gate.py": "M13: pure actuation gate over trace and kernel",
+    "jian_recall/stream.py": "M14: stream session, chunks and entry-count statistics",
 }
 
 # Every deviation from the baseline must be declared here with a reason.
@@ -126,6 +127,8 @@ ALLOWED_CHANGES = {
     "jian/capsule.py": "M10: payload API, v2 seal/export/import, event_full_text; M13: append_refusal",
     "jian/errors.py": "M10: E_BLOB_MISSING and E_BLOB_MISMATCH",
     "jian_recall/index.py": "M10: retrieval reads summary through event_text",
+    "jian_recall/errors.py": "M14: E_RC_STREAM for chunk boundary violations",
+    "jian_recall/__init__.py": "M14: export the stream session API",
     "jian_kernel/compiler.py": "M10: full text via event_full_text; M12.1: verify_evidence and --no-verify",
     "jian_kernel/proposer.py": "M10: proposal text goes through event_text",
     "jian_kernel/errors.py": "M12: E_KN_SNAPSHOT, E_KN_DRIFT; M12.1: E_KN_TAMPER",

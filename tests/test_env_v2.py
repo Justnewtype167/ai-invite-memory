@@ -79,8 +79,8 @@ EDITS = {
 }
 
 # M12 adds two kernel modules and touches kernel files for the snapshot API;
-# M12.1 adds verify-on-CLI. Their current bytes are pinned here; any later
-# drift fails N5 and must be declared again.
+# M12.1 adds verify-on-CLI; M14 adds the recall stream session. Their current
+# bytes are pinned here; any later drift fails N5 and must be declared again.
 #
 # compiler.py moved here from EDITS: it now carries two milestones of edits
 # (M10 full-text reads, M12.1 verify_evidence), so the line-level restore
@@ -91,6 +91,9 @@ M12_ADDITIONS = {
     ),
     "jian_kernel/snapshot.py": (
         "71489979a001867a03ccdce5ea71250ff9025a5f7fcca9b7527a956511fe2d40"
+    ),
+    "jian_recall/stream.py": (
+        "865ec458dc16aa4e1e6f56fdcfb541a8fbbe48fe22c0a501928bcc543a89f0ae"
     ),
 }
 M12_EDITS = {
@@ -106,6 +109,13 @@ M12_EDITS = {
     ),
     "jian_kernel/errors.py": (
         "de6ffacb29752d23d4eae28931f80ca8fd1eacde11dc47ddef3f1a6ee0f4274c"
+    ),
+    # M14: E_RC_STREAM and the stream session exports
+    "jian_recall/errors.py": (
+        "a70c36dd64a63d9309f28689e9ff2779b598ec207e00f32bd16d481eeed7517f"
+    ),
+    "jian_recall/__init__.py": (
+        "a7770481301b7d1d8057dde2018d1aa830a77966c748e8690a8f644655adcc90"
     ),
 }
 
@@ -371,8 +381,9 @@ class TestUpperLayersTouchLimit(unittest.TestCase):
                 f"{package} must stay byte-identical",
             )
         # M10 touched three files with one functional line each; M12.1 added
-        # the verify gate, which moved compiler.py to the whole-file pin above.
-        self.assertEqual(len(changed), 6)
+        # the verify gate, which moved compiler.py to the whole-file pin above;
+        # M14 touched two recall files for the stream session.
+        self.assertEqual(len(changed), 8)
         replaced = sum(len(entry["replaced"]) for entry in EDITS.values())
         self.assertEqual(replaced, 2, "two remaining M10 line-level edits")
         self.assertIn("jian_kernel/compiler.py", M12_EDITS, "compiler.py must stay pinned")
