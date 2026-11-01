@@ -7,22 +7,40 @@
 
 交付物是「格式 + 参考实现 + 一致性套件 + 论文」，不是聊天产品。
 
-## 1. 当前阶段：M7（加难探针与坍塌深度）
+## 1. 当前阶段：M12 已封，M13（动作闸门）未开始
 
-**已封版**：`v0.1-m1` … `v0.8-m6`，共 **193 个测试**。
-PCS 机制已成立（`PCS = A × min(C)`），但 30 条探针对 9B 模型拿到 `C = 1.00`——**探针太软，测不出差异**。
+**已封版**：`v0.1-m1` … `v0.15-m12`，共 **17 个 tag、270 个测试**。
 
-| 可改 | 不可改 |
-|---|---|
-| `jian_pcs/` | `jian/`、`jian_cn/`、`jian_recall/`、`jian_kernel/` 全部 |
-| `tools/responder_*.py` | M6 的 30 条探针（新增而非替换） |
-| `tests/` 新增 | 事件哈希算法、canonical 规则 |
+```
+M1-M5    证据层 / 中文规则 / 检索装配 / 人格内核 / 提案即证据
+M6-M9    行为身份 PCS / 多轮坍塌 / 规则可执行化与判定器效度 / 咨询模式
+M10      载荷与信封：事件改为「信封 + 内容寻址载荷」
+M11      轨迹与双投影：同一 kid 驱动文字与动作，身份不变
+M12      增量编译 + 对账：增量结果与全量逐字节相同
+M13-M15  动作闸门 / 实时流 / 哀悼与继承（未开始）
+```
 
-规格见 `docs/TASK-09-hard-probes.md`。**写之前先过一遍 `docs/SPEC-CHECKLIST.md` 的十问。**
+**下一步是 M13**，规格尚未写。写规格前必读：
 
-唯一目标：**新探针在 qwen3.5:9b temp 0 下的 C_final 必须落进 [0.50, 0.90]**，并引入坍塌深度 `D`。
-`jian_pcs/` 零依赖零网络；判定器必须确定性；测试只跑脚本化回复，一次也不联网。
-越界视为任务失败，即使代码能跑。
+```
+docs/SPEC-CHECKLIST.md      十问自检
+docs/FOUNDATION-INVARIANCE.md  地基不变量（为什么做 M13）
+docs/AUDIT-01.md            全项目重新验证的结论与已知缺口
+```
+
+### 1.1 冻结政策（已按 M10–M12 更新）
+
+```
+原始冻结（M1-M5）：jian/、jian_cn/、jian_recall/、jian_kernel/ 不许改
+M10 起：jian/ 是证据层，允许改，改动必须在 ALLOWED_CHANGES 声明
+M11 起：新增 jian_projection/（L2 投影层），不属于内核
+M12 起：jian_kernel/ 允许改（增量与快照），同样必须声明
+jian_cn/、jian_recall/、jian_pcs/ 仍然冻结（M10 只允许三处一行改动）
+```
+
+**闸门是 `tests/test_all_regression.py` 的 `ALLOWED_CHANGES`**：
+改了没声明 → 失败；声明了没改 → 也失败。
+
 
 ## 1.1 本机模型与工具
 
@@ -58,27 +76,28 @@ tools/responder_ollama.py   支持 --model
 
 ```
 D:/projects/Memory/
-  AGENTS.md
-  README.md
+  AGENTS.md            # 本文件：约束与当前阶段
+  README.md            # 中文首页    README-en.md 英文首页
+  LICENSE              # Apache-2.0
+  CHANGELOG.md         # 17 个里程碑的来龙去脉
   pyproject.toml
-  jian/
-    __init__.py
-    canonical.py      # C3 canonical JSON
-    errors.py         # C9 错误码
-    event.py          # 事件模型与校验
-    chain.py          # 哈希链
-    capsule.py        # 容器打包/解包/校验
-    cli.py            # 7 个命令
-  tests/
-    test_canonical.py
-    test_chain.py
-    test_capsule.py
-    test_cli.py
-  docs/
-    TASK-01-capsule.md   # 本任务规格（唯一权威）
-    SPEC-CONSTRAINTS.md  # 长期约束（不要改）
-  corpus/                # 合成人格库（不要改）
-  tools/build_corpus.py  # 语料生成器（不要改）
+  jian/                # L0 证据层：容器、哈希链、载荷 blob
+    canonical.py  errors.py  event.py  chain.py  capsule.py  cli.py
+  jian_cn/             # 中文规则层：称谓、相对时间、梗时效、繁简
+  jian_recall/         # 检索与预算装配：FTS5 + 二元切分 + 4k 上限
+  jian_kernel/         # L1 人格内核：编译、门控、历史、提案、快照与增量
+  jian_pcs/            # 行为身份：PCS、可执行规则、坍塌深度
+  jian_projection/     # L2 投影层：轨迹契约、文本投影器、动作投影器
+  tests/               # 270 个测试（unittest，无第三方依赖）
+  tools/               # 唯一允许联网/调模型的地方
+  corpus/              # 合成人格库（不要改）
+  experiments/         # 回复集与矩阵结果
+  docs/                # 规格 / 验收 / 结果 / 论文 / 审计
+    TASK-01..16-*.md   # 每个里程碑的权威规格
+    ACCEPT-M*.md       # 每个里程碑的验收记录（含独立复核）
+    AUDIT-01.md        # 全项目重新验证
+    SPEC-CHECKLIST.md  # 写规格前的十问
+    PAPER.md / PAPER-en.md
 ```
 
 ## 4. 代码风格
@@ -96,7 +115,7 @@ D:/projects/Memory/
 3. 自己降低 `docs/TASK-01-capsule.md` 里的验收标准
 4. 引入任何第三方依赖（包括 pytest）
 5. 写营销式 README、写「未来将支持」
-6. 越过 M1 范围（检索、摘要、LLM、中文解析、MCP）
+6. 越过当前里程碑范围（见 §1；M13 之前不许碰真实设备驱动）
 7. 把被测核心逻辑 mock 掉
 8. 一次提交超过 800 行（拆成两次）
 9. 让任何单个源文件超过 700 行而不拆分
@@ -107,11 +126,11 @@ D:/projects/Memory/
 python -m unittest discover -s tests -v
 ```
 
-必须满足：**8 个验收测试全绿，0 skipped，0 errors**，且：
+必须满足：**全量 270 个测试全绿，0 skipped，0 errors**（当前基线），且：
 
-- `python -m jian.cli --help` 能列出 7 个命令（命令是 7 个，测试是 8 个，别混）
+- 冻结包的改动必须在 `tests/test_all_regression.py` 的 `ALLOWED_CHANGES` 声明（改了没声明失败，声明了没改也失败）
 - 存在一个 `docs/demo/` 目录，含一次真实的 init→append→seal→verify→export→import 输出记录
-- 源码总行数 ≤ 1400 行（不含测试与文档）；**任何单个文件 > 700 行必须拆分**
+- 任何单个文件 > 700 行必须拆分
 
 ## 7. 汇报格式（每次结束必须按此格式）
 

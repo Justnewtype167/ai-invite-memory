@@ -351,13 +351,15 @@ Without these three, behavioral identity produces numbers that look stable and m
 3. 80 probes: PCS CI is still +/-0.12.
 4. No real long-term users.
 5. No automatic mode detection: modes are declared by the probes, not inferred by the system.
+6. **PCS is an evaluation result, not portable evidence**: a capsule carries evidence and `kid`; reproducing behavioral consistency needs the reply set.
+7. **No actuation layer yet**: projection is a pure function, so nothing records what the system actually did (the ethical gate is M13).
 
 ---
 
 ## 8. Reproducibility
 
 ```
-246 tests, 12 milestone tags, 0 third-party dependencies, Python 3.11+
+246 tests, 12 milestone tags, 0 third-party dependencies, Python 3.11+ (as of this draft; see README for the current numbers)
 Two local models (qwen3.5:9b / glm4:9b), fully offline
 python tools/pcs_matrix.py --models qwen3.5:9b glm4:9b
 ```
