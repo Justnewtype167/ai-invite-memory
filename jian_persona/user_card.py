@@ -33,6 +33,7 @@ DONE_MARKERS = ("已完成", "已办", "做到了")
 DEFAULT_RULES_PATH = Path(__file__).resolve().parent / "data" / "user_card_rules.json"
 PINNED_ID = "user_card"
 PINNED_SLOT = "pinned"
+CLAUSE_SPLIT = re.compile(r"[，。！？,.!?]")
 
 
 @dataclass(frozen=True)
@@ -122,8 +123,16 @@ def _derive_address(
 ) -> dict[str, object]:
     address = table.get("address")
     assert isinstance(address, dict)
+    raw_negations = address.get("negations", [])
+    negations = tuple(str(word) for word in raw_negations) if isinstance(
+        raw_negations, list
+    ) else ()
+    raw_suffixes = address.get("suffixes", [])
+    suffixes = tuple(str(word) for word in raw_suffixes) if isinstance(
+        raw_suffixes, list
+    ) else ()
     call, call_evidence, never = _derive_call(
-        core, str(address.get("call", ""))
+        core, str(address.get("call", "")), negations, suffixes
     )
     self_name = _last_match(core, str(address.get("self", "")))
     payload: dict[str, object] = {
@@ -139,16 +148,19 @@ def _derive_address(
 
 
 def _derive_call(
-    core: list[EvidenceEvent], pattern: str
+    core: list[EvidenceEvent],
+    pattern: str,
+    negations: tuple[str, ...],
+    suffixes: tuple[str, ...],
 ) -> tuple[str, str, list[dict[str, str]]]:
     """Split address directives into call and taboo; a taboo always wins.
 
-    The pattern captures an optional negation prefix plus an optional ``我``:
-    a prefixed match is a taboo ("别 / 不要 / 不许 / 不准 / 勿"), a bare
-    "叫我X" is the name to use. Without either, "妈妈叫桂花" is a kinship
-    statement, not an address directive. After scanning, a call that appears
-    in the taboo list is dropped, so an unlisted negation can never leak into
-    the prompt as an address.
+    Negation is decided per clause, not by a prefix token: any clause that
+    contains one of the configured negation words turns its "叫X" match into a
+    taboo, whatever the surface form is. A clause with no negation can only set
+    the call when it says "叫我X"; "妈妈叫桂花" is kinship, not an address.
+    Trailing tails such as "就好" are removed before the name is compared.
+    After scanning, a call that equals a taboo is dropped.
     """
     call = ""
     evidence = ""
@@ -157,23 +169,41 @@ def _derive_call(
     if not pattern:
         return call, evidence, never
     for event in core:
-        for match in re.finditer(pattern, event.text):
-            prefix = (match.group(1) or "").strip()
-            pronoun = (match.group(2) or "").strip()
-            name = match.group(3).strip()
-            if not name:
+        for clause in CLAUSE_SPLIT.split(event.text):
+            if not clause:
                 continue
-            if prefix:
-                if name not in seen:
-                    seen.add(name)
-                    never.append({"text": name, "evidence": event.event_id})
-            elif pronoun:
-                call = name
-                evidence = event.event_id
+            negative = any(
+                word and word in clause for word in negations
+            )
+            for match in re.finditer(pattern, clause):
+                pronoun = (match.group(1) or "").strip()
+                name = _trim_suffixes(match.group(2).strip(), suffixes)
+                if not name:
+                    continue
+                if negative:
+                    if name not in seen:
+                        seen.add(name)
+                        never.append({"text": name, "evidence": event.event_id})
+                elif pronoun:
+                    call = name
+                    evidence = event.event_id
     if call and call in seen:
         call = ""
         evidence = ""
     return call, evidence, never
+
+
+def _trim_suffixes(name: str, suffixes: tuple[str, ...]) -> str:
+    """Strip hesitation tails ("就好", "吧", ...) so only the name is left."""
+    trimmed = name
+    changed = True
+    while changed:
+        changed = False
+        for suffix in suffixes:
+            if suffix and trimmed.endswith(suffix) and len(trimmed) > len(suffix):
+                trimmed = trimmed[: -len(suffix)].strip()
+                changed = True
+    return trimmed
 
 
 def _last_match(

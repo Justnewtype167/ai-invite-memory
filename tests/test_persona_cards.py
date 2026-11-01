@@ -254,7 +254,9 @@ class TestUserCard(unittest.TestCase):
         append_event(store, None, "升职了", "2026-01-09T09:00:00Z", type="milestone")
 
     def _address_card(self, *texts: str) -> UserCard:
-        store = self._store()
+        store = pathlib.Path(tempfile.mkdtemp(prefix="jian_address_"))
+        self.addCleanup(shutil.rmtree, store, True)
+        init_store(store)
         for index, text in enumerate(texts):
             append_event(store, "user", text, _stamp(index))
         return derive_user_card(read_evidence(store))
@@ -293,6 +295,51 @@ class TestUserCard(unittest.TestCase):
         print(f"M16 address 不许 call={card.address['call']!r} never={names}")
         self.assertEqual(card.address["call"], "")
         self.assertEqual(names, ["小名"])
+
+    def test_address_negation_beng_is_taboo(self) -> None:
+        """``甭叫我X`` is decided by the clause, not by a known prefix."""
+        card = self._address_card("甭叫我宝宝")
+        names = [item["text"] for item in card.address["never"]]
+        print(f"M16 address 甭 call={card.address['call']!r} never={names}")
+        self.assertEqual(card.address["call"], "")
+        self.assertEqual(names, ["宝宝"])
+
+    def test_address_negation_wu_is_taboo(self) -> None:
+        """``勿叫我X`` is a taboo."""
+        card = self._address_card("勿叫我小名")
+        names = [item["text"] for item in card.address["never"]]
+        print(f"M16 address 勿 call={card.address['call']!r} never={names}")
+        self.assertEqual(card.address["call"], "")
+        self.assertEqual(names, ["小名"])
+
+    def test_address_negation_bielao_is_taboo(self) -> None:
+        """``别老叫我X`` is a taboo."""
+        card = self._address_card("别老叫我小名")
+        names = [item["text"] for item in card.address["never"]]
+        print(f"M16 address 别老 call={card.address['call']!r} never={names}")
+        self.assertEqual(card.address["call"], "")
+        self.assertEqual(names, ["小名"])
+
+    def test_address_negation_buyong_is_taboo(self) -> None:
+        """``不用叫我X`` is a taboo."""
+        card = self._address_card("不用叫我小名")
+        names = [item["text"] for item in card.address["never"]]
+        print(f"M16 address 不用 call={card.address['call']!r} never={names}")
+        self.assertEqual(card.address["call"], "")
+        self.assertEqual(names, ["小名"])
+
+    def test_address_strips_suffixes(self) -> None:
+        """Hesitation tails such as 就好 never become part of the name."""
+        tails = ("就好", "就行", "吧", "啊", "哦", "了", "啦")
+        for tail in tails:
+            card = self._address_card("叫我老周" + tail)
+            self.assertEqual(card.address["call"], "老周", tail)
+        card = self._address_card("叫我老周就好吧")
+        print(
+            f"M16 address suffix call={card.address['call']!r} "
+            f"tails={len(tails)}"
+        )
+        self.assertEqual(card.address["call"], "老周")
 
     def test_user_card_deterministic(self) -> None:
         """The same evidence yields byte-identical cards in two processes."""

@@ -2,7 +2,7 @@
 
 > 规格：`docs/TASK-21-traits-style.md`
 > 前置：`docs/ACCEPT-M16-P0.md`（P0 修复与人格事件跳过清单）
-> **结论：十二项验收全部通过；全量 `Ran 334 tests` 全绿、0 failed、0 error、0 skipped。**
+> **结论：十二项验收全部通过；全量 `Ran 339 tests` 全绿、0 failed、0 error、0 skipped。**
 > 例外：Task 7 的四组对照**未测量**（本机 Ollama 无模型、端口拒绝），
 > 真实报错与已测数字见 `docs/RESULTS-style.md`。
 
@@ -49,6 +49,30 @@ M16 address 不许 call='' never=['小名']
 
 其中 `别` 用例先写 `叫我宝贝` 再写 `别叫我宝贝`，所以它同时证明第二层兜底：
 即使 call 已经建立，只要同名进入 never 也会被丢弃（`call_evidence` 一并移除）。
+
+### P1/P2 修复（2026-11-02 第二批，5 条）
+
+`甭` 不进 never 的根因不是词表缺失，而是「用前缀判断否定」这个结构：任何没被
+正则列出的否定词都会退化成 call。因此改为**子句级否定判定**：
+
+```
+negations = 别 / 不要 / 不许 / 不准 / 勿 / 甭 / 别老 / 不用 / 没必要
+按标点切子句 → 子句内出现任一否定词 ⇒ 该子句的「叫X」进 never
+子句无否定词 ⇒ 只有「叫我X」能设 call；「妈妈叫桂花」仍不是称呼
+suffixes  = 就好 / 就行 / 吧 / 啊 / 哦 / 了 / 啦    （反复从名字尾部剥离）
+```
+
+真实输出：
+
+```
+M16 address 甭 call='' never=['宝宝']
+M16 address 勿 call='' never=['小名']
+M16 address 别老 call='' never=['小名']
+M16 address 不用 call='' never=['小名']
+M16 address suffix call='老周' tails=7
+```
+
+`叫我老周就好吧` 这类叠加尾缀也会被剥到只剩 `老周`（测试里循环覆盖 7 个尾缀）。
 
 ## 3. 版本账本与宪章 A2（必须显式说明）
 
@@ -102,12 +126,12 @@ $ python -m unittest discover -s tests
 ...
 S6 frozen tests=178 failures=0 errors=0 skipped=0
 V5 probes=80 skipped=0 C(a)=0.8625 C(b)=0.8375 A=0.7750 PCS=0.6491
-Ran 334 tests in 251.521s
+Ran 339 tests in 227.447s
 OK
 ```
 
-否定式修复后又跑一次全量：`Ran 334 tests ... OK`，**0 failed / 0 error / 0 skipped**
-（334 = 330 + 用户卡否定式 4 条；kid 与 330 时相同，未动）。
+P1/P2 修复后又跑一次全量：`Ran 339 tests ... OK`，**0 failed / 0 error / 0 skipped**
+（339 = 334 + 甭/勿/别老/不用 4 条 + 尾缀 1 条；kid 与 334 时相同，未动）。
 
 ## 7. 未测量项（Task 7）
 
@@ -133,7 +157,7 @@ A 组只引用 V5 的既有基线（PCS=0.649，95% CI [0.522, 0.754]）。
 ```
 S1-S8, U1-U4   🟢 全部通过（真实断言，非「应该通过」）
 额外四项       🟢 refusal 可编、600 条人格事件 kid 不变、人格事件不进版本账本、人格不进 PCS
-全量            🟢 Ran 334 tests / OK / 0 skipped
+全量            🟢 Ran 339 tests / OK / 0 skipped
 Task 7 对照     ⚪ 未测量（无模型）；不宣称 B/C/D 的任何增益
 M16 实现        🟢 可封版；唯一遗留是环境问题，不是代码问题
 ```
@@ -232,7 +256,8 @@ A 组等于「裸内核 + 无 persona 附加」。这一条我核对过实现，
 `call=宝贝` 仍会保留，必须由 `call ∉ never` 丢弃。
 
 全量复跑：`Ran 334 tests in 251.521s` / `OK`（334 = 330 + 4），kid 未动。
-修复提交：`13e067a fix: M16 user card keeps negated names out of call`。
+P1/P2 修复后再跑：`Ran 339 tests in 227.447s` / `OK`（339 = 334 + 5），kid 未动。
+修复提交：`13e067a`（P0：否定前缀 + `call ∉ never`）；P1/P2 提交见 `git log`。
 
 ---
 
@@ -292,3 +317,24 @@ call 的匹配要求：整个子句不含任何否定词
 测试：334 全绿
 验收：通过，P1/P2 记入下一批（不得丢失）
 ```
+
+## 4. P1/P2 已修（2026-11-02 第二批）
+
+| 输入 | 修复前 | 修复后 |
+|---|---|---|
+| 甭叫我宝宝 | call=宝宝 | `call=''` / `never=['宝宝']` ✅ |
+| 勿叫我小名 | （未测） | `call=''` / `never=['小名']` ✅ |
+| 别老叫我小名 | （未测） | `call=''` / `never=['小名']` ✅ |
+| 不用叫我小名 | （未测） | `call=''` / `never=['小名']` ✅ |
+| 叫我老周就好 | call=老周就好 | `call='老周'` ✅ |
+| 叫我老周就好吧 | call=老周就好吧 | `call='老周'`（叠加尾缀） ✅ |
+
+结构改动：否定判定从「前缀」改为「子句」——按标点切子句，子句内出现任一否定词
+即整条「叫X」进 `never`，不再依赖否定词紧贴 `叫`。尾缀在比较前反复剥离。
+
+```
+Ran 339 tests in 227.447s
+OK
+```
+
+全量 339（334 + 5 条新增：甭/勿/别老/不用 + 尾缀），kid 未动。
