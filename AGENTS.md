@@ -9,7 +9,7 @@
 
 ## 1. 当前阶段：M12 已封，M13（动作闸门）未开始
 
-**已封版**：`v0.1-m1` … `v0.15-m12`，共 **17 个 tag、270 个测试**。
+**已封版**：`v0.1-m1` … `v0.15.1-m12.1`，共 **18 个 tag、274 个测试**。
 
 ```
 M1-M5    证据层 / 中文规则 / 检索装配 / 人格内核 / 提案即证据
@@ -126,7 +126,7 @@ D:/projects/Memory/
 python -m unittest discover -s tests -v
 ```
 
-必须满足：**全量 270 个测试全绿，0 skipped，0 errors**（当前基线），且：
+必须满足：**全量 274 个测试全绿，0 skipped，0 errors**（当前基线），且：
 
 - 冻结包的改动必须在 `tests/test_all_regression.py` 的 `ALLOWED_CHANGES` 声明（改了没声明失败，声明了没改也失败）
 - 存在一个 `docs/demo/` 目录，含一次真实的 init→append→seal→verify→export→import 输出记录
