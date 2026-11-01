@@ -21,12 +21,25 @@ bm25 的分数依赖全库统计（N、avgdl、idf）
 
 ```
 recent   尾部 N 条        追加只影响尾部        O(1) 读取，已是增量
-trigger  同日 ≤3 / 未完成承诺 ≤2
-         按「天」分桶      追加只影响当天桶      可缓存，真省工
+trigger  同日 ≤3 / 未完成承诺 ≤2                 可缓存，真省工
 retrieve bm25 top-K      全局统计，**不可增量**   明确不碰
 ```
 
 **本轮只把 trigger 做成增量，并把 retrieve 的不可增量写进报告。**
+
+### 2.1 trigger 的真实查询键（先读代码，再谈缓存）
+
+`jian_recall/trigger.py` 的两个查询**不是按天分桶**的：
+
+```
+same_day   WHERE t.md = ? AND t.year < ?   ORDER BY t.ts DESC LIMIT 3
+           ⇒ 依赖「now 的 MM-DD」与「now 的 year」，不是事件自己的日期
+promises   WHERE d.is_promise = 1          ORDER BY t.ts DESC LIMIT 2
+           ⇒ 依赖「全库最新的两条承诺」，与日期无关
+```
+
+**所以缓存不能按「天」分桶，只能按查询谓词分桶 + 定向失效。**
+
 
 ---
 
@@ -34,8 +47,8 @@ retrieve bm25 top-K      全局统计，**不可增量**   明确不碰
 
 ```python
 StreamStats(
-    trigger_scanned:int,   # 本轮实际扫描的事件条数（按天桶）
-    trigger_reused:int,    # 直接命中的缓存天数
+    trigger_scanned:int,   # 本轮实际扫描的事件条数（只数新增）
+    trigger_reused:int,    # 本轮从缓存直接返回的子查询数（0..2）
     retrieve_scored:int,   # bm25 条目数（保持不变，**不宣称减少**）
 )
 ```
@@ -43,20 +56,27 @@ StreamStats(
 | 计数 | 断言 |
 |---|---|
 | `trigger_scanned` | 追加一条后 == 1（只扫新增），与历史总量无关 |
-| `trigger_reused` | 未跨天时 == 已缓存天数 |
+| `trigger_reused` | **不是天数**：本轮有几个子查询命中缓存（`same_day` / `promises` 各算一个，取值 0..2） |
 | `retrieve_scored` | **恒等于候选池条目数**，本轮不做减少 |
+
+> `trigger_reused` 早期写成「已缓存天数」，那是错的——
+> 触发查询没有「天」这个维度，硬套一个天数口径只会得到无法解释的数字。
 
 ---
 
 ## 4. 缓存失效（最容易出错的地方）
 
-| 触发条件 | 动作 |
-|---|---|
-| 追加事件且落在**同一天** | 只失效当天桶 |
-| 追加事件落在**新的一天** | 新增一个桶，旧桶不动 |
-| 证据 head 回退（截断/回滚） | **全部失效** |
-| 索引重建 | 全部失效 |
-| 会话 `now` 改变 | 全部失效（同日判定依赖它） |
+| 触发条件 | 失效哪个子查询 | 理由 |
+|---|---|---|
+| 追加事件的 `md == target_md` 且 `year < target_year` | `same_day` | 它进入了周年候选集 |
+| 追加事件是承诺（`is_promise`） | `promises` | 它可能挤掉 top-2 |
+| 追加事件与上述都无关 | **一个都不失效** | 两条查询结果都不变 |
+| `now` 改变（`md` 或 `year` 变化） | 全部 | 查询键变了 |
+| 证据 head 回退（截断/回滚） | 全部 | 结果集可能变小 |
+| 索引重建 | 全部 | 派生数据重置 |
+
+**「追加事件与查询无关时一个都不失效」是本轮真正省工的地方**——
+普通对话轮次不会碰 triggers 的任何一个子查询。
 
 **任何一条漏掉，都会产出一个「与全量不同」的上下文——而这正是 S1 要防的。**
 
@@ -68,7 +88,8 @@ StreamStats(
 |---|---|---|
 | X1 | `test_still_equivalent` | 30 次随机追加，每次 `session.context == assemble`（字节级，保住 S1） |
 | X2 | `test_trigger_is_delta_sized` | 追加 1 条后 `trigger_scanned == 1`；追加 10 条后 `== 10`；与库大小无关 |
-| X3 | `test_trigger_reused_within_day` | 同一天内多轮查询，`trigger_reused == 已缓存天数` |
+| X3 | `test_trigger_reused_per_subquery` | 两轮无关键追加后 `trigger_reused == 2`；追加一条与 `md` 无关的普通对话后仍 `== 2`；追加一条匹配 `md` 的事件后 `== 1`（`promises` 仍命中）；追加一条承诺后 `== 1` |
+| X3b | `test_reused_is_not_days` | 断言 `trigger_reused ∈ {0,1,2}`；跨 30 天、全程没有 `md` 命中时它依然是 2 —— 证明它**不是**天数口径 |
 | X4 | `test_cache_invalidation` | 跨天 / head 回退 / 索引重建 / `now` 改变 → 缓存全失效，结果仍与全量相同 |
 | X5 | `test_retrieve_not_claimed_incremental` | `retrieve_scored == candidates`（明写：本轮不减少） |
 | X6 | `test_all_regression` | 现有 **294 个测试全绿**；`jian/`、`jian_cn/`、`jian_kernel/`、`jian_pcs/`、`jian_projection/` 零 diff；`jian_recall/` 改动在 `ALLOWED_CHANGES` 声明 |
