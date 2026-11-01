@@ -75,4 +75,6 @@ docs/          规格、验收记录、结果、论文
 
 ## 许可
 
-待定。
+Apache-2.0，见 [LICENSE](LICENSE)。
+
+English: [README-en.md](README-en.md)
