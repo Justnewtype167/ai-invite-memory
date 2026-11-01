@@ -9,10 +9,11 @@ dependencies = []
 jian = "jian.cli:main"
 
 [tool.setuptools]
-packages = ["jian", "jian_cn", "jian_recall", "jian_kernel"]
+packages = ["jian", "jian_cn", "jian_recall", "jian_kernel", "jian_projection"]
 
 [tool.setuptools.package-data]
 jian_cn = ["data/*.json"]
 jian_recall = ["data/*.json"]
 jian_kernel = []
+jian_projection = ["data/*.json"]
 

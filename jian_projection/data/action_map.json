@@ -1,0 +1,18 @@
+{
+  "不主动联系": {
+    "segments": [
+      {"kind": "wait", "dur_ms": 3000}
+    ]
+  },
+  "先复述": {
+    "segments": [
+      {"kind": "action", "value": "nod", "dur_ms": 600},
+      {"kind": "wait", "dur_ms": 800}
+    ]
+  },
+  "不评价": {
+    "segments": [
+      {"kind": "action", "value": "neutral_face", "dur_ms": 400}
+    ]
+  }
+}
