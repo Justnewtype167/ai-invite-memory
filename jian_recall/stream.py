@@ -1,22 +1,30 @@
-"""Session-level streaming assembly (M14).
+"""Session-level streaming assembly (M14 / M14.1).
 
 ``StreamSession`` answers queries one turn at a time while keeping the bytes
-identical to the batch path. ``context`` delegates to :func:`assemble`, so
-there is exactly one assembly semantics; the session only adds chunking and
-work accounting.
+identical to the batch path. ``context`` shares the pool-to-context code with
+:func:`assemble`, so there is exactly one assembly semantics; the session only
+adds chunking, a trigger cache and work accounting.
 
-Work is counted in entries, never in seconds (C14). Each turn the session
-enumerates the same three candidate pools the batch assembler uses (recent
-tail, triggers, retrieved hits) and compares the candidate ids with the ids it
-has already scored:
+Retrieval is deliberately **not** incremental. bm25 depends on whole-store
+statistics (N, avgdl, idf), so appending one event changes every score; any
+implementation that skipped scoring would quietly change the bytes. Therefore
+``retrieve_scored`` always equals ``Context.candidates`` and is reported, never
+reduced.
 
-* ``scored``  entries that needed scoring for the first time in this session;
-* ``reused``  entries whose score and token estimate were already cached;
-* ``evicted`` candidates that the caps or text deduplication dropped.
+Only the two time-trigger sub-queries are cached. Their real query keys differ:
 
-``scored + reused`` therefore always equals ``Context.candidates``. The
-number of candidates is bounded by ``RECENT_LIMIT``, the trigger caps and
-``RETRIEVE_K``, so it never grows with the size of the evidence store.
+* ``same_day`` depends on the month-day and year of ``now``;
+* ``promises`` depends on the latest promise events, independent of the date.
+
+Each cache entry is a ``(key, generation)`` pair. An unrelated append bumps
+neither generation (the real saving); a matching append bumps exactly one.
+
+Work is counted in entries, never in seconds (C14):
+
+* ``trigger_scanned``  new evidence events inspected for invalidation;
+* ``trigger_loaded``   rows actually fetched by trigger queries;
+* ``trigger_reused``   sub-queries served from cache (0..2, not days);
+* ``retrieve_scored``  bm25 entries, unchanged this round.
 """
 
 from __future__ import annotations
@@ -24,46 +32,52 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterator
+from typing import Callable, Iterator
 
 from jian_recall.assemble import (
     Context,
     ContextItem,
     MAX_BUDGET,
     MIN_BUDGET,
-    RECENT_LIMIT,
-    RETRIEVE_K,
-    assemble,
+    _assemble_pools,
 )
 from jian_recall.errors import E_RC_BAD_BUDGET, E_RC_STREAM, RecallError
 from jian_recall.index import (
+    INDEX_DIR,
+    INDEX_FILE,
+    IndexStatus,
+    StoredEvent,
     index_status,
-    load_meta,
+    is_promise,
     parse_now,
     read_tail_events,
     update_index,
 )
-from jian_recall.retrieve import search
-from jian_recall.trigger import triggers
+from jian_recall.retrieve import Hit
+from jian_recall.trigger import _combine, _promises, _same_day
 
 CHUNK_SLOTS = ("recent", "recall", "longterm", "history")
 RECENT_CHUNK_LIMIT = 5
+SAME_DAY_CACHE = "same_day"
+PROMISE_CACHE = "promises"
 
 
 @dataclass(frozen=True)
 class StreamStats:
     """Entry counts describing the work of one context call."""
 
-    scored: int
-    reused: int
-    evicted: int
+    trigger_scanned: int
+    trigger_loaded: int
+    trigger_reused: int
+    retrieve_scored: int
 
     def to_dict(self) -> dict[str, int]:
         """Return a deterministic JSON-ready view of these counts."""
         return {
-            "scored": self.scored,
-            "reused": self.reused,
-            "evicted": self.evicted,
+            "trigger_scanned": self.trigger_scanned,
+            "trigger_loaded": self.trigger_loaded,
+            "trigger_reused": self.trigger_reused,
+            "retrieve_scored": self.retrieve_scored,
         }
 
 
@@ -147,27 +161,40 @@ class StreamSession:
         self.store = Path(store)
         self.budget = budget
         self.now = now
-        self._scored: set[str] = set()
-        self._stats = StreamStats(0, 0, 0)
+        self._epoch = {SAME_DAY_CACHE: 0, PROMISE_CACHE: 0}
+        self._cache: dict[str, tuple[tuple[object, ...], int, list[Hit]]] = {}
+        self._seq: int | None = None
+        self._identity: tuple[int, int] | None = None
+        self._stats = StreamStats(0, 0, 0, 0)
 
     def context(self, query: str) -> Context:
         """Return the same bytes as the batch assembler, with work counts.
 
         A stale derived index is brought up to date first; the evidence chain
-        is never sealed, rewritten or skipped. Assembly itself is delegated to
-        :func:`assemble`, so there is a single source of truth.
+        is never sealed, rewritten or skipped. The trigger sub-queries are
+        served from the cache when their key and generation still match.
         """
         status = index_status(self.store)
         if status.stale:
-            update_index(self.store)
-        stamp = parse_now(self.now).isoformat()
-        context = assemble(self.store, query, self.budget, stamp)
-        pool = self._pool_ids(query, stamp)
-        fresh = len(pool - self._scored)
-        reused = len(pool & self._scored)
-        self._scored |= pool
+            status = update_index(self.store)
+        moment = parse_now(self.now)
+        key = (moment.strftime("%m-%d"), moment.year)
+        scanned = self._apply_changes(status, key)
+        same_day, same_reused, same_loaded = self._fetch(
+            SAME_DAY_CACHE, key, lambda: _same_day(self.store, moment)
+        )
+        promises, promise_reused, promise_loaded = self._fetch(
+            PROMISE_CACHE, (), lambda: _promises(self.store)
+        )
+        trigger_pool = _combine(same_day, promises)
+        context = _assemble_pools(
+            self.store, query, self.budget, moment, trigger_pool
+        )
         self._stats = StreamStats(
-            fresh, reused, context.candidates - len(context.items)
+            scanned,
+            same_loaded + promise_loaded,
+            same_reused + promise_reused,
+            context.candidates,
         )
         return context
 
@@ -185,17 +212,93 @@ class StreamSession:
         """Return the entry counts of the most recent context call."""
         return self._stats
 
-    def _pool_ids(self, query: str, stamp: str) -> set[str]:
-        """Return the ids of the three candidate pools for this turn."""
-        meta = load_meta(self.store)
-        recent = read_tail_events(self.store, RECENT_LIMIT, meta.get("last_seg"))
-        longterm = triggers(self.store, stamp)
-        retrieved = search(self.store, query, RETRIEVE_K, stamp)
-        return (
-            {event.event_id for event in recent}
-            | {hit.event_id for hit in longterm}
-            | {hit.event_id for hit in retrieved}
-        )
+    def _apply_changes(self, status: IndexStatus, key: tuple[str, int]) -> int:
+        """Invalidate caches for new evidence and report how many were inspected.
+
+        ``scanned`` counts the new events examined in this call: zero on a cold
+        start, one after a single append, independent of the store size.
+        """
+        sequence = _sequence(status.lsn)
+        identity = _index_identity(self.store)
+        scanned = 0
+        if self._seq is None:
+            self._seq = sequence
+            self._identity = identity
+            return 0
+        rebuilt = self._identity is not None and _was_rebuilt(identity, self._identity)
+        if sequence < self._seq or rebuilt:
+            self._invalidate()
+        elif sequence > self._seq:
+            events = read_tail_events(self.store, sequence - self._seq)
+            scanned = len(events)
+            self._scan_events(events, key)
+        self._seq = sequence
+        self._identity = identity
+        return scanned
+
+    def _scan_events(self, events: list[StoredEvent], key: tuple[str, int]) -> None:
+        """Invalidate exactly the sub-query touched by these new events."""
+        target_md, target_year = key
+        same_day_hit = False
+        promise_hit = False
+        for event in events:
+            if event.ts[5:10] == target_md and int(event.ts[:4]) < target_year:
+                same_day_hit = True
+            if is_promise(event.text):
+                promise_hit = True
+        if same_day_hit:
+            self._epoch[SAME_DAY_CACHE] += 1
+        if promise_hit:
+            self._epoch[PROMISE_CACHE] += 1
+
+    def _invalidate(self) -> None:
+        """Invalidate both trigger caches, e.g. after a rollback or rebuild."""
+        self._epoch[SAME_DAY_CACHE] += 1
+        self._epoch[PROMISE_CACHE] += 1
+
+    def _fetch(
+        self,
+        name: str,
+        key: tuple[object, ...],
+        producer: Callable[[], list[Hit]],
+    ) -> tuple[list[Hit], int, int]:
+        """Return ``(hits, reused, loaded)`` for one trigger sub-query."""
+        entry = self._cache.get(name)
+        if entry is not None and entry[0] == key and entry[1] == self._epoch[name]:
+            return entry[2], 1, 0
+        hits = producer()
+        self._cache[name] = (key, self._epoch[name], hits)
+        return hits, 0, len(hits)
+
+
+def _sequence(event_id: str) -> int:
+    try:
+        return int(event_id[3:])
+    except ValueError as exc:
+        raise RecallError(E_RC_STREAM, f"非法事件 id：{event_id}") from exc
+
+
+def _index_identity(store: Path) -> tuple[int, int]:
+    """Return ``(inode, creation time)`` used to detect a full index rebuild.
+
+    An incremental update writes into the same file, so the inode stays put;
+    ``build_index`` removes the directory and creates a new file, so its inode
+    changes. The creation time is the fallback for filesystems that report a
+    zero inode.
+    """
+    database = store / INDEX_DIR / INDEX_FILE
+    try:
+        stat = database.stat()
+    except OSError as exc:
+        raise RecallError(E_RC_STREAM, f"无法读取索引：{database}") from exc
+    return stat.st_ino, stat.st_ctime_ns
+
+
+def _was_rebuilt(current: tuple[int, int], previous: tuple[int, int]) -> bool:
+    """Return whether the index file was recreated rather than updated."""
+    if current[0] != previous[0]:
+        return True
+    return current[0] == 0 and current[1] != previous[1]
 
 
 def _chunks(context: Context) -> Iterator[Chunk]:

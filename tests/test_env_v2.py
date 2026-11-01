@@ -93,7 +93,7 @@ M12_ADDITIONS = {
         "71489979a001867a03ccdce5ea71250ff9025a5f7fcca9b7527a956511fe2d40"
     ),
     "jian_recall/stream.py": (
-        "865ec458dc16aa4e1e6f56fdcfb541a8fbbe48fe22c0a501928bcc543a89f0ae"
+        "2bb52d5b82e8535ffda2877615a508273934b6e0f4b2b523fa80abdf7395ff57"
     ),
 }
 M12_EDITS = {
@@ -116,6 +116,13 @@ M12_EDITS = {
     ),
     "jian_recall/__init__.py": (
         "a7770481301b7d1d8057dde2018d1aa830a77966c748e8690a8f644655adcc90"
+    ),
+    # M14.1: trigger parts and the shared assemble step
+    "jian_recall/trigger.py": (
+        "dad98180de461f3b6b6a3a63519b706ee1569e016ca9e86ad5c2649fd9e2db7b"
+    ),
+    "jian_recall/assemble.py": (
+        "4dc73ccb9fcd536827d8cfb075e75524ea9d6392a81a923028dfcb60bbcfeb72"
     ),
 }
 
@@ -382,8 +389,9 @@ class TestUpperLayersTouchLimit(unittest.TestCase):
             )
         # M10 touched three files with one functional line each; M12.1 added
         # the verify gate, which moved compiler.py to the whole-file pin above;
-        # M14 touched two recall files for the stream session.
-        self.assertEqual(len(changed), 8)
+        # M14 touched two recall files for the stream session; M14.1 touched
+        # trigger.py and assemble.py so the session can cache sub-queries.
+        self.assertEqual(len(changed), 10)
         replaced = sum(len(entry["replaced"]) for entry in EDITS.values())
         self.assertEqual(replaced, 2, "two remaining M10 line-level edits")
         self.assertIn("jian_kernel/compiler.py", M12_EDITS, "compiler.py must stay pinned")

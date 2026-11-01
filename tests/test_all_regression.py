@@ -118,6 +118,11 @@ ALLOWED_ADDITIONS = {
     "jian_projection/emit.py": "M13: the only emit path, gate before sink",
     "jian_projection/gate.py": "M13: pure actuation gate over trace and kernel",
     "jian_recall/stream.py": "M14: stream session, chunks and entry-count statistics",
+    "jian_succession/__init__.py": "M15: export the legacy capsule API",
+    "jian_succession/errors.py": "M15: fixed E_SUCC_* codes",
+    "jian_succession/model.py": "M15: capsule constants, letters and kid recomputation",
+    "jian_succession/archive.py": "M15: zip, evidence and blob primitives",
+    "jian_succession/legacy.py": "M15: export, verify and import a legacy capsule",
 }
 
 # Every deviation from the baseline must be declared here with a reason.
@@ -129,6 +134,8 @@ ALLOWED_CHANGES = {
     "jian_recall/index.py": "M10: retrieval reads summary through event_text",
     "jian_recall/errors.py": "M14: E_RC_STREAM for chunk boundary violations",
     "jian_recall/__init__.py": "M14: export the stream session API",
+    "jian_recall/trigger.py": "M14.1: split triggers into per-predicate parts for caching",
+    "jian_recall/assemble.py": "M14.1: share the pool-to-context step with the stream session",
     "jian_kernel/compiler.py": "M10: full text via event_full_text; M12.1: verify_evidence and --no-verify",
     "jian_kernel/proposer.py": "M10: proposal text goes through event_text",
     "jian_kernel/errors.py": "M12: E_KN_SNAPSHOT, E_KN_DRIFT; M12.1: E_KN_TAMPER",
@@ -183,6 +190,7 @@ class TestAllRegression(unittest.TestCase):
                 "jian_kernel",
                 "jian_pcs",
                 "jian_projection",
+                "jian_succession",
             )
             for path in sorted((ROOT / package).rglob("*.py"))
         }

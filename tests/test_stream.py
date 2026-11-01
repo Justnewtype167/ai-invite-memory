@@ -1,4 +1,4 @@
-"""W1-W6: streaming assembly equivalence, delta work, chunks and boundaries (M14)."""
+"""X1-X5 and W3-W6: streaming equivalence, delta triggers, chunks (M14.1)."""
 
 from __future__ import annotations
 
@@ -26,13 +26,16 @@ from jian_recall.trigger import PROMISE_LIMIT, SAME_DAY_LIMIT
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 NOW = "2026-10-29T10:00:00+08:00"
+NEXT_DAY = "2026-10-30T10:00:00+08:00"
+NEXT_YEAR = "2027-10-29T10:00:00+08:00"
 QUERY = "项目进度"
 BUDGET = 512
 CANDIDATE_CAP = RETRIEVE_K + RECENT_LIMIT + SAME_DAY_LIMIT + PROMISE_LIMIT
+BASE_TOTAL = 60 + 3 + 8 + 2
 
 
 def _base_events(count: int = 60) -> list[tuple[str, str]]:
-    """Return a store with query hits, three anniversaries and eight recent turns."""
+    """Return a store with query hits, three anniversaries, promises and recent turns."""
     rows: list[tuple[str, str]] = []
     for index in range(count):
         rows.append(
@@ -43,6 +46,8 @@ def _base_events(count: int = 60) -> list[tuple[str, str]]:
     rows.append(("2023-10-29T10:00:00Z", "纪念日回忆三"))
     for index in range(8):
         rows.append((f"2025-06-01T08:0{index}:00Z", f"最近的日常记录{index + 1}"))
+    rows.append(("2025-06-01T08:10:00Z", "答应周末一起去看海"))
+    rows.append(("2025-06-01T08:11:00Z", "说好下个月一起吃饭"))
     return rows
 
 
@@ -64,13 +69,13 @@ class TestStreamSession(unittest.TestCase):
         build_index(root)
         return root
 
-    def test_session_equals_batch(self) -> None:
-        """W1: 30 appends, every context is byte-identical to assemble."""
+    def test_still_equivalent(self) -> None:
+        """X1: 30 appends, every context is byte-identical to assemble."""
         store = self._new_store(_base_events(75))
         session = StreamSession(store, BUDGET, NOW)
         session.context(QUERY)
         rng = random.Random(20261101)
-        scored: list[int] = []
+        rows: list[tuple[int, int, int, int]] = []
         for step in range(30):
             text = rc_fixtures.POOL[rng.randrange(len(rc_fixtures.POOL))]
             rc_fixtures.append_store(
@@ -79,39 +84,160 @@ class TestStreamSession(unittest.TestCase):
             live = session.context(QUERY)
             batch = assemble(store, QUERY, BUDGET, NOW)
             self.assertEqual(live.to_json(), batch.to_json())
-            self.assertEqual(session.stats().scored, 1)
-            self.assertEqual(
-                session.stats().scored + session.stats().reused, batch.candidates
-            )
-            scored.append(session.stats().scored)
-        print(f"W1 steps={len(scored)} identical={len(scored)} scored={scored}")
+            stats = session.stats()
+            self.assertEqual(stats.trigger_scanned, 1)
+            self.assertEqual(stats.trigger_loaded, 0)
+            self.assertEqual(stats.trigger_reused, 2)
+            self.assertEqual(stats.retrieve_scored, batch.candidates)
+            rows.append((stats.trigger_scanned, stats.trigger_loaded,
+                          stats.trigger_reused, stats.retrieve_scored))
+        print(f"X1 steps={len(rows)} identical={len(rows)} last={rows[-1]}")
 
-    def test_delta_work(self) -> None:
-        """W2: scored equals the affected entries, never the whole store."""
-        store = self._new_store(_base_events(400))
-        total = 400 + 3 + 8
+    def test_trigger_is_delta_sized(self) -> None:
+        """X2: scanned follows appended events and never the store size."""
+        results = []
+        for count in (60, 400):
+            store = self._new_store(_base_events(count))
+            session = StreamSession(store, BUDGET, NOW)
+            session.context(QUERY)
+            rc_fixtures.append_store(
+                store, [("2026-10-28T10:00:00Z", "今天天气不错")]
+            )
+            session.context(QUERY)
+            one = session.stats().trigger_scanned
+            rc_fixtures.append_store(
+                store,
+                [(f"2026-10-28T1{index}:00:00Z", f"普通追加{index}") for index in range(10)],
+            )
+            session.context(QUERY)
+            ten = session.stats().trigger_scanned
+            results.append((count, one, ten))
+        print(f"X2 store_size/one/ten={results}")
+        self.assertEqual(results[0][1], 1)
+        self.assertEqual(results[0][2], 10)
+        self.assertEqual(results[1][1], 1)
+        self.assertEqual(results[1][2], 10)
+        self.assertEqual((results[0][1], results[0][2]),
+                         (results[1][1], results[1][2]))
+
+    def test_trigger_reused_per_subquery(self) -> None:
+        """X3: reused counts cached sub-queries, and each invalidation costs one."""
+        store = self._new_store(_base_events())
         session = StreamSession(store, BUDGET, NOW)
-        first = session.context(QUERY)
-        stats = session.stats()
-        self.assertEqual(stats.reused, 0)
-        self.assertEqual(stats.scored, first.candidates)
-        self.assertLessEqual(stats.scored, CANDIDATE_CAP)
-        self.assertLess(stats.scored, total)
-        rows: list[tuple[int, int, int, int]] = []
-        for step, count in enumerate((1, 3, 5)):
-            batch = [
-                (f"2026-10-28T0{step}:{index:02d}:00Z", f"流式追加第{step}批{index}")
-                for index in range(count)
-            ]
-            rc_fixtures.append_store(store, batch)
+        session.context(QUERY)
+        cold = session.stats()
+        self.assertEqual(cold.trigger_scanned, 0)
+        self.assertEqual(cold.trigger_reused, 0)
+        self.assertLessEqual(cold.trigger_loaded, SAME_DAY_LIMIT + PROMISE_LIMIT)
+
+        session.context(QUERY)
+        warm = session.stats()
+        self.assertEqual((warm.trigger_scanned, warm.trigger_loaded,
+                          warm.trigger_reused), (0, 0, 2))
+
+        rc_fixtures.append_store(
+            store, [("2026-10-28T10:00:00Z", "今天天气不错")]
+        )
+        session.context(QUERY)
+        unrelated = session.stats()
+        self.assertEqual((unrelated.trigger_scanned, unrelated.trigger_loaded,
+                          unrelated.trigger_reused), (1, 0, 2))
+
+        rc_fixtures.append_store(
+            store, [("2020-10-29T10:00:00Z", "很久以前的纪念日")]
+        )
+        session.context(QUERY)
+        same_day = session.stats()
+        self.assertEqual((same_day.trigger_scanned, same_day.trigger_reused),
+                         (1, 1))
+        self.assertLessEqual(same_day.trigger_loaded, SAME_DAY_LIMIT)
+
+        rc_fixtures.append_store(
+            store, [("2026-10-28T12:00:00Z", "答应明天早点回来")]
+        )
+        session.context(QUERY)
+        promise = session.stats()
+        self.assertEqual((promise.trigger_scanned, promise.trigger_reused),
+                         (1, 1))
+        self.assertLessEqual(promise.trigger_loaded, PROMISE_LIMIT)
+        print(
+            "X3 cold={} warm={} unrelated={} same_day={} promise={}".format(
+                cold.to_dict(), warm.to_dict(), unrelated.to_dict(),
+                same_day.to_dict(), promise.to_dict(),
+            )
+        )
+
+    def test_reused_is_not_days(self) -> None:
+        """X3b: over 30 days without an md hit, reused stays 2 (not days)."""
+        store = self._new_store(_base_events())
+        session = StreamSession(store, BUDGET, NOW)
+        session.context(QUERY)
+        seen: list[int] = []
+        for day in range(1, 31):
+            rc_fixtures.append_store(
+                store,
+                [(f"2025-11-{day:02d}T10:00:00Z", f"十一月的第{day}天")],
+            )
+            session.context(QUERY)
+            stats = session.stats()
+            self.assertIn(stats.trigger_reused, (0, 1, 2))
+            seen.append(stats.trigger_reused)
+        self.assertEqual(seen, [2] * 30)
+        print(f"X3b days=30 reused_set={sorted(set(seen))}")
+
+    def test_cache_invalidation(self) -> None:
+        """X4: now change, rollback and rebuild invalidate; bytes stay equal."""
+        store = self._new_store(_base_events())
+        session = StreamSession(store, BUDGET, NOW)
+        session.context(QUERY)
+
+        session.now = NEXT_DAY
+        live = session.context(QUERY)
+        self.assertEqual(live.to_json(), assemble(store, QUERY, BUDGET, NEXT_DAY).to_json())
+        self.assertEqual(session.stats().trigger_reused, 1)
+
+        session.now = NEXT_YEAR
+        live = session.context(QUERY)
+        self.assertEqual(live.to_json(), assemble(store, QUERY, BUDGET, NEXT_YEAR).to_json())
+        self.assertEqual(session.stats().trigger_reused, 1)
+
+        session.now = NOW
+        session.context(QUERY)
+        _truncate_last(store)
+        build_index(store)
+        live = session.context(QUERY)
+        self.assertEqual(live.to_json(), assemble(store, QUERY, BUDGET, NOW).to_json())
+        self.assertEqual(session.stats().trigger_reused, 0)
+        self.assertGreater(session.stats().trigger_loaded, 0)
+
+        build_index(store)
+        live = session.context(QUERY)
+        self.assertEqual(live.to_json(), assemble(store, QUERY, BUDGET, NOW).to_json())
+        self.assertEqual(session.stats().trigger_reused, 0)
+        self.assertGreater(session.stats().trigger_loaded, 0)
+        print(
+            "X4 now_day/reused={} now_year/reused={} rollback/reused={} rebuild/reused={}"
+            .format(1, 1, 0, 0)
+        )
+
+    def test_retrieve_not_claimed_incremental(self) -> None:
+        """X5: retrieve_scored equals candidates; this round does not reduce it."""
+        store = self._new_store(_base_events())
+        session = StreamSession(store, BUDGET, NOW)
+        values: list[int] = []
+        for step in range(4):
+            if step:
+                rc_fixtures.append_store(
+                    store,
+                    [(f"2026-10-28T0{step}:00:00Z", f"明写不减少的检索{step}")],
+                )
             context = session.context(QUERY)
             stats = session.stats()
-            self.assertEqual(stats.scored, count)
-            self.assertEqual(stats.scored + stats.reused, context.candidates)
-            self.assertLessEqual(stats.scored, CANDIDATE_CAP)
-            self.assertLess(stats.scored, total)
-            rows.append((count, stats.scored, stats.reused, stats.evicted))
-        print(f"W2 total={total} cap={CANDIDATE_CAP} rows={rows}")
+            self.assertEqual(stats.retrieve_scored, context.candidates)
+            self.assertGreater(stats.retrieve_scored, 0)
+            self.assertLessEqual(stats.retrieve_scored, CANDIDATE_CAP + step)
+            values.append(stats.retrieve_scored)
+        print(f"X5 retrieve_scored/candidates={values}")
 
     def test_determinism(self) -> None:
         """W3: same store, same bytes, in and across processes."""
@@ -183,8 +309,7 @@ class TestStreamSession(unittest.TestCase):
             context = live.context(QUERY)
             self.assertLessEqual(context.total_tokens, budget)
             stats = live.stats()
-            self.assertEqual(stats.scored + stats.reused, context.candidates)
-            self.assertGreaterEqual(stats.evicted, 0)
+            self.assertEqual(stats.retrieve_scored, context.candidates)
         with self.assertRaises(RecallError) as error:
             StreamSession(self.root, 100)
         self.assertEqual(error.exception.code, E_RC_BAD_BUDGET)
@@ -201,12 +326,16 @@ class TestStreamSession(unittest.TestCase):
         print(f"W6 budgets=256,512,1024,4096 scarce_items=1")
 
     def test_stats_shape(self) -> None:
-        """W2: stats is three entry counts, not timings."""
+        """X5: stats is four entry counts, not timings."""
         session = StreamSession(self.root, BUDGET, NOW)
         session.context(QUERY)
         stats = session.stats()
         self.assertIsInstance(stats, StreamStats)
-        self.assertEqual(set(stats.to_dict()), {"scored", "reused", "evicted"})
+        self.assertEqual(
+            set(stats.to_dict()),
+            {"trigger_scanned", "trigger_loaded", "trigger_reused",
+             "retrieve_scored"},
+        )
         for value in stats.to_dict().values():
             self.assertIsInstance(value, int)
             self.assertFalse(isinstance(value, bool))
@@ -244,6 +373,15 @@ class TestStreamSession(unittest.TestCase):
         )
         self.assertEqual(completed.returncode, 0, completed.stderr)
         return completed.stdout.strip()
+
+
+def _truncate_last(store: pathlib.Path) -> None:
+    """Drop the last evidence line, simulating a head rollback."""
+    files = sorted((store / "evidence").glob("seg-*.jsonl"))
+    last = files[-1]
+    lines = [line for line in last.read_text(encoding="utf-8").split("\n") if line]
+    self_check = len(lines) - 1
+    last.write_text("\n".join(lines[:self_check]) + "\n", encoding="utf-8")
 
 
 if __name__ == "__main__":

@@ -10,6 +10,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 
 from jian.canonical import dumps
@@ -103,6 +104,23 @@ def assemble(
     status = index_status(store)
     if status.stale:
         raise RecallError(E_RC_STALE, "索引落后于证据，请先 update")
+    trigger_pool = _triggers(store, moment)
+    return _assemble_pools(store, query, budget, moment, trigger_pool)
+
+
+def _assemble_pools(
+    store: Path,
+    query: str,
+    budget: int,
+    moment: datetime,
+    trigger_pool: list[Hit],
+) -> Context:
+    """Assemble from a caller-provided trigger pool.
+
+    The batch path passes the pool it just queried; the stream session passes
+    its cached pool. Everything below the pool selection is shared, so the
+    two paths cannot drift apart.
+    """
     cap_recent = budget * 25 // 100
     cap_trigger = budget * 10 // 100
     cap_retrieved = budget - cap_recent - cap_trigger
@@ -111,7 +129,6 @@ def assemble(
     recent_pool = list(
         reversed(read_tail_events(store, RECENT_LIMIT, meta.get("last_seg")))
     )
-    trigger_pool = _triggers(store, moment)
     retrieved_pool = _search(store, query, RETRIEVE_K, moment)
 
     rows = _candidates(recent_pool, trigger_pool, retrieved_pool)
