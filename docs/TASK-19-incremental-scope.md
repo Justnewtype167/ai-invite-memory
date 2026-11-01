@@ -47,15 +47,27 @@ promises   WHERE d.is_promise = 1          ORDER BY t.ts DESC LIMIT 2
 
 ```python
 StreamStats(
-    trigger_scanned:int,   # 本轮实际扫描的事件条数（只数新增）
-    trigger_reused:int,    # 本轮从缓存直接返回的子查询数（0..2）
+    trigger_scanned:int,   # 失效判定时查看的新事件条数（冷启动=0）
+    trigger_loaded:int,    # 触发查询实际取回的行数（冷启动<=5，命中缓存=0）
+    trigger_reused:int,    # 从缓存直接返回的子查询数（0..2）
     retrieve_scored:int,   # bm25 条目数（保持不变，**不宣称减少**）
 )
 ```
 
+**为什么拆成 scanned 和 loaded**：它们度量的是两件事，混在一个数字里，
+冷启动的代价就被藏起来了。
+
+```
+scanned  失效判定：只有「新事件」才会走这条路 ⇒ 冷启动没有新事件 ⇒ 0
+loaded   查询取数：冷启动缓存为空，必须真的取 ⇒ <=5 行（同日至多 3 + 承诺至多 2）
+```
+
+**冷启动的代价必须可见**，所以用 `loaded` 记，而不是把它算进 `scanned` 或干脆记 0。
+
 | 计数 | 断言 |
 |---|---|
-| `trigger_scanned` | 追加一条后 == 1（只扫新增），与历史总量无关 |
+| `trigger_scanned` | 冷启动 == 0；追加一条后 == 1；与历史总量无关 |
+| `trigger_loaded` | 冷启动 <= 5；缓存全部命中 == 0；**只在失效后**才再次取数 |
 | `trigger_reused` | **不是天数**：本轮有几个子查询命中缓存（`same_day` / `promises` 各算一个，取值 0..2） |
 | `retrieve_scored` | **恒等于候选池条目数**，本轮不做减少 |
 
