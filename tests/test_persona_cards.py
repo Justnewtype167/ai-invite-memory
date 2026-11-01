@@ -253,6 +253,47 @@ class TestUserCard(unittest.TestCase):
         append_event(store, "user", "我不喜欢吃香菜", "2026-01-08T09:00:00Z")
         append_event(store, None, "升职了", "2026-01-09T09:00:00Z", type="milestone")
 
+    def _address_card(self, *texts: str) -> UserCard:
+        store = self._store()
+        for index, text in enumerate(texts):
+            append_event(store, "user", text, _stamp(index))
+        return derive_user_card(read_evidence(store))
+
+    def test_address_plain_call(self) -> None:
+        """A plain address directive sets the call name and no taboo."""
+        card = self._address_card("叫我老周")
+        print(
+            f"M16 address plain call={card.address['call']} "
+            f"never={card.address['never']}"
+        )
+        self.assertEqual(card.address["call"], "老周")
+        self.assertEqual(card.address["never"], [])
+
+    def test_address_negation_be_drops_earlier_call(self) -> None:
+        """An earlier call equal to a later taboo is dropped, not kept."""
+        card = self._address_card("叫我宝贝", "别叫我宝贝")
+        names = [item["text"] for item in card.address["never"]]
+        print(f"M16 address 别 call={card.address['call']!r} never={names}")
+        self.assertEqual(card.address["call"], "")
+        self.assertNotIn("call_evidence", card.address)
+        self.assertEqual(names, ["宝贝"])
+
+    def test_address_negation_buyao_is_taboo(self) -> None:
+        """``不要叫我X`` is a taboo, never the call name."""
+        card = self._address_card("不要叫我宝贝")
+        names = [item["text"] for item in card.address["never"]]
+        print(f"M16 address 不要 call={card.address['call']!r} never={names}")
+        self.assertEqual(card.address["call"], "")
+        self.assertEqual(names, ["宝贝"])
+
+    def test_address_negation_buxu_is_taboo(self) -> None:
+        """``不许叫我X`` is a taboo, never the call name."""
+        card = self._address_card("不许叫我小名")
+        names = [item["text"] for item in card.address["never"]]
+        print(f"M16 address 不许 call={card.address['call']!r} never={names}")
+        self.assertEqual(card.address["call"], "")
+        self.assertEqual(names, ["小名"])
+
     def test_user_card_deterministic(self) -> None:
         """The same evidence yields byte-identical cards in two processes."""
         store = self._store()

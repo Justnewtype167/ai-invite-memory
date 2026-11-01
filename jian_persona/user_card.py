@@ -122,27 +122,58 @@ def _derive_address(
 ) -> dict[str, object]:
     address = table.get("address")
     assert isinstance(address, dict)
-    call = _last_match(core, str(address.get("call", "")))
+    call, call_evidence, never = _derive_call(
+        core, str(address.get("call", ""))
+    )
     self_name = _last_match(core, str(address.get("self", "")))
-    never_text = str(address.get("never", ""))
-    never: list[dict[str, str]] = []
-    seen: set[str] = set()
-    for event in core:
-        for match in re.finditer(never_text, event.text):
-            value = match.group(1).strip()
-            if value and value not in seen:
-                seen.add(value)
-                never.append({"text": value, "evidence": event.event_id})
     payload: dict[str, object] = {
-        "call": call[0],
+        "call": call,
         "self": self_name[0],
         "never": never,
     }
-    if call[0]:
-        payload["call_evidence"] = call[1]
+    if call:
+        payload["call_evidence"] = call_evidence
     if self_name[0]:
         payload["self_evidence"] = self_name[1]
     return payload
+
+
+def _derive_call(
+    core: list[EvidenceEvent], pattern: str
+) -> tuple[str, str, list[dict[str, str]]]:
+    """Split address directives into call and taboo; a taboo always wins.
+
+    The pattern captures an optional negation prefix plus an optional ``我``:
+    a prefixed match is a taboo ("别 / 不要 / 不许 / 不准 / 勿"), a bare
+    "叫我X" is the name to use. Without either, "妈妈叫桂花" is a kinship
+    statement, not an address directive. After scanning, a call that appears
+    in the taboo list is dropped, so an unlisted negation can never leak into
+    the prompt as an address.
+    """
+    call = ""
+    evidence = ""
+    never: list[dict[str, str]] = []
+    seen: set[str] = set()
+    if not pattern:
+        return call, evidence, never
+    for event in core:
+        for match in re.finditer(pattern, event.text):
+            prefix = (match.group(1) or "").strip()
+            pronoun = (match.group(2) or "").strip()
+            name = match.group(3).strip()
+            if not name:
+                continue
+            if prefix:
+                if name not in seen:
+                    seen.add(name)
+                    never.append({"text": name, "evidence": event.event_id})
+            elif pronoun:
+                call = name
+                evidence = event.event_id
+    if call and call in seen:
+        call = ""
+        evidence = ""
+    return call, evidence, never
 
 
 def _last_match(

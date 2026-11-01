@@ -2,7 +2,7 @@
 
 > 规格：`docs/TASK-21-traits-style.md`
 > 前置：`docs/ACCEPT-M16-P0.md`（P0 修复与人格事件跳过清单）
-> **结论：十二项验收全部通过；全量 `Ran 330 tests` 全绿、0 failed、0 error、0 skipped。**
+> **结论：十二项验收全部通过；全量 `Ran 334 tests` 全绿、0 failed、0 error、0 skipped。**
 > 例外：Task 7 的四组对照**未测量**（本机 Ollama 无模型、端口拒绝），
 > 真实报错与已测数字见 `docs/RESULTS-style.md`。
 
@@ -33,6 +33,22 @@
 | `test_persona_events_keep_kid` | `M16 persona events=600 kid=2c4954edd7c7 head=ev_000005 stable=True`；`self_md` / `canon_md` / `state` / `graph` 逐字节相同；增量 kid 相同；`reconcile.events=5` |
 | `test_record_persona_only_keeps_version` | `M16 persona-only version=1 written=False kid_stable=True`；HISTORY 字节不变；`verify_kernel` 通过；证据链末事件仍是 `directive(kind=trait)` |
 | `test_persona_not_in_pcs` | `M16 persona view groups=[0, 38, 139, 154] rules=6`；PCS 规则原文不含人格文本；`jian_persona/*.py` 源码不含 `jian_pcs` |
+
+### 用户卡否定式回归（2026-11-02 补，4 条）
+
+原规则 `叫我(X)` 无视否定前缀，导致 `别叫我宝贝` 派生出 `call=宝贝` +
+`never=[宝贝]` 的自相矛盾卡。修复两层：规则层把否定前缀并进 call 正则，
+派生层再断言 `call ∉ never`（同名即丢弃）。真实输出：
+
+```
+M16 address plain call=老周 never=[]
+M16 address 别 call='' never=['宝贝']
+M16 address 不要 call='' never=['宝贝']
+M16 address 不许 call='' never=['小名']
+```
+
+其中 `别` 用例先写 `叫我宝贝` 再写 `别叫我宝贝`，所以它同时证明第二层兜底：
+即使 call 已经建立，只要同名进入 never 也会被丢弃（`call_evidence` 一并移除）。
 
 ## 3. 版本账本与宪章 A2（必须显式说明）
 
@@ -65,6 +81,7 @@
 | 三者都不进 PCS | `test_persona_not_in_pcs` 断言规则原文不含人格文本，且 `rule.text` 不出现在 D 组 prompt | ✅ |
 | 特质只能由人写入 | 未批准 `proposal(self.trait)` → `E_PERSONA_UNAPPROVED`；批准必须是 `directive(target=提案 id)` 且文本一致 | ✅ |
 | 用户卡不许模型自由发挥 | U2：9 条非空条目全部可追证据；无证据字段为空 | ✅ |
+| 用户卡不自相矛盾 | 否定式回归 4 条：`call` 与 `never` 同名即丢弃（无论先后） | ✅ |
 | 派生只向下 | `jian_persona` 内 grep 无 `jian_pcs` / `jian_kernel.history` / `jian_projection` | ✅ |
 | 无第三方依赖 / 无 skip / 无占位 | 全量 unittest；`jian_persona` 内 grep 无 `TODO` / `pass` / `NotImplementedError` | ✅ |
 
@@ -85,12 +102,12 @@ $ python -m unittest discover -s tests
 ...
 S6 frozen tests=178 failures=0 errors=0 skipped=0
 V5 probes=80 skipped=0 C(a)=0.8625 C(b)=0.8375 A=0.7750 PCS=0.6491
-Ran 330 tests in 330.106s
+Ran 334 tests in 251.521s
 OK
 ```
 
-拆分后同一命令共跑三次（`266.071s` / `277.104s` / `330.106s`，最后一次即提交前状态），
-每次都是 `OK`：**0 failed / 0 error / 0 skipped**（330 = 329 + Task 6 的 1 条）。
+否定式修复后又跑一次全量：`Ran 334 tests ... OK`，**0 failed / 0 error / 0 skipped**
+（334 = 330 + 用户卡否定式 4 条；kid 与 330 时相同，未动）。
 
 ## 7. 未测量项（Task 7）
 
@@ -116,7 +133,7 @@ A 组只引用 V5 的既有基线（PCS=0.649，95% CI [0.522, 0.754]）。
 ```
 S1-S8, U1-U4   🟢 全部通过（真实断言，非「应该通过」）
 额外四项       🟢 refusal 可编、600 条人格事件 kid 不变、人格事件不进版本账本、人格不进 PCS
-全量            🟢 Ran 330 tests / OK / 0 skipped
+全量            🟢 Ran 334 tests / OK / 0 skipped
 Task 7 对照     ⚪ 未测量（无模型）；不宣称 B/C/D 的任何增益
 M16 实现        🟢 可封版；唯一遗留是环境问题，不是代码问题
 ```
