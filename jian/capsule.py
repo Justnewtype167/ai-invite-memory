@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 import re
@@ -18,8 +17,12 @@ from .chain import (
     Segment,
     _FastPathMiss,
     _blob_digests,
+    _check_capsule_blobs,
+    _read_bytes,
     _render_revival,
     _scan_canonical,
+    _sha256,
+    _write_bytes,
     chain_document,
     chain_matches,
     parse_chain,
@@ -29,8 +32,6 @@ from .chain import (
     verify_evidence,
 )
 from .errors import (
-    E_BLOB_MISMATCH,
-    E_BLOB_MISSING,
     E_CHAIN_MISSING,
     E_HEADER_MISMATCH,
     E_IO,
@@ -239,6 +240,28 @@ def append_payload_event(
     return event
 
 
+def event_full_text(store: Path, data: Mapping[str, object]) -> str:
+    """Return the identity-layer text of one event, payload included.
+
+    v1 returns ``text``. Envelope v2 returns the full bytes of the ``text``
+    modality from ``blobs/`` and falls back to ``summary`` for every other
+    modality, because only text carries identity-relevant content.
+    """
+    if data.get("v") != 2:
+        value = data.get("text")
+        return value if isinstance(value, str) else ""
+    if data.get("modality") != "text":
+        value = data.get("summary")
+        return value if isinstance(value, str) else ""
+    ref = data.get("payload")
+    if not isinstance(ref, str) or not ref.startswith("sha256:"):
+        raise JianError(E_SCHEMA, f"非法载荷引用：{ref}")
+    try:
+        return read_blob(store, ref[len("sha256:"):]).decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise JianError(E_SCHEMA, "文本载荷不是 UTF-8 编码") from exc
+
+
 def seal_store(store: Path) -> Verification:
     """Freeze the store by writing chain.json (with ``sealed_at``) and manifest.json."""
     evidence = _load_evidence(store)
@@ -412,20 +435,6 @@ def _verify_capsule(path: Path) -> Verification:
     others = {name: data for name, data in entries.items() if name != MANIFEST_PATH}
     _check_manifest(manifest, others, head, str(sealed_at))
     return Verification(count, len(segments), head, "sealed")
-
-
-def _check_capsule_blobs(entries: Mapping[str, bytes], digests: Sequence[str]) -> None:
-    expected = {f"{BLOBS_DIR}/{digest}" for digest in digests}
-    found = {name for name in entries if BLOB_RE.match(name)}
-    extra = found - expected
-    if extra:
-        raise JianError(E_HEADER_MISMATCH, f"胶囊含未登记的载荷：{sorted(extra)[0]}")
-    for digest in digests:
-        name = f"{BLOBS_DIR}/{digest}"
-        if name not in entries:
-            raise JianError(E_BLOB_MISSING, f"胶囊缺少载荷：{digest}")
-        if _sha256(entries[name]) != digest:
-            raise JianError(E_BLOB_MISMATCH, f"载荷内容与其哈希不符：{digest}")
 
 
 def _check_manifest(manifest: Mapping[str, object], entries: Mapping[str, bytes],
@@ -662,25 +671,6 @@ def _read_zip(path: Path) -> dict[str, bytes]:
             return entries
     except (OSError, zipfile.BadZipFile) as exc:
         raise JianError(E_IO, f"无法读取胶囊：{path}") from exc
-
-
-def _sha256(data: bytes) -> str:
-    return hashlib.sha256(data).hexdigest()
-
-
-def _read_bytes(path: Path) -> bytes:
-    try:
-        return path.read_bytes()
-    except OSError as exc:
-        raise JianError(E_IO, f"读取失败：{path}") from exc
-
-
-def _write_bytes(path: Path, data: bytes) -> None:
-    try:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_bytes(data)
-    except OSError as exc:
-        raise JianError(E_IO, f"写入失败：{path}") from exc
 
 
 def _append_bytes(path: Path, data: bytes) -> None:

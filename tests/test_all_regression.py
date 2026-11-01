@@ -53,17 +53,24 @@ MODULES = (
 )
 FROZEN_COUNT = 178
 
-# sha256 of every source file in the three frozen upper packages; any edit breaks M1-M6.
-# ``jian/`` is the evidence layer and is allowed to change from M10 onward.
+# sha256 of every source file in the four packages at the M10 baseline; an edit
+# must be declared in ALLOWED_CHANGES below, otherwise the ratchet fails.
 FROZEN_DIGESTS = {
+    "jian/__init__.py": "bde7ba3f7b2d7cecac8b284a0f4b4958ef7c463d86be8bd9dfe51bbfb30874bf",
+    "jian/canonical.py": "a271683dd6bc9d5edaedce274249ff594122123b7eb120d2317517158445b757",
+    "jian/capsule.py": "8e746448130e72be9b99a7c8f78b5be73c8a6631f0e3433e2d860e95bdf1aa76",
+    "jian/chain.py": "d107f3c00482c385b1d027ac774c106fb2ed2dbb448f8745896650ddeef7e4a7",
+    "jian/cli.py": "69a1d8d6aa82d6f4c4bf287b1fe9b14400aa4cd36c1b743179123c6a875d5323",
+    "jian/errors.py": "d1a54fd42da5528225cfde1742b9c37131fbabe5234b98a27e0a9234598b2fec",
+    "jian/event.py": "6f24b2affa4728f05df63053935e19ce48a882cc0963d22470d886566633a14a",
     "jian_kernel/__init__.py": "0e6abd2f4d27d87a94453ee36aab70ac093d1b002ed9f453365146146f258f80",
     "jian_kernel/cli.py": "9c45b7aa55f42e4af4350ab9bcbcbbe5ce07513f8be78d3f0b6db54ceec63902",
-    "jian_kernel/compiler.py": "5d2066c094d5bd40b9dea2100cd92949fe296f3b84e1d12f36bd1fb0eb066001",
+    "jian_kernel/compiler.py": "a4be2a88409429589dd4084b1b60a316fb51a1550aeeb47b3c6ed9d8f43c2e46",
     "jian_kernel/errors.py": "9a33269b938c633672b2e22f22df1023c4eaed5e378559d04d4a4575cd581ca5",
     "jian_kernel/gate.py": "960fb8b655a16515c43c478f5ee8bac5762a1f8a059588670a75e806c26a872a",
     "jian_kernel/history.py": "d08c85ded030a0a4c5c301b25d96ed24df8011a3140782f932789443c34c3ace",
     "jian_kernel/kernel.py": "faac0333bdd0892edecae94b550a7b49da6e478898ccceeb62410ada5ba4749c",
-    "jian_kernel/proposer.py": "00aca3e18506998dfd85dd6059f8c247d6e37c4db388f46d74f3dc4ab4941697",
+    "jian_kernel/proposer.py": "8c7ffaba5432c08b326d8bfb8894405bd3eb85ef3bddd65b55f7d2b037e4d508",
     "jian_cn/__init__.py": "4da6b5679be5c8112b1a8aff17dbcc860cee86473333a761aab1614e28795c77",
     "jian_cn/cli.py": "1752a9843e20f1cea94aa4f968abe37b3124ce857afea649c543ddc7385db7fb",
     "jian_cn/errors.py": "dd420a844a9d83c4938e212607822e5c8e7dd408c9eaf361759f11b8c130a6a4",
@@ -75,10 +82,21 @@ FROZEN_DIGESTS = {
     "jian_recall/assemble.py": "ccb5ad2eddfe50151439c1ef4df83f1e477dff7f7f630bda6dc95e10455f8570",
     "jian_recall/cli.py": "33ecd64bdc8c9f42547c82cdd688fedfe44c5a04ab32c5d6541334c9b5a180ac",
     "jian_recall/errors.py": "37000fa2d668cc8ea8ce314f12f7331f945be6f79854a84f7001d23bdbffad4f",
-    "jian_recall/index.py": "6f143416ff4027810e35b49abcae3441c2b3d8d0b78dc32bb5ae6f325c467101",
+    "jian_recall/index.py": "a532fa489a87a259c32d4335f061e9657429961fbf45c967a6847106d93ad329",
     "jian_recall/retrieve.py": "f551191730355077f40fc7cd80cba89b6190cb3975dc3e2a1a38c1799566082b",
     "jian_recall/tokenizer.py": "c815698f2e448734111fbbda6ce6613fcf68f162276dde91a30dfdc9e30ccfe4",
     "jian_recall/trigger.py": "4f198c620461a3ab204eb9b21a2f9438a2d0ff75af1bfb6b78fc8945c81fca92",
+}
+
+# Every deviation from the baseline must be declared here with a reason.
+ALLOWED_CHANGES = {
+    "jian/event.py": "M10: envelope v2 fields and the event_text accessor",
+    "jian/chain.py": "M10: optional chain blobs, blob store, fast scan, revival v2",
+    "jian/capsule.py": "M10: payload API, v2 seal/export/import, event_full_text",
+    "jian/errors.py": "M10: E_BLOB_MISSING and E_BLOB_MISMATCH",
+    "jian_recall/index.py": "M10: retrieval reads summary through event_text",
+    "jian_kernel/compiler.py": "M10: identity layer reads full text through event_full_text",
+    "jian_kernel/proposer.py": "M10: proposal text goes through event_text",
 }
 
 
@@ -111,17 +129,22 @@ class TestAllRegression(unittest.TestCase):
         self.assertEqual(result.skipped, [])
 
     def test_frozen_packages_are_byte_identical(self) -> None:
-        """S6: M10 must not touch any file of the three frozen upper packages."""
+        """S6: any deviation from the baseline must be declared in ALLOWED_CHANGES."""
         found = {
             path.relative_to(ROOT).as_posix(): hashlib.sha256(
                 path.read_bytes()
             ).hexdigest()
-            for package in ("jian_cn", "jian_recall", "jian_kernel")
+            for package in ("jian", "jian_cn", "jian_recall", "jian_kernel")
             for path in sorted((ROOT / package).rglob("*.py"))
         }
         self.assertEqual(sorted(found), sorted(FROZEN_DIGESTS))
-        for name, digest in FROZEN_DIGESTS.items():
-            self.assertEqual(found[name], digest, f"frozen file changed: {name}")
+        changed = {
+            name for name, digest in FROZEN_DIGESTS.items() if found[name] != digest
+        }
+        undeclared = sorted(changed - set(ALLOWED_CHANGES))
+        self.assertEqual(undeclared, [], f"undeclared change: {undeclared}")
+        stale = sorted(set(ALLOWED_CHANGES) - changed)
+        self.assertEqual(stale, [], f"declared but unchanged: {stale}")
 
 
 if __name__ == "__main__":

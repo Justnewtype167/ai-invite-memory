@@ -14,6 +14,7 @@ from .errors import (
     E_BLOB_MISMATCH,
     E_BLOB_MISSING,
     E_CHAIN_MISSING,
+    E_HEADER_MISMATCH,
     E_IO,
     E_SCHEMA,
     E_TAMPER,
@@ -257,6 +258,21 @@ def _blob_digests(events: Sequence[Event] | None) -> list[str] | None:
         return None
     refs = sorted({str(event.payload) for event in events})
     return [ref.split(":", 1)[1] for ref in refs]
+
+
+def _check_capsule_blobs(entries: Mapping[str, bytes], digests: Sequence[str]) -> None:
+    """Require every referenced blob in a capsule and reject unregistered ones."""
+    expected = {f"{BLOBS_DIR}/{digest}" for digest in digests}
+    found = {name for name in entries if BLOB_RE.match(name)}
+    extra = found - expected
+    if extra:
+        raise JianError(E_HEADER_MISMATCH, f"胶囊含未登记的载荷：{sorted(extra)[0]}")
+    for digest in digests:
+        name = f"{BLOBS_DIR}/{digest}"
+        if name not in entries:
+            raise JianError(E_BLOB_MISSING, f"胶囊缺少载荷：{digest}")
+        if _sha256(entries[name]) != digest:
+            raise JianError(E_BLOB_MISMATCH, f"载荷内容与其哈希不符：{digest}")
 
 
 def _scan_canonical(evidence: Mapping[str, bytes]) -> tuple[int, str, list[Segment]]:

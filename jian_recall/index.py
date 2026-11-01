@@ -15,6 +15,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterator
 
+from jian.event import event_text
 from jian_recall.errors import E_RC_IO, E_RC_NO_INDEX, E_RC_STALE, RecallError
 from jian_recall.tokenizer import bigrams, estimate_tokens
 
@@ -440,7 +441,7 @@ def _parse_stored(line: str, path: Path) -> StoredEvent:
         raise RecallError(E_RC_IO, f"证据行无法解析：{path}") from exc
     event_id = data.get("id")
     stamp = data.get("t")
-    text = __import__("jian.event", fromlist=("event_text",)).event_text(data)
+    text = event_text(data)
     if not isinstance(event_id, str) or not isinstance(stamp, str) \
             or not isinstance(text, str):
         raise RecallError(E_RC_IO, f"证据字段缺失：{path}")

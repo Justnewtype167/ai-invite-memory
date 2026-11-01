@@ -114,11 +114,14 @@ def event_text(data: dict[str, object]) -> str:
 **原文写的是「上层零 diff」——这条是我写错了。** 实测上层有三处直接读 `data.get("text")`，
 v2 禁止 `text` 之后它们必然取到空串。
 
-| 文件 | 行 | 改动 |
+| 文件 | 改动 | 行数 |
 |---|---|---|
-| `jian_recall/index.py` | 443 | `data.get("text")` → `event_text(data)` |
-| `jian_kernel/compiler.py` | 161 | 同上 |
-| `jian_kernel/proposer.py` | 513 | 同上 |
+| `jian_recall/index.py` | 顶层 `from jian.event import event_text` + 调用 | 2 |
+| `jian_kernel/proposer.py` | 同上 | 2 |
+| `jian_kernel/compiler.py` | 顶层 `from jian.capsule import event_full_text` + 调用（**读全文，不读 summary**） | 2 |
+
+**合计 6 行（每文件 2 行：import + 调用）。**
+最初写的「3 行」不成立——没有 import 就无法调用，这是我第二次低估了改动面。
 
 **除此之外，四个上层包的所有其它文件必须零 diff**，
 `jian_cn/` 与 `jian_pcs/` 完全零 diff。
@@ -155,7 +158,7 @@ v2 禁止 `text` 之后它们必然取到空串。
 | N2 | `test_blob_store` | 内容寻址写入；重复内容只写一份；篡改 blob → `E_BLOB_MISMATCH`；删 blob → `E_BLOB_MISSING` |
 | N3 | `test_env_roundtrip` | export → import → export **逐字节一致**，且 blob 随包往返 |
 | N4 | `test_env_v1_compat` | v1 胶囊仍可 verify；只有 turn 的 v1 目录仍可 seal；**M1 的 31 个测试全绿** |
-| N5 | `test_upper_layers_touch_limit` | 四个上层包的 diff **恰好 3 行**（`recall/index.py:443`、`kernel/compiler.py:161`、`kernel/proposer.py:513`）；其余文件 sha256 与基线一致；`jian_cn/`、`jian_pcs/` 完全零 diff |
+| N5 | `test_upper_layers_touch_limit` | 四个上层包的 diff **恰好 6 行**（三文件各 2 行：import + 调用）；其余文件 sha256 与基线一致；`jian_cn/`、`jian_pcs/` 完全零 diff |
 | N6 | `test_summary_only_retrieval` | 检索只用 `summary`：把 payload 换成等长随机字节，检索结果不变 |
 | N7 | `test_all_regression` | 现有 **246 个测试仍全绿** |
 
@@ -187,3 +190,15 @@ python -m unittest discover -s tests -v      # 全绿、0 skipped
 
 **如果 kid 不同，必须解释清楚为什么**——这决定 M11 的轨迹实验能不能做。
 
+
+## 12. 冻结棘轮（本轮新增机制）
+
+`tests/test_all_regression.py` 引入 `ALLOWED_CHANGES = {文件: 原因}`：
+
+```
+与上一版相比，任何文件哈希有变，必须在此声明，否则测试失败
+反向也检查：声明了但实际没改，同样失败（防止声明腐烂）
+```
+
+**意义**：开冻结从「改哈希字典」变成「在测试里写一行理由」。
+这一轮 `jian/capsule.py`、`jian/event.py`、`jian/chain.py`、`jian_kernel/*` 的改动全部被声明。

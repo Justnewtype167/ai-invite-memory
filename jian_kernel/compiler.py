@@ -11,6 +11,7 @@ import re
 from datetime import datetime
 from pathlib import Path
 
+from jian.capsule import event_full_text
 from jian_cn.errors import CnError
 from jian_cn.kinship import Kinship, lexicon_terms, parse_kinship
 from jian_cn.timex import parse_time
@@ -158,7 +159,7 @@ def _parse_event(line: str, path: Path) -> EvidenceEvent:
         raise KernelError(E_KN_IO, f"证据行不是对象：{path}")
     event_id = data.get("id")
     stamp = data.get("t")
-    text = __import__("jian.event", fromlist=("event_text",)).event_text(data)
+    text = event_full_text(path.parent.parent, data)
     event_type = data.get("type", "turn")
     kind = data.get("kind")
     target = data.get("target")

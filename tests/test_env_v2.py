@@ -1,4 +1,4 @@
-"""N1-N6: the v2 payload envelope and the blob store (M10)."""
+"""N1-N6 and P0: the v2 payload envelope, the blob store and identity text."""
 
 from __future__ import annotations
 
@@ -15,6 +15,7 @@ from jian.capsule import (
     BLOBS_DIR,
     append_event,
     append_payload_event,
+    event_full_text,
     export_capsule,
     import_capsule,
     init_store,
@@ -62,18 +63,25 @@ BASELINE = {
     "jian_pcs/score.py": "28fe4f226ce8e7d052d80ee8409763c062f114ed7921adad964a8b1a7b08d88b",
 }
 EDITS = {
-    "jian_recall/index.py": (
-        '    text = data.get("text")\n',
-        '    text = __import__("jian.event", fromlist=("event_text",)).event_text(data)\n',
-    ),
-    "jian_kernel/compiler.py": (
-        '    text = data.get("text")\n',
-        '    text = __import__("jian.event", fromlist=("event_text",)).event_text(data)\n',
-    ),
-    "jian_kernel/proposer.py": (
-        '    text = data.get("text")\n',
-        '    text = __import__("jian.event", fromlist=("event_text",)).event_text(data)\n',
-    ),
+    "jian_recall/index.py": {
+        "added": ["from jian.event import event_text\n"],
+        "replaced": [
+            ('    text = event_text(data)\n', '    text = data.get("text")\n'),
+        ],
+    },
+    "jian_kernel/compiler.py": {
+        "added": ["from jian.capsule import event_full_text\n"],
+        "replaced": [
+            ('    text = event_full_text(path.parent.parent, data)\n',
+             '    text = data.get("text")\n'),
+        ],
+    },
+    "jian_kernel/proposer.py": {
+        "added": ["    event_text,\n"],
+        "replaced": [
+            ('    text = event_text(data)\n', '    text = data.get("text")\n'),
+        ],
+    },
 }
 
 
@@ -167,6 +175,33 @@ class TestEnvV2(unittest.TestCase):
         self.assertEqual(event_text({"v": 2, "summary": "新"}), "新")
         self.assertEqual(event_text({"v": 1}), "")
         self.assertEqual(event_text({"v": 2, "text": "被忽略"}), "")
+
+    def test_event_full_text_reads_blob(self) -> None:
+        """P0: identity text is the whole payload, summary stays retrieval-only."""
+        full = "甲" * 150 + "乙" * 150
+        summary = full[:200]
+        append_payload_event(
+            self.store, "text", summary, full.encode("utf-8"), role="user", t=STAMP
+        )
+        append_payload_event(
+            self.store, "audio", "一段语音", b"voice", role="assistant", t=STAMP
+        )
+        rows = _lines(self.store)
+        self.assertEqual(event_text(rows[0]), summary)
+        self.assertEqual(event_full_text(self.store, rows[0]), full)
+        self.assertEqual(len(full), 300)
+        self.assertEqual(event_full_text(self.store, rows[1]), "一段语音")
+        self.assertEqual(event_full_text(self.store, {"v": 1, "text": "旧"}), "旧")
+        missing = dict(rows[0], payload="sha256:" + "0" * 64)
+        with self.assertRaises(JianError) as context:
+            event_full_text(self.store, missing)
+        self.assertEqual(context.exception.code, E_BLOB_MISSING)
+
+        from jian_kernel.compiler import read_evidence
+
+        events = read_evidence(self.store)
+        self.assertEqual(events[0].text, full)
+        self.assertEqual(events[1].text, "一段语音")
 
 
 class TestBlobStore(unittest.TestCase):
@@ -274,10 +309,10 @@ class TestEnvV1Compat(unittest.TestCase):
 
 
 class TestUpperLayersTouchLimit(unittest.TestCase):
-    """N5: the four upper packages differ from the baseline by exactly 3 lines."""
+    """N5: exactly three declared sites in the upper packages, nothing else moved."""
 
     def test_upper_layers_touch_limit(self) -> None:
-        """N5: only three audited one-line edits, nothing else moved."""
+        """N5: only the declared lines differ; restoring them reproduces the baseline."""
         found = {
             path.relative_to(ROOT).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
             for package in ("jian_cn", "jian_recall", "jian_kernel", "jian_pcs")
@@ -287,15 +322,19 @@ class TestUpperLayersTouchLimit(unittest.TestCase):
         changed = [name for name in BASELINE if found[name] != BASELINE[name]]
         self.assertEqual(sorted(changed), sorted(EDITS))
         for name in sorted(EDITS):
-            before, after = EDITS[name]
             text = (ROOT / name).read_text(encoding="utf-8")
-            self.assertEqual(text.count(after), 1, f"edited line missing: {name}")
-            self.assertNotIn(before, text.replace(after, ""), f"old line survived: {name}")
-            restored = text.replace(after, before)
+            restored = text
+            for after, before in EDITS[name]["replaced"]:
+                self.assertEqual(text.count(after), 1, f"edited line missing: {name}")
+                self.assertNotIn(before, text.replace(after, ""), f"old line survived: {name}")
+                restored = restored.replace(after, before)
+            for line in EDITS[name]["added"]:
+                self.assertEqual(text.count(line), 1, f"added line missing: {name}")
+                restored = restored.replace(line, "", 1)
             self.assertEqual(
                 hashlib.sha256(restored.encode("utf-8")).hexdigest(),
                 BASELINE[name],
-                f"more than one line changed: {name}",
+                f"undeclared change in {name}",
             )
         for package in ("jian_cn", "jian_pcs"):
             self.assertFalse(
@@ -303,6 +342,8 @@ class TestUpperLayersTouchLimit(unittest.TestCase):
                 f"{package} must stay byte-identical",
             )
         self.assertEqual(len(changed), 3)
+        replaced = sum(len(entry["replaced"]) for entry in EDITS.values())
+        self.assertEqual(replaced, 3, "exactly three functional line edits")
 
 
 class TestSummaryOnlyRetrieval(unittest.TestCase):
