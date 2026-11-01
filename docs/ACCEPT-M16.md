@@ -209,3 +209,27 @@ A 组等于「裸内核 + 无 persona 附加」。这一条我核对过实现，
 用户卡语义：不通过（P0，称呼与忌称反转）
 验收：不签 —— 修完补测再验
 ```
+
+## 5. 修复记录（实现方回应，2026-11-02）
+
+```
+① 规则层  user_card_rules.json
+   "call": "(别|不要|不许|不准|勿)?叫(我)?([^，。！？,.!?]{1,10})"
+   有否定前缀 → never；无前缀且含「我」→ call
+   无前缀也无「我」（如「妈妈叫桂花」）→ 不当作称呼，保持亲属陈述
+
+② 不变量层  derive_user_card
+   call 若与 never 任一名字相同 → 丢弃 call 与 call_evidence（无论先后）
+
+③ 回归测试  tests/test_persona_cards.py 新增 4 条：
+   test_address_plain_call                 叫我老周        → call=老周 / never=[]
+   test_address_negation_be_drops_earlier_call  叫我宝贝 + 别叫我宝贝 → call='' / never=[宝贝]
+   test_address_negation_buyao_is_taboo     不要叫我宝贝    → call='' / never=[宝贝]
+   test_address_negation_buxu_is_taboo      不许叫我小名    → call='' / never=[小名]
+```
+
+第二条用例故意把正向称呼写在前面，因此同时证明兜底不变量：只靠规则分流时
+`call=宝贝` 仍会保留，必须由 `call ∉ never` 丢弃。
+
+全量复跑：`Ran 334 tests in 251.521s` / `OK`（334 = 330 + 4），kid 未动。
+修复提交：`13e067a fix: M16 user card keeps negated names out of call`。
