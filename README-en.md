@@ -21,7 +21,7 @@
 ## Run it
 
 ```bash
-python -m unittest discover -s tests -v     # 274 tests
+python -m unittest discover -s tests -v     # 339 tests
 ```
 
 Zero third-party dependencies, Python 3.11+. The core libraries never touch the network and never call a model; network and model calls live only in `tools/`.
