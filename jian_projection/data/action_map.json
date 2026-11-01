@@ -1,18 +1,51 @@
 {
+  "_default": {
+    "segments": [
+      {"kind": "action", "value": "idle", "dur_ms": 500}
+    ]
+  },
   "不主动联系": {
+    "keywords": ["不主动", "别老联系", "不要主动"],
     "segments": [
       {"kind": "wait", "dur_ms": 3000}
     ]
   },
   "先复述": {
+    "keywords": ["复述"],
     "segments": [
       {"kind": "action", "value": "nod", "dur_ms": 600},
       {"kind": "wait", "dur_ms": 800}
     ]
   },
   "不评价": {
+    "keywords": ["不评价", "别评价", "不说应该"],
     "segments": [
       {"kind": "action", "value": "neutral_face", "dur_ms": 400}
+    ]
+  },
+  "简短": {
+    "keywords": ["短", "简洁", "少说"],
+    "segments": [
+      {"kind": "action", "value": "hold", "dur_ms": 400}
+    ]
+  },
+  "不夸": {
+    "keywords": ["夸"],
+    "segments": [
+      {"kind": "action", "value": "neutral_face", "dur_ms": 400}
+    ]
+  },
+  "不追问": {
+    "keywords": ["追问", "每次都问", "问我在"],
+    "segments": [
+      {"kind": "action", "value": "step_back", "dur_ms": 500},
+      {"kind": "wait", "dur_ms": 600}
+    ]
+  },
+  "不称呼": {
+    "keywords": ["叫我", "称呼"],
+    "segments": [
+      {"kind": "action", "value": "hold", "dur_ms": 400}
     ]
   }
 }

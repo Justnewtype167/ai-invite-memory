@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
-from jian_projection.action import load_action_map, project_action
+from jian_projection.action import (
+    ActionMap,
+    ActionRule,
+    load_action_map,
+    project_action,
+)
 from jian_projection.errors import E_PR_UNKNOWN_PROJECTOR, ProjectionError
 from jian_projection.text import project_text
 from jian_projection.trace import (
@@ -15,6 +20,8 @@ from jian_projection.trace import (
 
 __all__ = [
     "ACTION_WHITELIST",
+    "ActionMap",
+    "ActionRule",
     "PROJECTORS",
     "ProjectionError",
     "SEGMENT_KINDS",

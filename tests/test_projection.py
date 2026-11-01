@@ -44,8 +44,12 @@ from jian_projection.errors import (
 NOW = "2026-10-29T10:00:00+08:00"
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 RUNS = 100
-RULE_KEYS = ("不主动联系", "先复述", "不评价")
-RULE_TEXTS = ("不主动联系", "先复述对方的话", "不评价对错")
+STYLE_TEXTS = (
+    "说话短一点",
+    "别老夸我",
+    "不用每次都问我在干嘛",
+    "别叫我宝贝",
+)
 
 
 def _fake_kernel(canon: tuple[CanonEntry, ...] = ()) -> SimpleNamespace:
@@ -68,6 +72,7 @@ class TestTraceSchema(unittest.TestCase):
         self.assert_code(E_PR_SCHEMA, Segment, "audio", "x", None)
         self.assert_code(E_PR_SCHEMA, Segment, "text", "x", 100)
         self.assert_code(E_PR_SCHEMA, Segment, "action", 7, 100)
+        self.assert_code(E_PR_SCHEMA, Segment, "text", "x", None, 7)
         self.assert_code(E_PR_UNKNOWN_ACTION, Segment, "action", "wave", 100)
         self.assert_code(E_PR_BAD_DURATION, Segment, "action", "nod", None)
         self.assert_code(E_PR_BAD_DURATION, Segment, "wait", "", None)
@@ -86,18 +91,12 @@ class TestTraceSchema(unittest.TestCase):
             "audio_v1",
             (Segment("text", "x", None),),
         )
+        self.assert_code(E_PR_SCHEMA, Trace, "kid", "text_v1", [Segment("text", "x", None)])
         self.assert_code(E_PR_SCHEMA, Trace, "kid", "text_v1", ("x",))
-        self.assert_code(
-            E_PR_SCHEMA,
-            Trace,
-            "kid",
-            "text_v1",
-            [Segment("text", "x", None)],
-        )
         self.assert_code(E_PR_UNKNOWN_PROJECTOR, project, _fake_kernel(), "video_v1")
 
     def test_trace_serialization(self) -> None:
-        """T1: a valid trace serializes to canonical JSON with no floats."""
+        """T1: a valid trace serializes to canonical JSON with source."""
         trace = Trace(
             "kid",
             "action_v1",
@@ -105,12 +104,15 @@ class TestTraceSchema(unittest.TestCase):
         )
         payload = trace.to_payload()
         self.assertEqual(sorted(payload), ["kid", "projector", "segments"])
-        self.assertEqual(payload["segments"][0], {"dur_ms": 600, "kind": "action", "value": "nod"})
+        self.assertEqual(
+            payload["segments"][0],
+            {"dur_ms": 600, "kind": "action", "source": None, "value": "nod"},
+        )
         self.assertEqual(
             trace.to_bytes(),
             b'{"kid":"kid","projector":"action_v1","segments":['
-            b'{"dur_ms":600,"kind":"action","value":"nod"},'
-            b'{"dur_ms":800,"kind":"wait","value":""}]}',
+            b'{"dur_ms":600,"kind":"action","source":null,"value":"nod"},'
+            b'{"dur_ms":800,"kind":"wait","source":null,"value":""}]}',
         )
 
 
@@ -119,12 +121,11 @@ class TestProjectionInvariants(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.root = pathlib.Path(tempfile.mkdtemp(prefix="jian_pr_"))
         cls.addClassCleanup(shutil.rmtree, cls.root, True)
-        events = [
-            ("2026-01-01T09:00:00Z", "今天天气不错", "turn", None),
-            ("2026-01-02T09:00:00Z", RULE_TEXTS[0], "directive", "lock"),
-            ("2026-01-03T09:00:00Z", RULE_TEXTS[1], "directive", "lock"),
-            ("2026-01-04T09:00:00Z", RULE_TEXTS[2], "directive", "lock"),
-        ]
+        events = [("2026-01-01T09:00:00Z", "今天天气不错", "turn", None)]
+        day = 2
+        for text in STYLE_TEXTS:
+            events.append((f"2026-01-{day:02d}T09:00:00Z", text, "directive", "lock"))
+            day += 1
         kn_fixtures.write_store(cls.root, events)
         cls.kernel = compile_kernel(cls.root, Policy(now=NOW))
 
@@ -134,7 +135,7 @@ class TestProjectionInvariants(unittest.TestCase):
         self.assertEqual(names, ["kernel", "projector"])
         self.assertEqual(list(inspect.signature(project_text).parameters), ["kernel"])
         self.assertEqual(list(inspect.signature(project_action).parameters), ["kernel"])
-        fake = _fake_kernel((CanonEntry("directive", RULE_TEXTS[1], ("ev_000003",)),))
+        fake = _fake_kernel((CanonEntry("directive", STYLE_TEXTS[0], ("ev_000003",)),))
         self.assertFalse(hasattr(fake, "store"))
         self.assertFalse(hasattr(fake, "evidence"))
         text_trace = project(fake, "text_v1")
@@ -211,39 +212,63 @@ class TestProjectionInvariants(unittest.TestCase):
         self.assertNotEqual(text_trace.to_bytes(), action_trace.to_bytes())
         print(
             f"T5 kid={self.kernel.kid[:12]} text_segments={len(text_trace.segments)} "
-            f"action_segments={len(action_trace.segments)}"
+            f"action_segments={len(action_trace.segments)} "
+            f"canon={len(self.kernel.canon)}"
         )
 
 
 class TestActionMap(unittest.TestCase):
+    def assert_code(self, code: str, func, *args, **kwargs) -> None:
+        with self.assertRaises(ProjectionError) as caught:
+            func(*args, **kwargs)
+        self.assertEqual(caught.exception.code, code)
+
     def test_action_map(self) -> None:
-        """T6: every mapped action is legal and every rule projects."""
+        """T6: keywords are legal, every rule projects and style text is covered."""
         mapping = load_action_map()
         self.assertEqual(action_module.DATA_FILE.name, "action_map.json")
-        self.assertEqual([rule for rule, _ in mapping], list(RULE_KEYS))
-        for rule, segments in mapping:
-            self.assertTrue(segments)
-            for segment in segments:
+        self.assertTrue(mapping.rules)
+        self.assertTrue(mapping.default)
+        for rule in mapping.rules:
+            self.assertTrue(rule.keywords)
+            self.assertTrue(rule.segments)
+            for segment in rule.segments:
                 self.assertIn(segment.kind, ("action", "wait"))
                 if segment.kind == "action":
                     self.assertIn(segment.value, ACTION_WHITELIST)
                 self.assertIsNotNone(segment.dur_ms)
-        for rule, segments in mapping:
-            kernel = _fake_kernel((CanonEntry("directive", rule, ("ev_1",)),))
+        for rule in mapping.rules:
+            keyword = rule.keywords[0]
+            kernel = _fake_kernel((CanonEntry("directive", keyword, ("ev_1",)),))
             trace = project_action(kernel)
-            self.assertEqual(trace.segments, segments)
+            self.assertEqual(len(trace.segments), len(rule.segments))
+            for got, expected in zip(trace.segments, rule.segments):
+                self.assertEqual(
+                    (got.kind, got.value, got.dur_ms),
+                    (expected.kind, expected.value, expected.dur_ms),
+                )
+                self.assertEqual(got.source, keyword)
+        hits = [
+            text for text in STYLE_TEXTS
+            if any(any(keyword in text for keyword in rule.keywords)
+                   for rule in mapping.rules)
+        ]
+        print(f"T6 style_hits={len(hits)}/{len(STYLE_TEXTS)}")
+        self.assertEqual(len(hits), len(STYLE_TEXTS))
+        self.assert_code(E_PR_EMPTY, project_action, _fake_kernel())
 
-    def test_unmatched_rule_is_ignored(self) -> None:
-        """T6: a canon entry with no mapped rule is skipped without error."""
+    def test_unmatched_rule_uses_default(self) -> None:
+        """T6: an unmapped canon entry falls back to _default, not an error."""
         kernel = _fake_kernel(
-            (
-                CanonEntry("directive", "今天天气不错", ("ev_1",)),
-                CanonEntry("directive", RULE_TEXTS[1], ("ev_2",)),
-            )
+            (CanonEntry("directive", "今天天气不错", ("ev_1",)),)
         )
         trace = project_action(kernel)
-        expected = dict(load_action_map())[RULE_KEYS[1]]
-        self.assertEqual(trace.segments, expected)
+        expected = load_action_map().default
+        self.assertEqual(len(trace.segments), len(expected))
+        for got, want in zip(trace.segments, expected):
+            self.assertEqual((got.kind, got.value, got.dur_ms),
+                             (want.kind, want.value, want.dur_ms))
+            self.assertEqual(got.source, "今天天气不错")
 
 
 if __name__ == "__main__":

@@ -27,6 +27,7 @@ def project_text(kernel: object) -> Trace:
                 "text",
                 CONSTRAINT_PREFIX + f"{entry.kind}: {entry.text}",
                 None,
+                entry.text,
             )
         )
     if not segments:

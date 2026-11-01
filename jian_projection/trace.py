@@ -47,6 +47,7 @@ class Segment:
     kind: str
     value: str
     dur_ms: int | None
+    source: str | None = None
 
     def __post_init__(self) -> None:
         """Validate the segment against the trace contract."""
@@ -56,6 +57,8 @@ class Segment:
             )
         if not isinstance(self.value, str):
             raise ProjectionError(E_PR_SCHEMA, "片段 value 必须是字符串")
+        if self.source is not None and not isinstance(self.source, str):
+            raise ProjectionError(E_PR_SCHEMA, "片段 source 必须是字符串或 null")
         if self.kind == "action":
             if self.value not in ACTION_WHITELIST:
                 raise ProjectionError(
@@ -69,7 +72,12 @@ class Segment:
 
     def to_payload(self) -> dict[str, object]:
         """Return the canonical JSON-ready view of this segment."""
-        return {"dur_ms": self.dur_ms, "kind": self.kind, "value": self.value}
+        return {
+            "dur_ms": self.dur_ms,
+            "kind": self.kind,
+            "source": self.source,
+            "value": self.value,
+        }
 
 
 @dataclass(frozen=True)
