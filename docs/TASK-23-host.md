@@ -83,7 +83,7 @@ class HostSession:
 
 | # | 测试 | 断言 |
 |---|---|---|
-| H1 | `test_round_trip` | on_user → prompt_for → reply，之后证据 +2 条，`kid` 不变（turn 不进 canon） |
+| H1 | `test_round_trip` | on_user → prompt_for → reply，之后证据 +2 条；`kid` 与「直接 append 同样两条」的孪生 store 相同（**turn 是内核事件，会改 state，所以 kid 会变——这是我原文写错的一条**） |
 | H2 | `test_prompt_order` | 用户卡出现在上下文之前；规则在最前；本轮输入在最后 |
 | H3 | `test_prompt_is_pure` | 连调两次 `prompt_for` 不写任何事件；返回字节相同 |
 | H4 | `test_refusal_recorded` | 违规回复 → `reply` 返回 `allowed=False`，证据多一条 `refusal`，正常回复不产生 refusal |
