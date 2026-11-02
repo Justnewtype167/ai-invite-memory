@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## v0.20-m17 · 2026-11-02
+
+宿主接入层。**地基第一次有了对外的入口。**
+
+- 新增 `tools/host_adapter.py`：一个类、五个方法（on_user / on_assistant / prompt_for / reply / stats）
+- `prompt_for` 固定顺序：行为规则 → 用户卡 → 上下文 → 人格视图 → 本轮输入
+- `reply` 走 M13 闸门：拒绝时只写 refusal，助手轮不落盘
+- 新增 `docs/HOST-INTEGRATION.md`（一页接入说明）与 `docs/TASK-23-host.md`（规格）
+- 测试 339 → **344**（H1–H5）
+- 顺带修正：TASK-23 原写「turn 不进 canon 所以 kid 不变」——**错**，turn 是内核事件会改 state；
+  H1 改为与「直接 append 同样两条」的孪生 store 比 kid
+
 ## v0.19-m16 · 2026-11-02
 
 特质、风格卡与用户卡。**宪章里 A2 与 A5 首次有了落地物。**
