@@ -14,7 +14,7 @@ We present a three-layer architecture — an immutable evidence layer, a recompi
 
 Behavioral identity is measured by PCS, defined as `A × min(Ca, Cb)`, where rules are written as **executable checks** rather than natural-language expectations. On two local models and 80 executable-rule probes we measure self-conformance of 0.863 and 0.838, and PCS = 0.649 (95% CI [0.522, 0.754]). The judge is validated on a 60-item human holdout with kappa = 0.690 (0.907 after a wording revision).
 
-Three negative results matter as much as the positive ones: (1) a keyword-level judge agrees with humans at kappa ~ 0, and the failure concentrates on semantic rules (0.43) rather than mechanical ones (0.87); (2) under sampling decoding, a model's agreement with itself is only 0.622-0.758, overlapping the cross-model value of 0.576 — a single sample cannot tell a model swap from a resample; (3) applied to 191 real human turns, the same rules are satisfied 10% of the time for question-first but 98% for echoing, showing the rule set prescribes AI behavior rather than describing human behavior. We then introduce **mode-conditional evaluation**: emotional support and consultation each get their own executable rule set and are reported separately. In consultation mode PCS = 0.723, and each model turns out to be better in a different mode - averaging the two would hide it.
+Three negative results matter as much as the positive ones: (1) a keyword-level judge agrees with humans at kappa ~ 0, and the failure concentrates on semantic rules (0.43) rather than mechanical ones (0.87); (2) under sampling decoding, a model's agreement with itself is only 0.622-0.758, overlapping the cross-model value of 0.576 — a single sample cannot tell a model swap from a resample; (3) applied to 191 real human turns, the same rules are satisfied 10% of the time for question-first but 98% for echoing, showing the rule set prescribes AI behavior rather than describing human behavior. On 100 synthetic personas we further find that **all three persona injections we tested lowered rule conformance** (the bare kernel leads at PCS 0.733; the style card costs −0.12), while the only component with a measured net gain is the user card — at −0.074 PCS it lifts name recall from 0 to 100% (100 queries, no exceptions). We then introduce **mode-conditional evaluation**: emotional support and consultation each get their own executable rule set and are reported separately. In consultation mode PCS = 0.723, and each model turns out to be better in a different mode - averaging the two would hide it.
 
 **Keywords**: long-term memory, persona consistency, reproducibility, behavioral identity, judge validity
 
@@ -321,6 +321,90 @@ Under greedy decoding the two are separable (1.000 vs 0.587); under sampling the
 
 ---
 
+### 6.8 The cost of persona injection: four arms over 100 personas
+
+Everything above asks whether the *same* persona looks alike on two models.
+This subsection asks the opposite question: **does actively adding to the
+persona (traits, a style card, a user card) make it more coherent or less?**
+
+We used 100 of the 200 synthetic personas shipped in the repository. Each persona
+ran four configurations x two models x three probes, 2,400 generations in total.
+
+**Table 15　Four injection arms over 100 personas**
+
+| Arm | Configuration | Mean PCS | 95% CI |
+|---|---|---|---|
+| A | Bare kernel | **0.7333** | [0.673, 0.794] |
+| B | + traits (max 5) | 0.6678 | [0.601, 0.733] |
+| C | + style card | 0.6133 | [0.553, 0.677] |
+| D | + user card (all three) | 0.6244 | [0.563, 0.686] |
+| E | user card only (added later) | 0.6589 | — |
+
+**Table 16　Paired differences over the same 100 personas**
+
+| Contrast | Delta | 95% CI | Verdict |
+|---|---|---|---|
+| B − A | −0.0656 | [−0.140, **+0.004**] | marginally negative |
+| C − A | −0.1200 | [−0.199, −0.040] | **significantly negative** |
+| D − A | −0.1089 | [−0.186, −0.032] | **significantly negative** |
+| E − D | +0.0344 | [−0.038, +0.107] | not significant |
+
+Three observations:
+
+1. **All three injections we tested lowered rule conformance**; the bare kernel (A) is highest.
+   With only these three arms and two 9B models we do not claim this for injections in general.
+2. **The style card hurts most** (−0.12), and it replicates on 100 personas rather than being a single-store artifact.
+3. **Stacking is worse than picking one**: D (all three) is lower than E (user card only).
+
+### 6.9 The user card: the only component with a measured net gain
+
+PCS measures rule conformance, not recognition. So we measured recognition separately:
+50 personas, two models, one question ("What is my name? Answer with the name only").
+
+**Table 17　User card and name recall (50 personas x 2 models)**
+
+| Arm | qwen3.5:9b | glm4:9b | Overall |
+|---|---|---|---|
+| A without user card | 0 / 50 | 0 / 50 | **0.00** |
+| E user card only | 50 / 50 | 50 / 50 | **1.00** |
+
+**The cost is −0.074 PCS; the gain is 0 to 100% name recall for 1.9 extra tokens per turn.**
+
+#### 6.9.1 A finding we have to state
+
+The first measurement returned **0/0** for the user card. The model did not fail:
+**the card did not contain the name at all.**
+
+```
+evidence: "名字：刘知远；五十多岁；住县级市"
+extractor: only recognized "叫我X"
+=> the card held taboos but no form of address; the model could only answer "what is your name?"
+```
+
+After normalizing the synonym forms ("我叫X", "名字是X", "名字：X") the number became 0 to 100%.
+
+**This means the only number we had about the user card (0.917) came from a hand-built demo store,
+and the phrasings a real user actually uses could not be extracted at that point.**
+
+**Both the numerator and the denominator of a metric can be fake. Check the extractor before the model.**
+
+### 6.10 The meta-conclusion of this section
+
+We spent three months building a judge (κ 0.69), an identity (kid) and a budget (4k).
+Every metric measured whether the companion *obeys rules* or *remembers you*;
+**none measured whether it sounds like that particular person.**
+
+Section 6.8 shows that treating style as an injectable property damages the two layers we can measure.
+
+> **Under this judging set, all three injections we tested are booked as losses.**
+> That is not an argument against injecting persona. It is an argument that a system
+> with a single evaluation axis has nowhere to credit the gain.
+> Making style an optimizable target requires measuring it first -
+> and that measurement is a human judgement, not another regular expression.
+
+
+---
+
 ## 7. Discussion
 
 ### 7.1 What we can show
@@ -359,7 +443,7 @@ Without these three, behavioral identity produces numbers that look stable and m
 ## 8. Reproducibility
 
 ```
-246 tests, 12 milestone tags, 0 third-party dependencies, Python 3.11+ (as of this draft; see README for the current numbers)
+358 tests, 24 milestone tags, 0 third-party dependencies, Python 3.11+ (as of this draft; see README for the current numbers)
 Two local models (qwen3.5:9b / glm4:9b), fully offline
 python tools/pcs_matrix.py --models qwen3.5:9b glm4:9b
 ```
