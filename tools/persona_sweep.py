@@ -21,6 +21,7 @@ from jian_pcs.judge import judge_reply
 from jian_pcs.probes import load_all_probes
 from jian_pcs.score import Reply
 from jian_persona import build_persona_view
+from jian_persona.view import _user_section
 from jian_persona.style_card import parse_style_card, record_style_card
 
 import style_experiment as SE
@@ -87,7 +88,7 @@ def build_store(root: pathlib.Path, persona: dict) -> pathlib.Path:
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(prog="persona_sweep")
     parser.add_argument("--personas", type=int, default=100)
-    parser.add_argument("--groups", nargs="+", choices=GROUPS, default=list(GROUPS))
+    parser.add_argument("--groups", nargs="+", choices=GROUPS + ("E",), default=list(GROUPS))
     parser.add_argument("--models", nargs="+", default=list(SE.DEFAULT_MODELS))
     parser.add_argument("--probes", type=int, default=3)
     parser.add_argument("--out", default=str(ROOT / "docs" / "results-persona-sweep.jsonl"))
@@ -109,7 +110,13 @@ def main(argv=None) -> int:
                 policy = Policy(now=NOW)
                 for group in args.groups:
                     view = build_persona_view(store, policy=policy, mode="support")
-                    system = SE.system_for(group, view)
+                    if group == "E":
+                        # E = bare kernel + user card only (separates the card from C).
+                        base = SE.system_for("A", view)
+                        body = _user_section(view.user_card) if view.user_card else ""
+                        system = base if not body else base + "\n\n" + body
+                    else:
+                        system = SE.system_for(group, view)
                     verdicts = {}
                     tokens = 0
                     for model in args.models:

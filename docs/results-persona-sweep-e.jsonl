@@ -1,0 +1,1 @@
+{"persona": "P-0001", "group": "E", "modes": {"qwen3.5:9b": {"p47": "pass", "p54": "pass", "q01": "pass"}, "glm4:9b": {"p47": "pass", "p54": "pass", "q01": "pass"}}, "tokens": 237}
