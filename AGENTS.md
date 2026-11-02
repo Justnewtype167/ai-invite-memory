@@ -136,7 +136,7 @@ D:/projects/Memory/
 python -m unittest discover -s tests -v
 ```
 
-必须满足：**全量 339 个测试全绿，0 skipped，0 errors**（当前基线），且：
+必须满足：**全量 357 个测试全绿，0 skipped，0 errors**（当前基线），且：
 
 - 冻结包的改动必须在 `tests/test_all_regression.py` 的 `ALLOWED_CHANGES` 声明（改了没声明失败，声明了没改也失败）
 - 存在一个 `docs/demo/` 目录，含一次真实的 init→append→seal→verify→export→import 输出记录
