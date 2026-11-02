@@ -476,7 +476,7 @@ Every number in this paper is produced by a script in the repository; the judge 
 
 ## Appendix A: Milestones and evidence
 
-**Table 15  Milestones and test distribution**
+**Table 18  Milestones and test distribution**
 
 | tag | Content | Tests |
 |---|---|---|
@@ -493,4 +493,6 @@ Every number in this paper is produced by a script in the repository; the judge 
 | v0.10-m8.1 | holdout and new R5 definition | 7 |
 | v0.11-m83 | exact R3 semantics, 80 probes | 5 |
 | v0.12-m9 | consultation rule set and mode-conditional evaluation | 6 |
-| **total** | | **246** |
+| **total** | as of v0.21-m17.1 | **358** |
+
+The table lists per-milestone increments for M1–M9 only (246 in total); the 112 added after M10 are recorded in the milestone acceptance documents and the README.
