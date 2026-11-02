@@ -23,6 +23,7 @@ if str(ROOT) not in sys.path:
 from jian.capsule import append_event, init_store, utc_now, verify_path
 from jian.errors import JianError
 from jian_kernel.compiler import compile_kernel
+from jian_kernel.incremental import compile_kernel_incremental
 from jian_kernel.errors import KernelError
 from jian_kernel.kernel import Policy
 from jian_persona import build_persona_view
@@ -56,6 +57,8 @@ class HostSession:
         if not (self.store / "evidence").is_dir():
             init_store(self.store)
         self._counter = {"turns": 0, "refused": 0, "prompts": 0}
+        self._policy = Policy(now=self.now)
+        self._view_cache = None
 
     # -- writes --------------------------------------------------------
     def on_user(self, text, t):
@@ -87,10 +90,22 @@ class HostSession:
         rules = load_rules_v2()
         return RULE_HEADER + NEWLINE + NEWLINE.join("- " + r.text for r in rules)
 
+    def _kernel(self):
+        """Return the kernel, reusing the incremental snapshot when possible."""
+        return compile_kernel_incremental(self.store, self._policy)
+
     def _card_and_persona(self):
         """Return (card_block, persona_block); both empty when nothing is known."""
         try:
-            view = build_persona_view(self.store, policy=Policy(now=self.now))
+            kernel = self._kernel()
+            cached = self._view_cache
+            if cached is not None and cached[0] == kernel.head:
+                view = cached[1]
+            else:
+                view = build_persona_view(
+                    self.store, kernel=kernel, policy=self._policy
+                )
+                self._view_cache = (kernel.head, view)
         except (KernelError, JianError):
             return "", "", None
         card = ""
@@ -169,7 +184,7 @@ class HostSession:
     # -- gated write ---------------------------------------------------
     def reply(self, text, t):
         """Gate the reply, then either record it or record the refusal."""
-        kernel = compile_kernel(self.store, Policy(now=self.now))
+        kernel = self._kernel()
         trace = Trace(
             kid=kernel.kid,
             projector="text_v1",
