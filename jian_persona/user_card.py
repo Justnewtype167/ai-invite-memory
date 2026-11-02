@@ -33,7 +33,7 @@ DONE_MARKERS = ("已完成", "已办", "做到了")
 DEFAULT_RULES_PATH = Path(__file__).resolve().parent / "data" / "user_card_rules.json"
 PINNED_ID = "user_card"
 PINNED_SLOT = "pinned"
-CLAUSE_SPLIT = re.compile(r"[，。！？,.!?]")
+CLAUSE_SPLIT = re.compile(r"[，。！？,.!?；;]")
 
 
 @dataclass(frozen=True)
@@ -131,8 +131,17 @@ def _derive_address(
     suffixes = tuple(str(word) for word in raw_suffixes) if isinstance(
         raw_suffixes, list
     ) else ()
+    raw_aliases = address.get("aliases", [])
+    aliases: tuple[tuple[str, str], ...] = ()
+    if isinstance(raw_aliases, list):
+        aliases = tuple(
+            (str(item[0]), str(item[1]))
+            for item in raw_aliases
+            if isinstance(item, list) and len(item) == 2
+            and str(item[0]) and str(item[1])
+        )
     call, call_evidence, never = _derive_call(
-        core, str(address.get("call", "")), negations, suffixes
+        core, str(address.get("call", "")), negations, suffixes, aliases
     )
     self_name = _last_match(core, str(address.get("self", "")))
     payload: dict[str, object] = {
@@ -152,13 +161,17 @@ def _derive_call(
     pattern: str,
     negations: tuple[str, ...],
     suffixes: tuple[str, ...],
+    aliases: tuple[tuple[str, str], ...],
 ) -> tuple[str, str, list[dict[str, str]]]:
     """Split address directives into call and taboo; a taboo always wins.
 
     Negation is decided per clause, not by a prefix token: any clause that
     contains one of the configured negation words turns its "叫X" match into a
-    taboo, whatever the surface form is. A clause with no negation can only set
-    the call when it says "叫我X"; "妈妈叫桂花" is kinship, not an address.
+    taboo, whatever the surface form is. Before matching, synonyms such as
+    "我叫X", "名字是X" and "名字：X" are rewritten into the "叫我X" surface
+    form, so group(1) stays the pronoun and group(2) stays the name. A clause
+    with no negation can only set the call when "叫我X" is not preceded by a
+    kinship term; "我妈叫我回家" is someone else calling, not an address.
     Trailing tails such as "就好" are removed before the name is compared.
     After scanning, a call that equals a taboo is dropped.
     """
@@ -172,10 +185,11 @@ def _derive_call(
         for clause in CLAUSE_SPLIT.split(event.text):
             if not clause:
                 continue
+            normalized = _normalize_clause(clause, aliases)
             negative = any(
                 word and word in clause for word in negations
             )
-            for match in re.finditer(pattern, clause):
+            for match in re.finditer(pattern, normalized):
                 pronoun = (match.group(1) or "").strip()
                 name = _trim_suffixes(match.group(2).strip(), suffixes)
                 if not name:
@@ -184,13 +198,30 @@ def _derive_call(
                     if name not in seen:
                         seen.add(name)
                         never.append({"text": name, "evidence": event.event_id})
-                elif pronoun:
+                elif pronoun and not _has_kinship_prefix(
+                    normalized[: match.start()]
+                ):
                     call = name
                     evidence = event.event_id
     if call and call in seen:
         call = ""
         evidence = ""
     return call, evidence, never
+
+
+def _normalize_clause(
+    clause: str, aliases: tuple[tuple[str, str], ...]
+) -> str:
+    """Rewrite self-introduction synonyms into the "叫我X" surface form."""
+    normalized = clause
+    for source, target in aliases:
+        normalized = normalized.replace(source, target)
+    return normalized
+
+
+def _has_kinship_prefix(prefix: str) -> bool:
+    """Return whether a kinship term precedes "叫我", e.g. 我妈叫我回家."""
+    return any(term in prefix for term in lexicon_terms())
 
 
 def _trim_suffixes(name: str, suffixes: tuple[str, ...]) -> str:

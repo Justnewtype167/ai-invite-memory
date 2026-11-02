@@ -341,6 +341,47 @@ class TestUserCard(unittest.TestCase):
         )
         self.assertEqual(card.address["call"], "老周")
 
+    def test_address_self_intro_sets_call(self) -> None:
+        """``我叫X`` is a self-introduction, not a missing pronoun."""
+        card = self._address_card("我叫老周")
+        print(
+            f"M16 address self-intro call={card.address['call']!r} "
+            f"never={card.address['never']}"
+        )
+        self.assertEqual(card.address["call"], "老周")
+        self.assertEqual(card.address["never"], [])
+
+    def test_address_name_field_sets_call(self) -> None:
+        """``名字：X；...`` stops at the separator instead of eating the tail."""
+        card = self._address_card("名字：张兰；三十岁")
+        print(
+            f"M16 address name-field call={card.address['call']!r} "
+            f"never={card.address['never']}"
+        )
+        self.assertEqual(card.address["call"], "张兰")
+        self.assertEqual(card.address["never"], [])
+        card = self._address_card("名字是张兰")
+        self.assertEqual(card.address["call"], "张兰")
+
+    def test_address_negation_without_call(self) -> None:
+        """``别叫我X`` alone stays a taboo and leaves the call empty."""
+        card = self._address_card("别叫我宝贝")
+        names = [item["text"] for item in card.address["never"]]
+        print(f"M16 address negation-only call={card.address['call']!r} "
+              f"never={names}")
+        self.assertEqual(card.address["call"], "")
+        self.assertEqual(names, ["宝贝"])
+
+    def test_address_kinship_call_is_not_call(self) -> None:
+        """``我妈叫我回家`` is someone else calling, not the user's address."""
+        card = self._address_card("我妈叫我回家")
+        print(
+            f"M16 address kinship call={card.address['call']!r} "
+            f"never={card.address['never']}"
+        )
+        self.assertEqual(card.address["call"], "")
+        self.assertEqual(card.address["never"], [])
+
     def test_user_card_deterministic(self) -> None:
         """The same evidence yields byte-identical cards in two processes."""
         store = self._store()
