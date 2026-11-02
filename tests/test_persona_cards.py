@@ -31,6 +31,7 @@ from jian.capsule import (
 )
 from jian.event import parse_event
 from jian_kernel.compiler import compile_kernel, core_events, read_evidence
+from jian_kernel.incremental import compile_kernel_incremental
 from jian_kernel.kernel import Policy
 from jian_persona.errors import (
     E_PERSONA_BUDGET,
@@ -557,6 +558,21 @@ class TestPersonaView(unittest.TestCase):
             f"{[len(body) for body in (body_a, body_b, body_c, body_d)]} "
             f"rules={len(rules)}"
         )
+
+    def test_passed_kernel_matches_internal_compile(self) -> None:
+        """A supplied kernel yields exactly the internally compiled view."""
+        store = self._store()
+        policy = Policy(now=NOW)
+        supplied = compile_kernel_incremental(store, policy)
+        passed = build_persona_view(store, kernel=supplied, policy=policy)
+        internal = build_persona_view(store, policy=policy)
+        print(
+            f"M16 view passed-kernel kid={passed.kid[:12]} "
+            f"same={passed == internal}"
+        )
+        self.assertEqual(passed, internal)
+        self.assertEqual(passed.kid, supplied.kid)
+        self.assertEqual(passed.head, supplied.head)
 
 
 if __name__ == "__main__":

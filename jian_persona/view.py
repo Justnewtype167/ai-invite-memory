@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Mapping
 
 from jian_kernel.compiler import compile_kernel, read_evidence
-from jian_kernel.kernel import Policy
+from jian_kernel.kernel import Kernel, Policy
 
 from jian_persona.errors import E_PERSONA_INPUT, PersonaError
 from jian_persona.model import ActiveTrait, Conflict
@@ -56,6 +56,7 @@ class PersonaView:
 def build_persona_view(
     store: Path,
     *,
+    kernel: Kernel | None = None,
     mode: str = "support",
     exclude: Mapping[str, str] | None = None,
     style_card: StyleCard | None = None,
@@ -64,11 +65,18 @@ def build_persona_view(
 ) -> PersonaView:
     """Build the persona view from evidence, with optional overrides.
 
+    ``kernel`` lets a caller pass a kernel compiled elsewhere, typically the
+    result of ``compile_kernel_incremental``, so this call does not recompile
+    the evidence. When it is ``None`` the view compiles internally exactly as
+    before. The supplied kernel is used as the identity source unchanged:
+    ``kid`` and ``head`` still come from it, and no card can move them.
+
     ``style_card`` and ``user_card`` overrides exist for experiments and for
-    tests that compare cards without rewriting evidence. ``kid`` and ``head``
-    always come from ``compile_kernel``, so card changes cannot move identity.
+    tests that compare cards without rewriting evidence. Card changes cannot
+    move identity.
     """
-    kernel = compile_kernel(store, policy)
+    if kernel is None:
+        kernel = compile_kernel(store, policy)
     events = read_evidence(store)
     resolution = resolve_traits(events, load_vocabulary(), mode)
     traits = tuple(sorted(resolution.active, key=lambda item: item.event_id))
