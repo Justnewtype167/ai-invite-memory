@@ -26,8 +26,11 @@ jobs:
           python -m venv /tmp/clean
           /tmp/clean/bin/pip install dist/*.whl
           /tmp/clean/bin/aiinvite --help
-          /tmp/clean/bin/python -c "import aiinvite, aiinvite.kernel, aiinvite.persona; from aiinvite.errors import AiInviteError; print('imports ok')"
+          /tmp/clean/bin/python -c "import aiinvite, aiinvite.host, aiinvite.demo.engine, aiinvite.persona; print('imports ok')"
       - name: attach to the release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${GITHUB_REF_NAME}" dist/* --clobber
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          gh release view "$tag" >/dev/null 2>&1 || gh release create "$tag" --title "$tag" --generate-notes
+          gh release upload "$tag" dist/* --clobber
