@@ -12,7 +12,26 @@
 
 论文：[中文](docs/PAPER.md) · [English](docs/PAPER-en.md)
 
+> 另外两份完整文档：
+>
+> - **AI 角色哀悼与继承协议 V7.0**：[`docs/PROTOCOL-V7.md`](docs/PROTOCOL-V7.md)
+>   —— 人死后人格与情感记忆如何被继承。**工程定稿，尚未实现**（`aiinvite/succession` 目前是 M15 的胶囊 V1；按宪章，活着的用户路径优先）。
+> - **影响评估**：[`docs/IMPACT-PROTOCOL-V7.md`](docs/IMPACT-PROTOCOL-V7.md)
+
+## 安装
+
+```bash
+pip install ai-invite-memory          # 零第三方依赖，Python 3.11+
+```
+
+没有 PyPI 账号也行，直接装 Release 里的 wheel：
+[下载页](https://github.com/Justnewtype167/ai-invite-memory/releases) · 详见 [`docs/INSTALL.md`](docs/INSTALL.md)
+
+**这是内核，不是成品应用。** 它没有界面、不调模型；要「双击就能用」的产物，需要在其上再加一层（见 INSTALL §4）。
+
 ---
+
+## 它是什么
 
 ## 它能回答什么问题
 
