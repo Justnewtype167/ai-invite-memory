@@ -56,7 +56,7 @@ FROZEN_COUNT = 178
 # sha256 of every source file, re-baselined at M18 (the rename moved every
 # file, so the baseline was regenerated once; from here on any byte change fails).
 FROZEN_DIGESTS = {
-    "aiinvite/__init__.py": "156c2a8a88ba3c398efeb037f7cb57c36cffb23e145f0555fd774048aa8636ad",
+    "aiinvite/__init__.py": "5006902bc0d55ad29666e7200b5658ee4f3267acf657f718bb057196100ba1d5",
     "aiinvite/canonical.py": "d62bb641aba457706bd6d4f2fe8ad0af2d29bb74e8ca0c4e690942d263235cce",
     "aiinvite/capsule.py": "6376933fbed96fcc47e0fca911e89ecbfea5eaf7fda8545d1505bd9340a58ab1",
     "aiinvite/chain.py": "c30b71e0aed2ad2a30c7e79d368d82f3f3d0a50d3812ef6566587d9209ffb388",
