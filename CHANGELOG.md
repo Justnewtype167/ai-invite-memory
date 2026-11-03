@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## v0.24-m19 · 2026-11-03
+
+**首次发布到 PyPI**（`ai-invite-memory`），首批安装产物。
+
+- 新增 `aiinvite.host`：宿主接入层进入安装包（此前只在 `tools/`，pip 安装者拿不到）
+- 新增 `aiinvite.demo`：最小可信演示窗口（tkinter，零第三方依赖）
+  - 聊天 / 人格保险箱 / 导出导入 / **换模型按钮**
+- 新增 `tests/test_demo_engine.py`（6 条，D1–D5，用假模型调用，不碰网络）
+- 测试 358 → **364**
+- 打包元数据补全（readme / license / urls / classifiers），`twine check` PASSED
+- 新增 `.github/workflows/release.yml`：推 tag 自动构建 + 干净 venv 冒烟 + 挂附件
+- 新增 `docs/INSTALL.md`、`docs/RELEASE.md`
+
 ## v0.22-m18 · 2026-11-03
 
 **改名：竹简 / Jian → AI Invite · Memory（爱邀记忆内核）。**
