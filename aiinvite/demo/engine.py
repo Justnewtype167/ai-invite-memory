@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 import pathlib
 import shutil
 import tempfile
@@ -13,7 +14,8 @@ from aiinvite.capsule import init_store, utc_now, verify_path
 from aiinvite.host import HostSession
 
 OLLAMA_URL = "http://127.0.0.1:11434/api/generate"
-DEFAULT_MODELS = ("qwen3.5:9b", "glm4:9b")
+DEFAULT_MODELS = ("glm4:9b", "qwen3.5:9b")
+DEFAULT_MODEL = DEFAULT_MODELS[0]
 
 
 class EngineError(RuntimeError):
@@ -62,7 +64,9 @@ class DemoEngine:
         self.model = model or DEFAULT_MODELS[0]
         self._caller = caller
         self._now = now
-        init_store(self.store)
+        if not (self.store / "chain.json").is_file():
+            # A second launch must reuse the memory, not crash on it.
+            init_store(self.store)
         self._session = None
         self.turns = []
 
@@ -158,5 +162,17 @@ class DemoEngine:
 
 
 def scratch_store():
-    """Return a throwaway store path for the demo window."""
+    """Return a throwaway store path (tests and experiments only)."""
     return pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_demo_")) / "memory"
+
+
+def default_store():
+    """Return the persistent store the window opens by default.
+
+    A demo that forgets you every launch is not a demo of memory.
+    """
+    if os.name == "nt":
+        base = pathlib.Path(os.environ.get("APPDATA") or pathlib.Path.home())
+    else:
+        base = pathlib.Path(os.environ.get("XDG_DATA_HOME") or pathlib.Path.home() / ".local" / "share")
+    return base / "AIInvite" / "memory"

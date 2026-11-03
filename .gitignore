@@ -11,4 +11,6 @@ dist/
 
 docs/demo/e2e/
 .trae/
-runs/
+runs/apps/
+build/
+*.spec

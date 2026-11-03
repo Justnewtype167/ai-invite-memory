@@ -156,11 +156,11 @@ def build(engine, labels=None):
 
 def main(argv=None):
     """Open the demo window."""
-    from aiinvite.demo.engine import DemoEngine, scratch_store, DEFAULT_MODELS
+    from aiinvite.demo.engine import DEFAULT_MODEL, DemoEngine, default_store
 
     argv = list(sys.argv[1:] if argv is None else argv)
-    store = pathlib.Path(argv[0]) if argv else scratch_store()
-    model = argv[1] if len(argv) > 1 else DEFAULT_MODELS[0]
+    store = pathlib.Path(argv[0]) if argv else default_store()
+    model = argv[1] if len(argv) > 1 else DEFAULT_MODEL
     engine = DemoEngine(store, model=model)
     build(engine).mainloop()
     return 0
