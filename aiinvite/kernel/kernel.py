@@ -105,6 +105,7 @@ class EvidenceEvent:
     weights_sha: str | None = None
     temp_milli: int | None = None
     seed: int | None = None
+    role: str | None = None
 
 
 @dataclass(frozen=True)

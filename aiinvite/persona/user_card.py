@@ -101,7 +101,9 @@ def derive_user_card(
     proposal can never become a user fact.
     """
     table = rules if rules is not None else load_rules()
-    core = core_events(events)
+    # The model's own words must never shape the user card: a reply such as
+    # "why do you not want me to call you baby?" would otherwise add a taboo.
+    core = [event for event in core_events(events) if event.role != "assistant"]
     address = _derive_address(core, table)
     people = _derive_people(core)
     taboos = tuple(

@@ -53,6 +53,7 @@ from aiinvite.kernel.kernel import (
 from aiinvite.kernel.proposer import Proposal, Proposer, ReplayProposer
 
 EVENT_TYPES = ("turn", "directive", "milestone", "feedback", "proposal", "refusal")
+ROLES = ("user", "assistant")
 PROMISE_DONE = ("已完成", "已办", "做到了")
 FEEDBACK_TRUST = {"correction": -50, "praise": 20}
 FIRST_DAY_INTIMACY = 5
@@ -242,9 +243,13 @@ def _parse_event(line: str, path: Path) -> EvidenceEvent:
             isinstance(value, bool) or not isinstance(value, int)
         ):
             raise KernelError(E_KN_IO, f"证据 {name} 不是整数：{path}")
+    role = data.get("role")
+    if role is not None and role not in ROLES:
+        raise KernelError(E_KN_IO, f"证据 role 非法：{path}")
     return EvidenceEvent(
         event_id, stamp_text(parse_stamp(stamp)), str(event_type), kind, text,
-        target, model, prompt_sha, quant, weights_sha, temp_milli, seed,
+        role=role, target=target, model=model, prompt_sha=prompt_sha,
+        quant=quant, weights_sha=weights_sha, temp_milli=temp_milli, seed=seed,
     )
 
 

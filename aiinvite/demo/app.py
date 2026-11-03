@@ -154,13 +154,41 @@ def build(engine, labels=None):
     return root
 
 
+def parse_args(argv):
+    """Return (store, model) from the command line, or raise SystemExit."""
+    from aiinvite.demo.engine import DEFAULT_MODEL, default_store
+
+    args = list(argv)
+    store: pathlib.Path | None = None
+    model = DEFAULT_MODEL
+    index = 0
+    while index < len(args):
+        item = args[index]
+        if item in ("-h", "--help"):
+            print("usage: python -m aiinvite.demo.app [--store PATH] [--model NAME]")
+            raise SystemExit(0)
+        if item == "--store" and index + 1 < len(args):
+            store = pathlib.Path(args[index + 1])
+            index += 2
+            continue
+        if item == "--model" and index + 1 < len(args):
+            model = args[index + 1]
+            index += 2
+            continue
+        if item.startswith("-"):
+            raise SystemExit(f"unknown option: {item}")
+        # Backwards compatibility: a bare first positional is the store path.
+        if store is None:
+            store = pathlib.Path(item)
+        index += 1
+    return (store or default_store()), model
+
+
 def main(argv=None):
     """Open the demo window."""
-    from aiinvite.demo.engine import DEFAULT_MODEL, DemoEngine, default_store
+    from aiinvite.demo.engine import DemoEngine
 
-    argv = list(sys.argv[1:] if argv is None else argv)
-    store = pathlib.Path(argv[0]) if argv else default_store()
-    model = argv[1] if len(argv) > 1 else DEFAULT_MODEL
+    store, model = parse_args(sys.argv[1:] if argv is None else argv)
     engine = DemoEngine(store, model=model)
     build(engine).mainloop()
     return 0
