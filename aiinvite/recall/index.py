@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import shutil
 import sqlite3
+import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -200,6 +201,7 @@ def build_index(store: Path) -> IndexStatus:
                 ("version", INDEX_VERSION),
                 ("last_seg", last_path.stem),
                 ("last_size", str(last_path.stat().st_size)),
+                ("build_id", uuid.uuid4().hex),
             ],
         )
         connection.commit()

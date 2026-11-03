@@ -49,6 +49,7 @@ from aiinvite.recall.index import (
     StoredEvent,
     index_status,
     is_promise,
+    load_meta,
     parse_now,
     read_tail_events,
     update_index,
@@ -291,14 +292,25 @@ def _index_identity(store: Path) -> tuple[int, int]:
         stat = database.stat()
     except OSError as exc:
         raise RecallError(E_RC_STREAM, f"无法读取索引：{database}") from exc
-    return stat.st_ino, stat.st_ctime_ns
+    try:
+        build = load_meta(store).get("build_id", "")
+    except RecallError:
+        build = ""
+    return build, stat.st_ino, stat.st_ctime_ns
 
 
 def _was_rebuilt(current: tuple[int, int], previous: tuple[int, int]) -> bool:
-    """Return whether the index file was recreated rather than updated."""
-    if current[0] != previous[0]:
+    """Return whether the index file was recreated rather than updated.
+
+    A rebuild writes a fresh ``build_id`` into the meta table, which is the only
+    signal that survives filesystems that recycle inode numbers (ext4 does).
+    The inode/ctime pair stays as the fallback for indexes built by M3.
+    """
+    if current[0] and previous[0]:
+        return current[0] != previous[0]
+    if current[1] != previous[1]:
         return True
-    return current[0] == 0 and current[1] != previous[1]
+    return current[1] == 0 and current[2] != previous[2]
 
 
 def _chunks(context: Context) -> Iterator[Chunk]:
