@@ -54,9 +54,9 @@ memory/
 **迁移 = 打包这个目录。** 换设备、换模型，人格与记忆都在里面。
 
 ```bash
-jian export ./memory ./me.aiem      # 带走
-jian import ./me.aiem ./memory2     # 到岸
-jian verify ./memory2               # 验明
+python -m aiinvite.cli export ./memory ./me.aiem      # 带走
+python -m aiinvite.cli import ./me.aiem ./memory2     # 到岸
+python -m aiinvite.cli verify ./memory2               # 验明
 ```
 
 ---

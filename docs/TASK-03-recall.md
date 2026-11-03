@@ -12,7 +12,7 @@
 
 | 许做 | 不许做 |
 |---|---|
-| 新增 `aiinvite.recall/` | 修改 `jian/`（M1 冻结）、`aiinvite.cn/`（M2 冻结）任何一行 |
+| 新增 `aiinvite.recall/` | 修改 `aiinvite/`（M1 冻结）、`aiinvite.cn/`（M2 冻结）任何一行 |
 | 新增 `tests/test_rc_*.py` | 调用任何模型、任何网络接口、任何第三方库 |
 | 在 `pyproject.toml` packages 里加 `aiinvite.recall` | 引入 float（数据 JSON 里也不行） |
 
@@ -332,7 +332,7 @@ python -m aiinvite.recall.cli ask    <store> "问题" --budget 4096 --now 2026-1
 
 ## 12. 禁止事项
 
-1. 不许改 `jian/` 与 `aiinvite.cn/`（两个模块都已封版）
+1. 不许改 `aiinvite/` 与 `aiinvite.cn/`（两个模块都已封版）
 2. 不许引入向量/嵌入模型（哪怕本地）
 3. 不许为了让 R6 过而缩短测试集或跳过预热
 4. 不许把检索写成一堆 if/elif 关键词分支来通过 R3 与 R7

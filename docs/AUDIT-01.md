@@ -22,12 +22,12 @@
 ### 2.1 包依赖（AST 解析，非文档）
 
 ```
-jian             -> ∅
+aiinvite/         -> ∅
 aiinvite.cn          -> ∅
-aiinvite.recall      -> jian, aiinvite.cn
-aiinvite.kernel      -> jian, aiinvite.cn, aiinvite.recall
+aiinvite.recall      -> aiinvite, aiinvite/cn
+aiinvite.kernel      -> aiinvite, aiinvite/cn, aiinvite.recall
 aiinvite.pcs         -> ∅
-aiinvite.projection  -> jian
+aiinvite.projection  -> aiinvite
 ```
 
 **无层级倒置，无循环依赖。** 投影层只依赖证据层（用其 canonical 序列化），不依赖内核实现——
@@ -69,7 +69,7 @@ aiinvite.projection  -> jian
 
 ```
 后果：谁改了 evidence/seg-*.jsonl，compile 会安静地产出另一个 kid，不报错。
-检测依赖：显式跑 jian verify / aiinvite kernel reconcile，或与已知 kid 比对。
+检测依赖：显式跑 python -m aiinvite.cli verify / aiinvite kernel reconcile，或与已知 kid 比对。
 ```
 
 **这意味着论文里「改 1 字节即被发现」应改为「改 1 字节即**可**被发现（由 verify 命令）」**——
@@ -114,7 +114,7 @@ PCS 不读：store 里的证据
 实际：  当前阶段 M12，已封版到 v0.15-m12，共 270 个测试
 ```
 
-而且其中「不可改」表列着 `jian/`、`aiinvite.kernel/` 全部——M10/M11/M12 已经改过它们。
+而且其中「不可改」表列着 `aiinvite/`、`aiinvite.kernel/` 全部——M10/M11/M12 已经改过它们。
 **新贡献者照着这份文档工作，会立刻违规。**
 
 ### P2-B2 README 里有三个不同的测试数
@@ -177,7 +177,7 @@ v2 加了 `blobs/`，「4 个文件」不再成立。需要标注版本。
 
 | 编号 | 问题 | 修法 |
 |---|---|---|
-| P1-A1 | 编译不校验哈希链 | README 与论文改为「改 1 字节即**可**被发现（`jian verify`）」；论文 §4.2 加注「不等于编译时自动报警」 |
+| P1-A1 | 编译不校验哈希链 | README 与论文改为「改 1 字节即**可**被发现（`python -m aiinvite.cli verify`）」；论文 §4.2 加注「不等于编译时自动报警」 |
 | P1-A2 | 行为身份与证据脱钩 | README 与论文 §7.4 新增：**PCS 是评测结果，不随胶囊携带**；`FOUNDATION-INVARIANCE.md` 新增 §3.5 |
 | P1-A3 | 动作不入证据 | `FOUNDATION-INVARIANCE.md` §3 标注「当前未实现（M13）」；论文 §7.4 新增第 7 条 |
 | P2-A4 | 棘轮边界 | 本条不修代码，作为已知边界保留：棘轮防「偷偷改」，不防「公开改」 |

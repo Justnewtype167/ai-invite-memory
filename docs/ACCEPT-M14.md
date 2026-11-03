@@ -187,7 +187,7 @@ R8 frozen tests=75 failures=0 errors=0 skipped=0
 ```
 
 - M13 基线 286 → M14 增加 8 个流式测试，共 **294**，0 skipped、0 failures、0 errors。
-- W7：`jian/`、`aiinvite.cn/`、`aiinvite.kernel/`、`aiinvite.pcs/`、`aiinvite.projection/` 零 diff；
+- W7：`aiinvite/`、`aiinvite.cn/`、`aiinvite.kernel/`、`aiinvite.pcs/`、`aiinvite.projection/` 零 diff；
   `aiinvite.recall/` 的三处（新增 `stream.py`、`errors.py` 的 `E_RC_STREAM`、
   `__init__.py` 的导出）在 `tests/test_all_regression.py` 与
   `tests/test_env_v2.py` 的 N5 两处棘轮均已声明并钉值。

@@ -11,7 +11,7 @@
 | 项 | 断言 | 实测 |
 |---|---|---|
 | 测试总数 | —— | **129 tests, OK, 0 skipped** |
-| 三个已封版包 | 零 diff | `jian/`、`aiinvite.cn/`、`aiinvite.recall/` 均未改 |
+| 三个已封版包 | 零 diff | `aiinvite/`、`aiinvite.cn/`、`aiinvite.recall/` 均未改 |
 | K1 同进程 100 次编译 | 字节一致 | kid 相同，`self_md/canon_md/state` 全同 |
 | **K1 跨进程**（不同 PYTHONHASHSEED） | kid 相同 | **相同 `3a588adc…`** |
 | K1 generation | 恒 0 | 0 |
@@ -110,7 +110,7 @@ tests       Ran 131 tests, OK
 
 | 版本 | 模块 | 测试 | 关键断言 |
 |---|---|---|---|
-| v0.1-m1 | `jian/` | 31 | 改 1 字节必被发现 |
+| v0.1-m1 | `aiinvite/` | 31 | 改 1 字节必被发现 |
 | v0.2-m2 | `aiinvite.cn/` | 44 | 组合优于清单（留出集 14/14） |
 | v0.3-m3 | `aiinvite.recall/` | 27 | 4k 预算不损保真（20/20） |
 | v0.4-m4 | `aiinvite.kernel/` | 29 | **跨进程 kid 一致** |

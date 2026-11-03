@@ -90,7 +90,7 @@ S3  分块等价  iter_context 的块串接结果 == context 的结果
 | W4 | `test_chunks_concatenate` | `iter_context` 至少 2 块；拼接结果 == `context`；块数稳定 |
 | W5 | `test_unsealed_stream` | 未封存 store 上边追加边取上下文，全程可用 |
 | W6 | `test_budget_never_exceeded` | 任意时刻 `tokens <= budget`；空库/小预算的边界行为明确 |
-| W7 | `test_all_regression` | 现有 **286 个测试全绿**；`jian/`、`aiinvite.cn/`、`aiinvite.kernel/`、`aiinvite.pcs/`、`aiinvite.projection/` 零 diff；`aiinvite.recall/` 改动必须在 `ALLOWED_CHANGES` 声明 |
+| W7 | `test_all_regression` | 现有 **286 个测试全绿**；`aiinvite/`、`aiinvite.cn/`、`aiinvite.kernel/`、`aiinvite.pcs/`、`aiinvite.projection/` 零 diff；`aiinvite.recall/` 改动必须在 `ALLOWED_CHANGES` 声明 |
 
 ---
 

@@ -17,7 +17,7 @@ ReplayProposer        ← 读录制好的提案重放（M5 用，M4 先留桩）
 
 | 许做 | 不许做 |
 |---|---|
-| 新增 `aiinvite.kernel/` | 改 `jian/`、`aiinvite.cn/`、`aiinvite.recall/`（三者已封版） |
+| 新增 `aiinvite.kernel/` | 改 `aiinvite/`、`aiinvite.cn/`、`aiinvite.recall/`（三者已封版） |
 | 读 M1 证据、调用 M2 的称谓/时间 | 调用任何模型、网络、三方库 |
 | 写 `store/kernel/`（派生物，可删可重建） | 写 `store/evidence/`（证据层只读） |
 
@@ -186,7 +186,7 @@ python -m aiinvite.kernel.cli verify  <store>
 | K3 | `test_kn_gate` | ①手改 canon 后 record → `E_KN_STALE`（篡改检测），证据新增承诺但无新指令 → `E_KN_GATE_CANON`（canon 门控），`--force` 重写并追加 `tamper_healed`；②注入一次大变更 → `E_KN_GATE_DELTA`；③state 跳变 500 → `E_KN_GATE_STATE`；④各失败后 `kernel/` 目录**字节未变** |
 | K4 | `test_kn_history` | HISTORY 只追加；`diff` 逐条正确；`restore` 不写盘 |
 | K5 | `test_kn_sources` | 构造一条无 evidence 的条目 → `E_KN_UNSOURCED`；evidence 指向不存在事件 → 同样报错 |
-| K6 | `test_kn_regression` | M1+M2+M3 的 **104 个测试仍全绿**；`jian/`、`aiinvite.cn/`、`aiinvite.recall/` 零 diff |
+| K6 | `test_kn_regression` | M1+M2+M3 的 **104 个测试仍全绿**；`aiinvite/`、`aiinvite.cn/`、`aiinvite.recall/` 零 diff |
 
 ---
 
@@ -197,7 +197,7 @@ python -m aiinvite.kernel.cli verify  <store>
 3. 不许在门控失败后留下任何半成品文件
 4. 不许让 `version` 参与 `kid` 计算
 5. 不许为了让 K3 通过而把门控阈值调宽
-6. 不许改已封版的两个包（`jian/`、`aiinvite.cn/`、`aiinvite.recall/`）
+6. 不许改已封版的两个包（`aiinvite/`、`aiinvite.cn/`、`aiinvite.recall/`）
 
 ---
 

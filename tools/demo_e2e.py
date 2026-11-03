@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """端到端演示：一次真实对话 → 存证 → 编译人格 → 换设备验算。
 
-四个已封版包：jian(v0.1) / aiinvite.cn(v0.2) / aiinvite.recall(v0.3) / aiinvite.kernel(v0.4)
+四个已封版包：aiinvite(v0.1) / aiinvite/cn(v0.2) / aiinvite/recall(v0.3) / aiinvite/kernel(v0.4)
 零第三方依赖、零模型调用。
 
 运行：python tools/demo_e2e.py
@@ -53,7 +53,7 @@ def main():
 
     hr("0. 环境")
     print("演示目录：docs/demo/e2e")
-    print("四个包：jian / aiinvite.cn / aiinvite.recall / aiinvite.kernel ｜ 0 依赖 ｜ 0 模型调用")
+    print("四个包：aiinvite / aiinvite/cn / aiinvite/recall / aiinvite/kernel ｜ 0 依赖 ｜ 0 模型调用")
 
     # ---------- 1. 对话 ----------
     hr("1. 设备 A：三天的对话（8 条关键 + 52 条日常，共 60 条）")

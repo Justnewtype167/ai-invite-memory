@@ -6,7 +6,7 @@
 
 | 许做 | 不许做 |
 |---|---|
-| 新增顶层包 `aiinvite.cn/` | **修改 `jian/` 里任何一行**（M1 已封版，tag v0.1-m1） |
+| 新增顶层包 `aiinvite.cn/` | **修改 `aiinvite/` 里任何一行**（M1 已封版，tag v0.1-m1） |
 | 新增 `tests/test_cn_*.py` | 修改 `.aiem` 容器格式或事件模型 |
 | 新增 `aiinvite.cn/data/*.json` | **调用任何 LLM、任何网络接口、任何第三方库** |
 | 在 `pyproject.toml` 的 packages 里加 `aiinvite.cn` | 引入 float（数据文件里也不行） |
@@ -464,7 +464,7 @@ python -m aiinvite.cn.cli norm "臺灣裏面"
 
 ## 10. M2 特有禁止事项
 
-1. 不许改 `jian/` 下任何文件（改了就说明你在拿 M1 迁就 M2）
+1. 不许改 `aiinvite/` 下任何文件（改了就说明你在拿 M1 迁就 M2）
 2. 不许在实现里读 `slang_holdout.json`（读一次就作废）
 3. 不许为达标去改标签文件（标签先行提交后即为只读）
 4. 不许用「模型兜底」——遇到不会的就抛 `E_CN_*`，**不许猜**

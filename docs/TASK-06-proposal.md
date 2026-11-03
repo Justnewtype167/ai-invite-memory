@@ -19,7 +19,7 @@
 
 | 可改 | 不可改 |
 |---|---|
-| `jian/event.py`（加第 6 种事件类型） | `jian/capsule.py`、`jian/cli.py` |
+| `aiinvite/event.py`（加第 6 种事件类型） | `aiinvite/capsule.py`、`aiinvite/cli.py` |
 | `aiinvite.kernel/*`（新增 proposal 支持） | `aiinvite.cn/`、`aiinvite.recall/` 全部 |
 | `tests/` 新增 | 事件哈希算法、canonical 规则 |
 

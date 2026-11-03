@@ -58,7 +58,7 @@ class Trace:
 | `kind` 白名单 | `text` / `action` / `wait`；其余 `E_PR_SCHEMA` |
 | `action` 的 `value` 必须在动作白名单内 | `E_PR_UNKNOWN_ACTION` |
 | `dur_ms` | `action`/`wait` 必填，`1..60000` |
-| 序列化 | 规范化 JSON（复用 `jian.canonical`），浮点禁用 |
+| 序列化 | 规范化 JSON（复用 `aiinvite.canonical`），浮点禁用 |
 
 **关键**：`Trace` 不含任何证据字段，也不含时间戳——**同一内核两次投影必须字节相同**。
 
@@ -121,7 +121,7 @@ I4  形态分离：同一内核 + 不同投影器 → 轨迹不同（且都能�
 | T4 | `test_determinism` | 同一内核投影 100 次 → 规范化 JSON 字节完全相同（跨进程同样成立） |
 | T5 | `test_two_forms_differ` | 同一内核：`text_v1` 与 `action_v1` 的 segments 不相同；两者的 `kid` 相同 |
 | T6 | `test_action_map` | 映射表引用的动作全部在白名单；每条 canon 规则都能投影；未命中的规则被忽略且不报错 |
-| T7 | `test_all_regression` | 现有 **255 个测试仍全绿**；冻结包零 diff（`aiinvite.cn/`、`aiinvite.recall/`、`aiinvite.pcs/`），`jian/` 与 `aiinvite.kernel/` 若改动必须在 `ALLOWED_CHANGES` 声明 |
+| T7 | `test_all_regression` | 现有 **255 个测试仍全绿**；冻结包零 diff（`aiinvite.cn/`、`aiinvite.recall/`、`aiinvite.pcs/`），`aiinvite/` 与 `aiinvite.kernel/` 若改动必须在 `ALLOWED_CHANGES` 声明 |
 
 ---
 
@@ -130,7 +130,7 @@ I4  形态分离：同一内核 + 不同投影器 → 轨迹不同（且都能�
 1. 不许调用模型、不许联网、不许随机
 2. 不许投影器接收 store 路径或读证据（只给内核对象）
 3. 不许在 Trace 里放时间戳、路径、环境信息（会破坏 T4）
-4. 不许改 `jian/`、`aiinvite.kernel/`、`aiinvite.cn/`、`aiinvite.recall/`、`aiinvite.pcs/`
+4. 不许改 `aiinvite/`、`aiinvite.kernel/`、`aiinvite.cn/`、`aiinvite.recall/`、`aiinvite.pcs/`
 5. 不许把动作映射写死在代码里（必须走 `data/action_map.json`）
 
 ---

@@ -15,13 +15,13 @@
 
 ## 1. 冻结例外（范围写死，不得扩大）
 
-`jian/`、`aiinvite.cn/`、`aiinvite.recall/` 都已封版。M4.1 **只允许**改这些：
+`aiinvite/`、`aiinvite.cn/`、`aiinvite.recall/` 都已封版。M4.1 **只允许**改这些：
 
 | 文件 | 允许改什么 |
 |---|---|
-| `jian/event.py` | 事件类型与字段校验、`new_event` 增加 type/kind |
-| `jian/capsule.py` | `append_event` 增加 type/kind 参数（旧签名必须仍可用） |
-| `jian/cli.py` | `append` 增加 `--type` / `--kind` |
+| `aiinvite/event.py` | 事件类型与字段校验、`new_event` 增加 type/kind |
+| `aiinvite/capsule.py` | `append_event` 增加 type/kind 参数（旧签名必须仍可用） |
+| `aiinvite/cli.py` | `append` 增加 `--type` / `--kind` |
 | `aiinvite.recall/retrieve.py` | 打分加查询覆盖度 |
 | `aiinvite.recall/assemble.py` | 文本级去重 |
 

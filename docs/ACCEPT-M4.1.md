@@ -8,7 +8,7 @@
 ## 1. 改动范围符合冻结例外
 
 ```
-改：jian/capsule.py  jian/cli.py  jian/event.py
+改：aiinvite/capsule.py  aiinvite/cli.py  aiinvite/event.py
     aiinvite.recall/assemble.py  aiinvite.recall/retrieve.py
     测试 + tools/demo_e2e.py + docs/demo/E2E.txt
 未改：aiinvite.cn/ 全部、aiinvite.kernel/ 全部
@@ -78,7 +78,7 @@
 |---|---|
 | `aiinvite.cn/` vs `v0.2-m2` | **零 diff** |
 | `aiinvite.kernel/` vs `v0.4-m4` | **零 diff** |
-| `jian/` vs `v0.1-m1` | 仅 `event.py` / `capsule.py` / `cli.py` |
+| `aiinvite/` vs `v0.1-m1` | 仅 `event.py` / `capsule.py` / `cli.py` |
 | `aiinvite.recall/` vs `v0.3-m3` | 仅 `assemble.py` / `retrieve.py` |
 
 **恰好五个文件，一个不多。**
@@ -97,7 +97,7 @@ tests       Ran 148 tests, OK
 
 | tag | 包 | 测试 | 一句话 |
 |---|---|---|---|
-| v0.1-m1 | `jian/` | 31 | 改 1 字节会被发现 |
+| v0.1-m1 | `aiinvite/` | 31 | 改 1 字节会被发现 |
 | v0.2-m2 | `aiinvite.cn/` | 44 | 中文靠规则，不靠模型 |
 | v0.3-m3 | `aiinvite.recall/` | 27 | 4k 预算不损保真 |
 | v0.4-m4 | `aiinvite.kernel/` | 29 | 人格可重算，kid 不变 |

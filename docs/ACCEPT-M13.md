@@ -82,12 +82,12 @@ project_action(kernel):
 
 | 硬点 | 落点 |
 |---|---|
-| 违规时 `sink` 次数必须为 0 | [`emit()`](file:///d:/projects/Memory/aiinvite.projection/emit.py) 先 `check`，拒绝直接返回，`sink` 那一行不可达 |
-| 内核没有对应约束就不启用闸门 | [`_enabled()`](file:///d:/projects/Memory/aiinvite.projection/gate.py) 要求 `canon_keywords` 出现在 canon 才评估该规则 |
-| 只判话语，不判自述/约束 | [`_first_violation()`](file:///d:/projects/Memory/aiinvite.projection/gate.py) 跳过 `role != "speech"` |
-| 规则是数据，不许写死 | [`data/gate_rules.json`](file:///d:/projects/Memory/aiinvite.projection/data/gate_rules.json)；`gate.py` 只解释字段 |
+| 违规时 `sink` 次数必须为 0 | `aiinvite.projection/emit.py` 先 `check`，拒绝直接返回，`sink` 那一行不可达 |
+| 内核没有对应约束就不启用闸门 | `aiinvite.projection/gate.py` 要求 `canon_keywords` 出现在 canon 才评估该规则 |
+| 只判话语，不判自述/约束 | `aiinvite.projection/gate.py` 跳过 `role != "speech"` |
+| 规则是数据，不许写死 | `aiinvite.projection/data/gate_rules.json`；`gate.py` 只解释字段 |
 | `check` 是纯函数 | 签名只有 `trace, kernel`；不读 store、不读时间、不用随机 |
-| 拒绝必留痕 | [`append_refusal()`](file:///d:/projects/Memory/jian/capsule.py) 写 `refusal` 事件，进哈希链、过 `verify` |
+| 拒绝必留痕 | `aiinvite/capsule.py` 写 `refusal` 事件，进哈希链、过 `verify` |
 
 判定顺序：规则按文件顺序、片段按轨迹顺序、**首违即停**，返回第一个违规片段位置。
 
@@ -131,7 +131,7 @@ scope             text / action / both
 ```
 测试        286 全绿（M13 前 274 + 本轮 12；0 skipped）
 冻结套件     178 / 0 / 0 / 0
-六个包       jian / aiinvite.projection 的改动全部在 ALLOWED_CHANGES 声明
+六个包       aiinvite / aiinvite.projection 的改动全部在 ALLOWED_CHANGES 声明
              aiinvite.cn / aiinvite.recall / aiinvite.pcs 零 diff
 新增文件     aiinvite.projection/gate.py、aiinvite.projection/emit.py、
             aiinvite.projection/data/gate_rules.json、tests/test_gate.py

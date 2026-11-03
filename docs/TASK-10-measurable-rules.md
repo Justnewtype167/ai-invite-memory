@@ -177,7 +177,7 @@ aiinvite.pcs/judge.py                新增 first_is_question 一个算子；其
 1. 不许为了让 κ 好看而调整规则定义
 2. 不许在判定器里留「近似 / 包含关键词即算通过」这类宽松逻辑
 3. 不许把 non-scored 规则偷偷计入 C
-4. 不许改 `jian/`、`aiinvite.cn/`、`aiinvite.recall/`、`aiinvite.kernel/`
+4. 不许改 `aiinvite/`、`aiinvite.cn/`、`aiinvite.recall/`、`aiinvite.kernel/`
 
 ---
 

@@ -173,7 +173,7 @@ tools/responder_ollama.py --multi
 1. 不许改 M6 的 30 条探针（新增而非替换）
 2. 不许引入模型判定
 3. 不许为了让标定带通过而放宽判定
-4. 不许改 `jian/`、`aiinvite.cn/`、`aiinvite.recall/`、`aiinvite.kernel/`
+4. 不许改 `aiinvite/`、`aiinvite.cn/`、`aiinvite.recall/`、`aiinvite.kernel/`
 5. 不许只报 `C_final` 不报 `D`
 
 ---

@@ -112,7 +112,7 @@ M16 address suffix call='老周' tails=7
 ## 5. 棘轮与拆分
 
 - `ALLOWED_ADDITIONS`：`aiinvite.persona` 的 7 个 `.py` 全部声明。
-- `ALLOWED_CHANGES`：`aiinvite.kernel/gate.py`、`aiinvite.kernel/kernel.py`、`jian/event.py`、
+- `ALLOWED_CHANGES`：`aiinvite.kernel/gate.py`、`aiinvite.kernel/kernel.py`、`aiinvite/event.py`、
   `aiinvite.kernel/compiler.py` 等 M16 改动全部声明（`history.py` 未动）。
 - `tests/test_env_v2.py`：`gate.py` / `kernel.py` 钉值更新，`len(changed) == 12`。
 - 单文件 ≤700 行：`tests/test_persona.py` 曾到 740 行，已拆为

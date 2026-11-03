@@ -19,7 +19,7 @@
 
 | 可改 | 不可改 |
 |---|---|
-| `jian/event.py`（`proposal` 增加 4 个可选字段） | `jian/capsule.py`、`jian/cli.py` |
+| `aiinvite/event.py`（`proposal` 增加 4 个可选字段） | `aiinvite/capsule.py`、`aiinvite/cli.py` |
 | `aiinvite.kernel/*` | `aiinvite.cn/`、`aiinvite.recall/` 全部 |
 | `tools/proposer_*.py`（新增） | 事件哈希算法、canonical 规则 |
 | `tests/` 新增 | —— |

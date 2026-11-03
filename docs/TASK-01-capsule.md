@@ -23,7 +23,7 @@ REVIVAL.md
 
 ## 2. canonical JSON（RFC 8785 子集）
 
-实现 `jian/canonical.py::dumps(obj) -> bytes`，规则如下，**逐条都有测试**：
+实现 `aiinvite/canonical.py::dumps(obj) -> bytes`，规则如下，**逐条都有测试**：
 
 1. 对象键按 ASCII 排序（v1 的键全为 ASCII，用 `sorted()` 即可）
 2. 分隔符固定为 `,` 与 `:`，**无任何空格**
@@ -115,7 +115,7 @@ append 规则：
 ## 6. manifest.json
 
 ```json
-{"capsule_version":1,"schema":"jian.capsule/1","created":"...","hash_algo":"sha256","head":"<最后一条事件的 hash>","files":[{"path":"chain.json","sha256":"...","bytes":123}],"signature":null}
+{"capsule_version":1,"schema":"aiinvite.capsule/1","created":"...","hash_algo":"sha256","head":"<最后一条事件的 hash>","files":[{"path":"chain.json","sha256":"...","bytes":123}],"signature":null}
 ```
 
 - `files` 按 `path` 升序，覆盖除 `manifest.json` 外的所有条目

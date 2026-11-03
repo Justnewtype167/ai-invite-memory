@@ -55,7 +55,7 @@ class TestCompileVerifies(unittest.TestCase):
         kernel = compile_kernel(self.store, POLICY, verify=False)
         self.assertTrue(kernel.kid)
 
-    def test_underlying_error_is_jian_error(self) -> None:
+    def test_underlying_error_is_invite_error(self) -> None:
         """M12.1: the wrapped cause stays inspectable."""
         self._tamper()
         with self.assertRaises(KernelError) as context:

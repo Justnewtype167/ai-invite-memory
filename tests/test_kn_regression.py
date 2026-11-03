@@ -28,7 +28,7 @@ MODULES = (
     "test_rc_regression",
 )
 FROZEN_COUNT = 104
-FROZEN_PACKAGES = ("jian", "aiinvite.cn", "aiinvite.recall")
+FROZEN_PACKAGES = ("aiinvite", "aiinvite/cn", "aiinvite/recall")
 
 
 def _load(name: str):
@@ -63,7 +63,9 @@ class TestRegression(unittest.TestCase):
         """K6: no frozen source mentions the M4 package."""
         offenders: list[str] = []
         for name in FROZEN_PACKAGES:
-            for path in sorted((ROOT / name).rglob("*.py")):
+            # glob, not rglob: a recursive walk would descend into the subpackages
+            # and flag aiinvite/kernel/ against itself.
+            for path in sorted((ROOT / name).glob("*.py")):
                 if "aiinvite.kernel" in path.read_text(encoding="utf-8"):
                     offenders.append(str(path))
         self.assertEqual(offenders, [])

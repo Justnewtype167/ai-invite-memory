@@ -18,7 +18,7 @@
 | `tests/test_succession.py` | Y1–Y6 共 17 个测试 |
 | `tests/test_all_regression.py` | 扫描包加 `aiinvite.succession`；`ALLOWED_ADDITIONS` 声明 5 个新文件 |
 
-`jian/`、`aiinvite.kernel/`、`aiinvite.recall/` **一个字节都没动**：遗赠层只调用它们的公开 API。
+`aiinvite/`、`aiinvite.kernel/`、`aiinvite.recall/` **一个字节都没动**：遗赠层只调用它们的公开 API。
 
 ---
 
@@ -195,7 +195,7 @@ OK
 ```
 测试    315 全绿（294 + 21）
 包      7 个（新增 aiinvite.succession）
-既有包  jian/ aiinvite.kernel/ aiinvite.recall/ 一个字节都没动
+既有包  aiinvite/ aiinvite.kernel/ aiinvite.recall/ 一个字节都没动
 ```
 
 ## 4. 结论

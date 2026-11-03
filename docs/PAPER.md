@@ -186,7 +186,7 @@ kid = sha256(canonical(canon, state, graph, self, origin, models))
 > 实测校验开销约为编译的 **5%**（2000 条事件），因此没有理由为速度关掉它。
 
 > **一点必须说清**：篡改是「**可**被发现」而非「编译时自动报警」。
-> 编译器只解析事件、不验链（为了速度），校验由 `jian verify` 显式执行。
+> 编译器只解析事件、不验链（为了速度），校验由 `python -m aiinvite.cli verify` 显式执行。
 > 把两者混为一谈会高估系统能力——这条已记入 `docs/AUDIT-01.md` 的 P1-A1。
 
 ---

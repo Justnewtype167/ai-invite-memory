@@ -19,7 +19,7 @@
 | R4 | `test_snapshot_tamper` | 改 `kid` / 改 `digest` / 删字段 → `E_KN_SNAPSHOT`；`head` 指向不存在事件 → `E_KN_STALE` |
 | R5 | `test_work_is_delta_sized` | 事件计数而非墙钟：`full=20`，之后每次增量 `delta=1,1,1,1`，无新增时 `idle=0` |
 | R6 | `test_reconcile_detects_drift` | 人为写入全零 `kid`：`reconcile` 与 CLI 均报 `E_KN_DRIFT`，退出码非零 |
-| R7 | `test_all_regression` | `178` 个冻结测试全绿；`jian/`、`aiinvite.cn/`、`aiinvite.recall/`、`aiinvite.pcs/`、`aiinvite.projection/` 零 diff；`aiinvite.kernel/` 改动已声明 |
+| R7 | `test_all_regression` | `178` 个冻结测试全绿；`aiinvite/`、`aiinvite.cn/`、`aiinvite.recall/`、`aiinvite.pcs/`、`aiinvite.projection/` 零 diff；`aiinvite.kernel/` 改动已声明 |
 
 R5 的关键断言是「处理了几条」，不是「快了多少」：增量路径的计数器等于
 `id > head` 的事件条数，与机器负载无关（C14）。

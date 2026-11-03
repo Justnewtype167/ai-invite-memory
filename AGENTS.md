@@ -14,7 +14,7 @@
 
 ## 1. 当前阶段：M12 已封，M13（动作闸门）未开始
 
-**已封版**：`v0.1-m1` … `v0.21-m17.1`，共 **24 个 tag、357 个测试**。
+**已封版**：`v0.1-m1` … `v0.23-m18.1`，共 **26 个 tag、358 个测试**。
 
 ```
 M1-M5    证据层 / 中文规则 / 检索装配 / 人格内核 / 提案即证据
@@ -41,8 +41,8 @@ docs/AUDIT-01.md            全项目重新验证的结论与已知缺口
 ### 1.1 冻结政策（已按 M10–M12 更新）
 
 ```
-原始冻结（M1-M5）：jian/、aiinvite.cn/、aiinvite.recall/、aiinvite.kernel/ 不许改
-M10 起：jian/ 是证据层，允许改，改动必须在 ALLOWED_CHANGES 声明
+原始冻结（M1-M5）：aiinvite/、aiinvite.cn/、aiinvite.recall/、aiinvite.kernel/ 不许改
+M10 起：aiinvite/ 是证据层，允许改，改动必须在 ALLOWED_CHANGES 声明
 M11 起：新增 aiinvite.projection/（L2 投影层），不属于内核
 M12 起：aiinvite.kernel/ 允许改（增量与快照），同样必须声明
 aiinvite.cn/、aiinvite.recall/、aiinvite.pcs/ 仍然冻结（M10 只允许三处一行改动）
@@ -91,14 +91,14 @@ D:/projects/Memory/
   LICENSE              # Apache-2.0
   CHANGELOG.md         # 17 个里程碑的来龙去脉
   pyproject.toml
-  jian/                # L0 证据层：容器、哈希链、载荷 blob
+  aiinvite/                # L0 证据层：容器、哈希链、载荷 blob
     canonical.py  errors.py  event.py  chain.py  capsule.py  cli.py
   aiinvite.cn/             # 中文规则层：称谓、相对时间、梗时效、繁简
   aiinvite.recall/         # 检索与预算装配：FTS5 + 二元切分 + 4k 上限
   aiinvite.kernel/         # L1 人格内核：编译、门控、历史、提案、快照与增量
   aiinvite.pcs/            # 行为身份：PCS、可执行规则、坍塌深度
   aiinvite.projection/     # L2 投影层：轨迹契约、文本投影器、动作投影器
-  tests/               # 357 个测试（unittest，无第三方依赖）
+  tests/               # 358 个测试（unittest，无第三方依赖）
   tools/               # 唯一允许联网/调模型的地方
   corpus/              # 合成人格库（不要改）
   experiments/         # 回复集与矩阵结果
@@ -136,7 +136,7 @@ D:/projects/Memory/
 python -m unittest discover -s tests -v
 ```
 
-必须满足：**全量 357 个测试全绿，0 skipped，0 errors**（当前基线），且：
+必须满足：**全量 358 个测试全绿，0 skipped，0 errors**（当前基线），且：
 
 - 冻结包的改动必须在 `tests/test_all_regression.py` 的 `ALLOWED_CHANGES` 声明（改了没声明失败，声明了没改也失败）
 - 存在一个 `docs/demo/` 目录，含一次真实的 init→append→seal→verify→export→import 输出记录

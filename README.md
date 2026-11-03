@@ -35,7 +35,7 @@ python -m unittest discover -s tests -v     # 358 tests，期望全绿
 ## 目录
 
 ```
-jian/          证据层：容器、哈希链、字节可复现
+aiinvite/          证据层：容器、哈希链、字节可复现
 aiinvite/cn/       中文规则层：称谓图、相对时间、梗时效、繁简
 aiinvite/recall/   检索与预算装配：FTS5 + 二元切分 + 4k 上限
 aiinvite/kernel/   人格内核：确定性编译、门控、历史、提案

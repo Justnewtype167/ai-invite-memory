@@ -5,7 +5,7 @@
 ## 产物
 
 ```
-文件    dist/jian-v1.0.0-paper.zip
+文件    dist/aiinvite-v1.0.0-paper.zip
 大小    447,445 字节
 条目    243 个（218 个文件，无 .git）
 sha256  964afbcb3da497d98dd9de5e324c4ea05b02d5d5509fae9154854dca61d4f5a9

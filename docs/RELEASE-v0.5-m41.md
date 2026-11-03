@@ -5,7 +5,7 @@
 ## 产物
 
 ```
-文件    dist/jian-v0.5-m41.zip
+文件    dist/aiinvite-v0.5-m41.zip
 大小    235,608 字节
 条目    125 个（108 个文件，无 .git、无 __pycache__）
 sha256  e3fc6f8390ebaece4650e72ba928200e3185fe531e1f88414e4f81454c8612f5
@@ -32,7 +32,7 @@ python tools/demo_e2e.py                    # 九段，最后一段是五类事�
 
 | 包 | tag | 能力 |
 |---|---|---|
-| `jian/` | v0.1-m1 | 证据容器、哈希链、字节可复现、篡改可检 |
+| `aiinvite/` | v0.1-m1 | 证据容器、哈希链、字节可复现、篡改可检 |
 | `aiinvite.cn/` | v0.2-m2 | 称谓组合、相对时间组合、梗时效、繁简规范化 |
 | `aiinvite.recall/` | v0.3-m3 | FTS5 索引、4k 预算装配、派生缓存可对账 |
 | `aiinvite.kernel/` | v0.4-m4 | 确定性编译、四道门控、历史与回滚 |

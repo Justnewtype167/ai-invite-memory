@@ -159,7 +159,7 @@ PCS         0.75        ← 0.90 × min(0.87, 0.83)
 1. 不许让 `aiinvite.pcs/` 导入 `urllib` / `socket` / `requests`
 2. 不许测试里调真模型
 3. 不许只报 PCS 不报 C 和 A
-4. 不许改 `jian/`、`aiinvite.cn/`、`aiinvite.recall/`、`aiinvite.kernel/`
+4. 不许改 `aiinvite/`、`aiinvite.cn/`、`aiinvite.recall/`、`aiinvite.kernel/`
 5. 不许把 `unknown` 计入通过
 
 ---

@@ -8,10 +8,10 @@
 ## 1. 范围
 
 ```
-改：jian/event.py（加第 6 种事件 proposal）
+改：aiinvite/event.py（加第 6 种事件 proposal）
     aiinvite.kernel/* 全部
     6 个新测试 P1–P6 + test_all_regression 更新
-未改：aiinvite.cn/、aiinvite.recall/、jian/capsule.py、jian/cli.py
+未改：aiinvite.cn/、aiinvite.recall/、aiinvite/capsule.py、aiinvite/cli.py
 ```
 
 **测试：163 个（148 + 15），0 skipped。**

@@ -63,9 +63,9 @@ action_v1 → 片段数 5
 
 | 不变量 | 落点 |
 |---|---|
-| I1 投影只读内核 | [`project()`](file:///d:/projects/Memory/aiinvite.projection/__init__.py) 只接收 `kernel` 与投影器名；`project_text` / `project_action` 签名只有 `kernel` |
+| I1 投影只读内核 | `aiinvite.projection/__init__.py` 只接收 `kernel` 与投影器名；`project_text` / `project_action` 签名只有 `kernel` |
 | I2 投影不改身份 | `Kernel` 本身是 frozen dataclass；投影只读 `kid` / `self_md` / `canon` |
-| I3 确定性 | `Trace` 不含时间戳、路径、证据；序列化复用 `jian.canonical.dumps`，浮点禁用 |
+| I3 确定性 | `Trace` 不含时间戳、路径、证据；序列化复用 `aiinvite.canonical.dumps`，浮点禁用 |
 | I4 形态分离 | 两个投影器输出不同 segments，但 `Trace.kid` 都来自同一个内核 |
 
 ## 4. 数据结构与错误码

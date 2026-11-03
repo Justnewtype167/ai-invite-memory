@@ -29,7 +29,7 @@ Zero third-party dependencies, Python 3.11+. The core libraries never touch the 
 ## Layout
 
 ```
-jian/             evidence layer: store, hash chain, byte reproducibility, payload blobs
+aiinvite/             evidence layer: store, hash chain, byte reproducibility, payload blobs
 aiinvite.cn/          Chinese rule layer: kinship, relative time, slang decay, script folding
 aiinvite.recall/      retrieval and budgeted assembly: FTS5 + bigrams + 4k cap
 aiinvite.kernel/      persona kernel: deterministic compile, gates, history, proposals

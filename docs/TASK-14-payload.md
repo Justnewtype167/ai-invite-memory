@@ -19,7 +19,7 @@
 
 | 可改 | 不可改 |
 |---|---|
-| `jian/event.py`、`jian/capsule.py`、`jian/chain.py`、`jian/cli.py` | `aiinvite.cn/`、`aiinvite.recall/`、`aiinvite.kernel/`、`aiinvite.pcs/` |
+| `aiinvite/event.py`、`aiinvite/capsule.py`、`aiinvite/chain.py`、`aiinvite/cli.py` | `aiinvite.cn/`、`aiinvite.recall/`、`aiinvite.kernel/`、`aiinvite.pcs/` |
 | `tests/` 新增 | 已有事件的哈希算法、canonical 规则 |
 
 **本轮只动证据层。** 上层四个包一行都不许改——这是检验「地基改动是否真的对上层透明」的机会。
@@ -116,9 +116,9 @@ v2 禁止 `text` 之后它们必然取到空串。
 
 | 文件 | 改动 | 行数 |
 |---|---|---|
-| `aiinvite.recall/index.py` | 顶层 `from jian.event import event_text` + 调用 | 2 |
+| `aiinvite.recall/index.py` | 顶层 `from aiinvite.event import event_text` + 调用 | 2 |
 | `aiinvite.kernel/proposer.py` | 同上 | 2 |
-| `aiinvite.kernel/compiler.py` | 顶层 `from jian.capsule import event_full_text` + 调用（**读全文，不读 summary**） | 2 |
+| `aiinvite.kernel/compiler.py` | 顶层 `from aiinvite.capsule import event_full_text` + 调用（**读全文，不读 summary**） | 2 |
 
 **合计 6 行（每文件 2 行：import + 调用）。**
 最初写的「3 行」不成立——没有 import 就无法调用，这是我第二次低估了改动面。
@@ -201,4 +201,4 @@ python -m unittest discover -s tests -v      # 全绿、0 skipped
 ```
 
 **意义**：开冻结从「改哈希字典」变成「在测试里写一行理由」。
-这一轮 `jian/capsule.py`、`jian/event.py`、`jian/chain.py`、`aiinvite.kernel/*` 的改动全部被声明。
+这一轮 `aiinvite/capsule.py`、`aiinvite/event.py`、`aiinvite/chain.py`、`aiinvite.kernel/*` 的改动全部被声明。
