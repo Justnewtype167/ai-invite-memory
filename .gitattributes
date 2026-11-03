@@ -1,7 +1,12 @@
-# 字节永远不被改写：本项目的全部承诺都建立在「原样」之上
 * text=auto eol=lf
-
-# 证据与容器是字节级资产，禁止任何换行转换
+*.py text eol=lf
+*.md text eol=lf
+*.json text eol=lf
 *.jsonl text eol=lf
-*.aiem binary
+*.toml text eol=lf
+*.yml text eol=lf
+*.txt text eol=lf
+*.sqlite binary
+*.pptx binary
+*.zip binary
 *.png binary
