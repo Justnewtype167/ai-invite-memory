@@ -108,9 +108,11 @@ def build(engine, labels=None):
         threading.Thread(target=run, daemon=True).start()
 
     def do_switch():
-        engine.switch_model(model_var.get().strip())
+        result = engine.switch_model(model_var.get().strip())
         refresh()
+        same = result["kid_before"] == result["kid_after"]
         append("[model] -> " + engine.model)
+        append("[kid] " + result["kid_after"][:24] + (" (unchanged)" if same else " (CHANGED!)"))
 
     def do_export():
         target = filedialog.askdirectory(title=labels["export"])

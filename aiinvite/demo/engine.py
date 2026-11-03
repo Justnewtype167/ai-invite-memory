@@ -67,8 +67,14 @@ class DemoEngine:
         self.turns = []
 
     def switch_model(self, model):
-        """Change the model only; evidence and identity stay untouched."""
+        """Change the model only; evidence and identity stay untouched.
+
+        The kid is repeated here so the window can show it before and after
+        without sending a turn: every sent turn is evidence and moves the kid.
+        """
+        before = self.current_kid()
         self.model = model
+        return {"kid_before": before, "kid_after": self.current_kid()}
 
     def _session_object(self):
         if self._session is None:
@@ -90,6 +96,13 @@ class DemoEngine:
         turn = Turn(role="assistant", text=raw, refused=not verdict.allowed)
         self.turns.append(turn)
         return turn
+
+    def current_kid(self):
+        """Return the kid of the evidence as it stands now (no write)."""
+        try:
+            return self._session_object()._kernel().kid
+        except Exception:
+            return ""
 
     def snapshot(self):
         """Return the numbers and cards the window renders."""

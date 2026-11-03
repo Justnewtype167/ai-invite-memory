@@ -192,7 +192,8 @@ def _derive_call(
             for match in re.finditer(pattern, normalized):
                 pronoun = (match.group(1) or "").strip()
                 name = _trim_suffixes(match.group(2).strip(), suffixes)
-                if not name:
+                if not name or _is_interrogative(name):
+                    # "我叫什么名字？" is a question, not an introduction.
                     continue
                 if negative:
                     if name not in seen:
@@ -222,6 +223,14 @@ def _normalize_clause(
 def _has_kinship_prefix(prefix: str) -> bool:
     """Return whether a kinship term precedes "叫我", e.g. 我妈叫我回家."""
     return any(term in prefix for term in lexicon_terms())
+
+
+INTERROGATIVES = ("\u4ec0\u4e48", "\u8c01", "\u5565", "\u54ea", "\u600e\u4e48")  # 什么 谁 啥 哪 怎么
+
+
+def _is_interrogative(name: str) -> bool:
+    """Return whether the captured text is a question word rather than a name."""
+    return any(word in name for word in INTERROGATIVES)
 
 
 def _trim_suffixes(name: str, suffixes: tuple[str, ...]) -> str:
