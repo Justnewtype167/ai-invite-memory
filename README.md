@@ -1,10 +1,12 @@
 # AI Invite · Memory / 爱邀记忆内核
 
+[![ci](https://github.com/Justnewtype167/ai-invite-memory/actions/workflows/ci.yml/badge.svg)](https://github.com/Justnewtype167/ai-invite-memory/actions/workflows/ci.yml) [![release](https://img.shields.io/github/v/tag/Justnewtype167/ai-invite-memory?label=release)](https://github.com/Justnewtype167/ai-invite-memory/releases) [![license](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+
 面向 AI 伴侣的**可验证、可携带的记忆内核与人格层**。
 
 > 人格不活在权重里，而活在一份可以重算的产物 + 一组可以验证的测试里。
 
-**当前状态**：`v0.22-m18` · 358 个测试全绿 · 25 个 tag · 0 第三方依赖
+**当前状态**：`v0.23-m18.1` · 358 个测试全绿 · 26 个 tag · 0 第三方依赖
 
 > 顺序：证据层 → 主题与规则 → 检索 → 人格内核 → 行为身份 → 载荷 → 轨迹投影 → 增量编译。（见 `AGENTS.md §1`）
 
