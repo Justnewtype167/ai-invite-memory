@@ -18,6 +18,9 @@ LABELS = {
     "model": "当前模型",
     "card": "用户卡",
     "traits": "特质",
+    "canon": "长期规则",
+    "rule": "记成规则",
+    "ruled": "[规则] ",
     "you": "你",
     "ai": "它",
     "refused": "【闸门拒绝】",
@@ -78,6 +81,9 @@ def build(engine, labels=None):
             snap["card"] or "-",
             "",
             labels["traits"] + ": " + (", ".join(snap["traits"]) or "-"),
+            "",
+            labels["canon"] + ":",
+            chr(10).join("- " + line for line in snap["canon"]) if snap["canon"] else "-",
             "",
             labels["where"] + ":",
             snap["store"],
@@ -143,7 +149,21 @@ def build(engine, labels=None):
         except Exception as error:  # noqa: BLE001
             append("[verify] FAILED: " + str(error))
 
+    def do_remember():
+        text = entry.get().strip()
+        if not text:
+            return
+        entry.delete(0, "end")
+        try:
+            snap = engine.remember(text)
+            append(labels["ruled"] + text)
+            append("[canon] " + str(len(snap["canon"])) + " rule(s)")
+            refresh()
+        except Exception as error:  # noqa: BLE001
+            append("[error] " + str(error))
+
     tk.Button(bottom, text=labels["send"], command=work).pack(side="left", padx=4)
+    tk.Button(bottom, text=labels["rule"], command=do_remember).pack(side="left", padx=4)
     tk.Button(top, text=labels["switch"], command=do_switch).pack(side="left", padx=8)
     tk.Button(side, text=labels["export"], command=do_export).pack(fill="x", pady=2)
     tk.Button(side, text=labels["import"], command=do_import).pack(fill="x", pady=2)

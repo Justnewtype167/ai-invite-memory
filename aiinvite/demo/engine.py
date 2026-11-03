@@ -10,7 +10,7 @@ import urllib.error
 import urllib.request
 from dataclasses import dataclass
 
-from aiinvite.capsule import init_store, utc_now, verify_path
+from aiinvite.capsule import append_event, init_store, utc_now, verify_path
 from aiinvite.host import HostSession
 
 OLLAMA_URL = "http://127.0.0.1:11434/api/generate"
@@ -70,6 +70,19 @@ class DemoEngine:
         self._session = None
         self.turns = []
 
+    def remember(self, text):
+        """Write the line as a standing rule (directive/lock), not a chat turn.
+
+        This is the difference the demo exists to show: a turn is remembered,
+        a directive becomes canon and the actuation gate enforces it.
+        """
+        text = (text or "").strip()
+        if not text:
+            raise EngineError("empty rule")
+        append_event(self.store, text=text, t=utc_now(), type="directive", kind="lock")
+        self._session = None
+        return self.snapshot()
+
     def switch_model(self, model):
         """Change the model only; evidence and identity stay untouched.
 
@@ -114,10 +127,12 @@ class DemoEngine:
         kid = ""
         card = ""
         traits = []
+        canon = []
         events = 0
         try:
             kernel = session._kernel()
             kid = kernel.kid
+            canon = [entry.text for entry in kernel.canon]
             view = session._card_and_persona()[2]
         except Exception:
             view = None
@@ -133,6 +148,7 @@ class DemoEngine:
             "events": events,
             "card": card,
             "traits": traits,
+            "canon": canon,
             "model": self.model,
             "store": str(self.store),
         }
