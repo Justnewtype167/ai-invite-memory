@@ -13,7 +13,7 @@ python -m pip install -e .            # 零第三方依赖
 ## 2. 一轮对话
 
 ```python
-from host_adapter import HostSession
+from aiinvite.host import HostSession
 
 session = HostSession(store=Path("./memory"), model="qwen3.5:9b")
 

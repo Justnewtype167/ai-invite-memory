@@ -27,6 +27,14 @@ pip install ai-invite-memory          # 零第三方依赖，Python 3.11+
 没有 PyPI 账号也行，直接装 Release 里的 wheel：
 [下载页](https://github.com/Justnewtype167/ai-invite-memory/releases) · 详见 [`docs/INSTALL.md`](docs/INSTALL.md)
 
+**想看它到底能做什么？** 装完跑一个 60 秒的窗口：
+
+```bash
+python -m aiinvite.demo.app
+```
+
+按一次「换模型」——kid 不变、用户卡不变，回答换了一个模型的声音。详见 [`aiinvite/demo/README.md`](aiinvite/demo/README.md)。
+
 **这是内核，不是成品应用。** 它没有界面、不调模型；要「双击就能用」的产物，需要在其上再加一层（见 INSTALL §4）。
 
 ---

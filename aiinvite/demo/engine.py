@@ -1,0 +1,149 @@
+"""Pure logic behind the demo window: no UI, no hard-coded model calls."""
+from __future__ import annotations
+
+import json
+import pathlib
+import shutil
+import tempfile
+import urllib.error
+import urllib.request
+from dataclasses import dataclass
+
+from aiinvite.capsule import init_store, utc_now, verify_path
+from aiinvite.host import HostSession
+
+OLLAMA_URL = "http://127.0.0.1:11434/api/generate"
+DEFAULT_MODELS = ("qwen3.5:9b", "glm4:9b")
+
+
+class EngineError(RuntimeError):
+    """A demo-level failure with a message the window can show."""
+
+
+def ollama_caller(prompt: str, model: str, timeout: int = 120) -> str:
+    """Ask a local Ollama model; raise EngineError when it is unreachable."""
+    payload = json.dumps({
+        "model": model,
+        "prompt": prompt,
+        "stream": False,
+        "think": False,
+        "options": {"num_predict": 220},
+    }).encode("utf-8")
+    request = urllib.request.Request(
+        OLLAMA_URL, data=payload, headers={"Content-Type": "application/json"}
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            body = json.loads(response.read().decode("utf-8"))
+    except (urllib.error.URLError, OSError) as exc:
+        raise EngineError(f"cannot reach Ollama at {OLLAMA_URL}: {exc}") from exc
+    except json.JSONDecodeError as exc:
+        raise EngineError(f"Ollama returned non-JSON: {exc}") from exc
+    text = str(body.get("response", "")).strip()
+    if not text:
+        raise EngineError(f"{model} returned an empty reply")
+    return text
+
+
+@dataclass(frozen=True)
+class Turn:
+    """One exchange, as the window shows it."""
+
+    role: str
+    text: str
+    refused: bool = False
+
+
+class DemoEngine:
+    """A conversation plus the four things the demo must make visible."""
+
+    def __init__(self, store, model=None, caller=ollama_caller, now=None):
+        self.store = pathlib.Path(store)
+        self.model = model or DEFAULT_MODELS[0]
+        self._caller = caller
+        self._now = now
+        init_store(self.store)
+        self._session = None
+        self.turns = []
+
+    def switch_model(self, model):
+        """Change the model only; evidence and identity stay untouched."""
+        self.model = model
+
+    def _session_object(self):
+        if self._session is None:
+            self._session = HostSession(self.store, self.model, now=self._now)
+        self._session.model = self.model
+        return self._session
+
+    def send(self, text):
+        """Record the user turn, ask the model, gate the reply, record it."""
+        text = (text or "").strip()
+        if not text:
+            raise EngineError("empty input")
+        session = self._session_object()
+        session.on_user(text, utc_now())
+        self.turns.append(Turn(role="user", text=text))
+        prompt = session.prompt_for(text)
+        raw = self._caller(prompt, self.model)
+        verdict = session.reply(raw, utc_now())
+        turn = Turn(role="assistant", text=raw, refused=not verdict.allowed)
+        self.turns.append(turn)
+        return turn
+
+    def snapshot(self):
+        """Return the numbers and cards the window renders."""
+        session = self._session_object()
+        kid = ""
+        card = ""
+        traits = []
+        events = 0
+        try:
+            kernel = session._kernel()
+            kid = kernel.kid
+            view = session._card_and_persona()[2]
+        except Exception:
+            view = None
+        try:
+            events = verify_path(self.store).events
+        except Exception:
+            events = 0
+        if view is not None:
+            card = view.user_card.text().strip() if view.user_card else ""
+            traits = [item.name for item in view.traits]
+        return {
+            "kid": kid,
+            "events": events,
+            "card": card,
+            "traits": traits,
+            "model": self.model,
+            "store": str(self.store),
+        }
+
+    def export_to(self, target):
+        """Copy the store to a folder the user can carry."""
+        target = pathlib.Path(target)
+        if target.exists():
+            shutil.rmtree(target)
+        shutil.copytree(self.store, target)
+        verify_path(target)
+        return target
+
+    def import_from(self, source):
+        """Replace this store with a copied one; identity must already match."""
+        source = pathlib.Path(source)
+        verify_path(source)
+        if self.store.exists():
+            shutil.rmtree(self.store)
+        shutil.copytree(source, self.store)
+        self._session = None
+        return self.store
+
+    def verify(self):
+        """Return the verified event count; raises on tampering."""
+        return verify_path(self.store).events
+
+
+def scratch_store():
+    """Return a throwaway store path for the demo window."""
+    return pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_demo_")) / "memory"

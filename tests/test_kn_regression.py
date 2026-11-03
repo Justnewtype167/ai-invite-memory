@@ -64,7 +64,8 @@ class TestRegression(unittest.TestCase):
         offenders: list[str] = []
         for name in FROZEN_PACKAGES:
             # glob, not rglob: a recursive walk would descend into the subpackages
-            # and flag aiinvite/kernel/ against itself.
+            # and flag aiinvite/kernel/ against itself. Subpackages (kernel, cn,
+            # recall, host) are their own layers; only top-level L0 modules count.
             for path in sorted((ROOT / name).glob("*.py")):
                 if "aiinvite.kernel" in path.read_text(encoding="utf-8"):
                     offenders.append(str(path))
