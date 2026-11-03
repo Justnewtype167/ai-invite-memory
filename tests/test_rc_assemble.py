@@ -12,10 +12,10 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 import rc_fixtures
 
-from jian_recall.assemble import assemble
-from jian_recall.errors import E_RC_BAD_BUDGET, RecallError
-from jian_recall.index import build_index
-from jian_recall.retrieve import search
+from aiinvite.recall.assemble import assemble
+from aiinvite.recall.errors import E_RC_BAD_BUDGET, RecallError
+from aiinvite.recall.index import build_index
+from aiinvite.recall.retrieve import search
 
 NOW = "2026-10-29T10:00:00+08:00"
 QUERY = "项目进度"
@@ -24,7 +24,7 @@ QUERY = "项目进度"
 class TestAssemble(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.root = pathlib.Path(tempfile.mkdtemp(prefix="jian_rc_asm_"))
+        cls.root = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_rc_asm_"))
         events: list[tuple[str, str]] = []
         for index in range(60):
             events.append(
@@ -87,7 +87,7 @@ class TestAssemble(unittest.TestCase):
 
     def test_scarce_store_is_not_padded(self) -> None:
         """R4.3: a store with few candidates stays below the budget."""
-        small = pathlib.Path(tempfile.mkdtemp(prefix="jian_rc_small_"))
+        small = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_rc_small_"))
         self.addCleanup(shutil.rmtree, small, True)
         rc_fixtures.write_store(small, [("2024-01-01T10:00:00Z", "只有两条记忆")])
         build_index(small)

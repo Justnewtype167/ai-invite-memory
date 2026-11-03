@@ -1,4 +1,4 @@
-# Jian capsule revival guide
+# AI Invite capsule revival guide
 
 events: 3
 segments: 1

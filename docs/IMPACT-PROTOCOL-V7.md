@@ -1,7 +1,7 @@
 # 协议 V7.0 对 M1–M15 的影响评估
 
 > 结论先给：**不需要大面积重构。**
-> 一处**隔离型重写**（M15 的 `jian_succession`，隔离在一个包里），
+> 一处**隔离型重写**（M15 的 `aiinvite.succession`，隔离在一个包里），
 > 一处**高危但可控的加法**（horizon 触碰 kid 计算），其余六处是数据或小改动。
 
 ---
@@ -44,10 +44,10 @@ Policy 增加 horizon 字段 → 进入 policy_digest → 进入 kid
 ### 影响面（按行数）
 
 ```
-jian_kernel/kernel.py     340 行   Policy 增字段、序列化（约 20 行）
-jian_kernel/compiler.py   475 行   read_evidence 过滤（约 15 行）
-jian_kernel/snapshot.py   350 行   失效条件（约 15 行）
-jian_kernel/incremental.py 474 行  基底重算（约 30 行）
+aiinvite.kernel/kernel.py     340 行   Policy 增字段、序列化（约 20 行）
+aiinvite.kernel/compiler.py   475 行   read_evidence 过滤（约 15 行）
+aiinvite.kernel/snapshot.py   350 行   失效条件（约 15 行）
+aiinvite.kernel/incremental.py 474 行  基底重算（约 30 行）
 合计约 80 行净改动，占内核 1639 行的 5%
 ```
 
@@ -56,7 +56,7 @@ jian_kernel/incremental.py 474 行  基底重算（约 30 行）
 
 ---
 
-## 三、隔离型重写：jian_succession
+## 三、隔离型重写：aiinvite.succession
 
 ```
 现状：导出证据（含原文）+ 脱敏 + 重算 kid
@@ -67,7 +67,7 @@ v7：  导出内核（含 horizon）+ memorial + commitment，**不含证据**
 
 | 因素 | 说明 |
 |---|---|
-| 代码隔离 | `jian_succession/` 是独立包（985 行），只依赖公开 API |
+| 代码隔离 | `aiinvite.succession/` 是独立包（985 行），只依赖公开 API |
 | 依赖方向 | 它调用别人，别人不调用它——改它不会波及任何既有功能 |
 | 寿命 | M15 是一天前刚完成的，**现在改成本最低** |
 | 可保留 | 脱敏重建链、哈希绑定、mode 校验、redaction 记录全部复用 |
@@ -109,7 +109,7 @@ kid = hash(self_md, canon_md, state, graph, origin, models)
 |---|---|---|
 | horizon（含 Policy/快照/增量/回归） | 1–1.5 天 | **高**（碰 kid） |
 | 继承模式约束（canon 冻结、禁冒充、refusal） | 0.5 天 | 低 |
-| jian_succession 重写 | 2–3 天 | 中（隔离） |
+| aiinvite.succession 重写 | 2–3 天 | 中（隔离） |
 | memorial 槽位 + 去实体 + 子串检查 | 1–2 天 | 中（判定要标定） |
 | safety_log 分级 | 0.5 天 | 低 |
 | 文档与协议同步 | 0.5 天 | 低 |
@@ -124,7 +124,7 @@ kid = hash(self_md, canon_md, state, graph, origin, models)
 ```
 ① horizon        单独提交、单独验收；先证明 horizon=None 逐字节回归
 ② 继承模式约束    纯加法，与 ① 无依赖，可并行
-③ jian_succession 重写  在 ①② 稳定后做，因为它要依赖 horizon
+③ aiinvite.succession 重写  在 ①② 稳定后做，因为它要依赖 horizon
 ④ memorial 管线   最后做，因为它的判定阈值需要数据标定
 ⑤ safety_log      最小，随时可做
 ```

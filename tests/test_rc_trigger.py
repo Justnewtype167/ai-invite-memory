@@ -12,8 +12,8 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 import rc_fixtures
 
-from jian_recall.index import build_index
-from jian_recall.trigger import triggers
+from aiinvite.recall.index import build_index
+from aiinvite.recall.trigger import triggers
 
 NOW = "2026-10-29T10:00:00+08:00"
 
@@ -21,7 +21,7 @@ NOW = "2026-10-29T10:00:00+08:00"
 class TestTrigger(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.root = pathlib.Path(tempfile.mkdtemp(prefix="jian_rc_trig_"))
+        cls.root = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_rc_trig_"))
         events = [
             ("2021-10-29T09:00:00Z", "四年前的今天搬了一次家"),
             ("2022-10-29T09:00:00Z", "三年前的今天去看了海"),

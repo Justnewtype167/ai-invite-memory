@@ -9,7 +9,7 @@ import unittest
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
-from jian_pcs.probes import (
+from aiinvite.pcs.probes import (
     RULE_IDS,
     RULES_PATH,
     V2_OPERATORS,
@@ -110,12 +110,12 @@ class TestRulesV2(unittest.TestCase):
         """V1: scoring never depends on self.md containing the rules."""
         self.assertTrue(RULES_PATH.exists())
         self.assertEqual(
-            ROOT / "jian_pcs" / "data" / "rules_v2.json",
+            ROOT / "aiinvite/pcs" / "data" / "rules_v2.json",
             RULES_PATH,
         )
         references = [
             path.name
-            for path in (ROOT / "jian_pcs").glob("*.py")
+            for path in (ROOT / "aiinvite/pcs").glob("*.py")
             if "self.md" in path.read_text(encoding="utf-8")
         ]
         print(f"V1 self.md references={references}")

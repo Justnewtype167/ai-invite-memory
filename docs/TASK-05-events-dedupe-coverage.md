@@ -15,17 +15,17 @@
 
 ## 1. 冻结例外（范围写死，不得扩大）
 
-`jian/`、`jian_cn/`、`jian_recall/` 都已封版。M4.1 **只允许**改这些：
+`jian/`、`aiinvite.cn/`、`aiinvite.recall/` 都已封版。M4.1 **只允许**改这些：
 
 | 文件 | 允许改什么 |
 |---|---|
 | `jian/event.py` | 事件类型与字段校验、`new_event` 增加 type/kind |
 | `jian/capsule.py` | `append_event` 增加 type/kind 参数（旧签名必须仍可用） |
 | `jian/cli.py` | `append` 增加 `--type` / `--kind` |
-| `jian_recall/retrieve.py` | 打分加查询覆盖度 |
-| `jian_recall/assemble.py` | 文本级去重 |
+| `aiinvite.recall/retrieve.py` | 打分加查询覆盖度 |
+| `aiinvite.recall/assemble.py` | 文本级去重 |
 
-**其它任何文件不许动。** `jian_cn/` 与 `jian_kernel/` 一行都不许改。
+**其它任何文件不许动。** `aiinvite.cn/` 与 `aiinvite.kernel/` 一行都不许改。
 
 ---
 
@@ -76,8 +76,8 @@ append_event(store, *, type: str, text: str, kind: str | None = None,
 CLI：
 
 ```
-python -m jian.cli append <dir> --type directive --kind lock --text "称呼：叫我小满"
-python -m jian.cli append <dir> --type feedback --kind correction --text "不对"
+python -m aiinvite.cli append <dir> --type directive --kind lock --text "称呼：叫我小满"
+python -m aiinvite.cli append <dir> --type feedback --kind correction --text "不对"
 ```
 
 ---
@@ -92,7 +92,7 @@ python -m jian.cli append <dir> --type feedback --kind correction --text "不对
 预算     = 只计一次
 ```
 
-`normalize` 用 `jian_cn.normalize`（繁简/全半角/空白一致），这样「臺灣」与「台湾」算同一句。
+`normalize` 用 `aiinvite.cn.normalize`（繁简/全半角/空白一致），这样「臺灣」与「台湾」算同一句。
 
 **边界**：
 
@@ -139,7 +139,7 @@ final = bm25_normalized * (0.4 + 0.6 * coverage) * time_decay
 
 ## 7. 禁止
 
-1. 不许改 `jian_cn/`、`jian_kernel/` 任何一行
+1. 不许改 `aiinvite.cn/`、`aiinvite.kernel/` 任何一行
 2. 不许改事件哈希算法或 canonical 规则
 3. 不许为了 S4 去改 `qa_labels.json` 或扩充干扰池
 4. 不许把去重做成「删掉后出现的重复」而不记录 `merged`

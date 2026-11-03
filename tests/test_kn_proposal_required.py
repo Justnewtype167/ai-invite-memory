@@ -12,17 +12,17 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 import kn_fixtures
 
-from jian_kernel.errors import E_KN_NO_PROPOSAL, KernelError
-from jian_kernel.compiler import compile_kernel
-from jian_kernel.history import record_kernel
-from jian_kernel.kernel import Policy
+from aiinvite.kernel.errors import E_KN_NO_PROPOSAL, KernelError
+from aiinvite.kernel.compiler import compile_kernel
+from aiinvite.kernel.history import record_kernel
+from aiinvite.kernel.kernel import Policy
 
 NOW = "2026-10-29T10:00:00+08:00"
 
 
 class TestProposalRequired(unittest.TestCase):
     def setUp(self) -> None:
-        self.root = pathlib.Path(tempfile.mkdtemp(prefix="jian_prop_req_"))
+        self.root = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_prop_req_"))
         self.addCleanup(shutil.rmtree, self.root, True)
         kn_fixtures.write_store(self.root, [
             ("2026-01-01T09:00:00Z", "今天天气不错", "turn", None),

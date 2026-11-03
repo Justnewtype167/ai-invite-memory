@@ -29,7 +29,7 @@ retrieve bm25 top-K      全局统计，**不可增量**   明确不碰
 
 ### 2.1 trigger 的真实查询键（先读代码，再谈缓存）
 
-`jian_recall/trigger.py` 的两个查询**不是按天分桶**的：
+`aiinvite.recall/trigger.py` 的两个查询**不是按天分桶**的：
 
 ```
 same_day   WHERE t.md = ? AND t.year < ?   ORDER BY t.ts DESC LIMIT 3
@@ -104,7 +104,7 @@ loaded   查询取数：冷启动缓存为空，必须真的取 ⇒ <=5 行（�
 | X3b | `test_reused_is_not_days` | 断言 `trigger_reused ∈ {0,1,2}`；跨 30 天、全程没有 `md` 命中时它依然是 2 —— 证明它**不是**天数口径 |
 | X4 | `test_cache_invalidation` | 跨天 / head 回退 / 索引重建 / `now` 改变 → 缓存全失效，结果仍与全量相同 |
 | X5 | `test_retrieve_not_claimed_incremental` | `retrieve_scored == candidates`（明写：本轮不减少） |
-| X6 | `test_all_regression` | 现有 **294 个测试全绿**；`jian/`、`jian_cn/`、`jian_kernel/`、`jian_pcs/`、`jian_projection/` 零 diff；`jian_recall/` 改动在 `ALLOWED_CHANGES` 声明 |
+| X6 | `test_all_regression` | 现有 **294 个测试全绿**；`jian/`、`aiinvite.cn/`、`aiinvite.kernel/`、`aiinvite.pcs/`、`aiinvite.projection/` 零 diff；`aiinvite.recall/` 改动在 `ALLOWED_CHANGES` 声明 |
 
 ---
 

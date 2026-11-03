@@ -1,48 +1,48 @@
-# Jian M1 demo record
+# AI Invite M1 demo record
 
 Commands and real outputs, run on this machine.
 
-$ python -m jian.cli init D:\projects\Memory\docs\demo\store
+$ python -m aiinvite.cli init D:\projects\Memory\docs\demo\store
 OK init D:\projects\Memory\docs\demo\store
 [exit 0]
 
-$ python -m jian.cli append D:\projects\Memory\docs\demo\store --role user --text "hello, jian" --t 2026-10-29T06:00:00Z
+$ python -m aiinvite.cli append D:\projects\Memory\docs\demo\store --role user --text "hello, jian" --t 2026-10-29T06:00:00Z
 OK append ev_000001 seg=seg-0001
 [exit 0]
 
-$ python -m jian.cli append D:\projects\Memory\docs\demo\store --role assistant --text "hello, memory" --t 2026-10-29T06:00:05Z
+$ python -m aiinvite.cli append D:\projects\Memory\docs\demo\store --role assistant --text "hello, memory" --t 2026-10-29T06:00:05Z
 OK append ev_000002 seg=seg-0001
 [exit 0]
 
-$ python -m jian.cli append D:\projects\Memory\docs\demo\store --role user --text "remember this" --t 2026-10-29T06:00:09Z
+$ python -m aiinvite.cli append D:\projects\Memory\docs\demo\store --role user --text "remember this" --t 2026-10-29T06:00:09Z
 OK append ev_000003 seg=seg-0001
 [exit 0]
 
-$ python -m jian.cli seal D:\projects\Memory\docs\demo\store
+$ python -m aiinvite.cli seal D:\projects\Memory\docs\demo\store
 OK seal events=3 segments=1 head=61a5d726 state=sealed
 [exit 0]
 
-$ python -m jian.cli verify D:\projects\Memory\docs\demo\store
+$ python -m aiinvite.cli verify D:\projects\Memory\docs\demo\store
 OK events=3 segments=1 head=61a5d726 state=sealed
 [exit 0]
 
-$ python -m jian.cli export D:\projects\Memory\docs\demo\store D:\projects\Memory\docs\demo\memory.aiem
+$ python -m aiinvite.cli export D:\projects\Memory\docs\demo\store D:\projects\Memory\docs\demo\memory.aiem
 OK export events=3 segments=1 head=61a5d726 state=sealed
 [exit 0]
 
-$ python -m jian.cli import D:\projects\Memory\docs\demo\memory.aiem D:\projects\Memory\docs\demo\restored
+$ python -m aiinvite.cli import D:\projects\Memory\docs\demo\memory.aiem D:\projects\Memory\docs\demo\restored
 OK import events=3 segments=1 head=61a5d726 state=sealed
 [exit 0]
 
-$ python -m jian.cli verify D:\projects\Memory\docs\demo\restored
+$ python -m aiinvite.cli verify D:\projects\Memory\docs\demo\restored
 OK events=3 segments=1 head=61a5d726 state=sealed
 [exit 0]
 
-$ python -m jian.cli verify D:\projects\Memory\docs\demo\memory.aiem
+$ python -m aiinvite.cli verify D:\projects\Memory\docs\demo\memory.aiem
 OK events=3 segments=1 head=61a5d726 state=sealed
 [exit 0]
 
-$ python -m jian.cli inspect D:\projects\Memory\docs\demo\memory.aiem
+$ python -m aiinvite.cli inspect D:\projects\Memory\docs\demo\memory.aiem
 capsule schema=jian.capsule/1 version=1 created=2026-10-29T08:10:27Z head=61a5d72633d15bcabe068c9b356cbc7b7353d51593eeeeef68e9ea3f1078645c events=3 segments=1 files=3
 [exit 0]
 

@@ -8,8 +8,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from jian.capsule import append_event, export_capsule, init_store, seal_store, verify_path
-from jian.cli import main
+from aiinvite.capsule import append_event, export_capsule, init_store, seal_store, verify_path
+from aiinvite.cli import main
 
 
 def _stamp(index: int) -> str:

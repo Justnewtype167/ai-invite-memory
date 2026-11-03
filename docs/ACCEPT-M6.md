@@ -1,6 +1,6 @@
 # M6 验收（机制通过；探针集有判定假阴性，必须先修）
 
-> 对象：`jian_pcs/` + `tools/responder_ollama.py` + 5 个新测试
+> 对象：`aiinvite.pcs/` + `tools/responder_ollama.py` + 5 个新测试
 > 结论：**公式与边界全对；但探针集把「换个说法」判成了不遵守，真实数字因此失真。**
 
 ---
@@ -10,7 +10,7 @@
 ```
 Ran 192 tests, OK, 0 skipped        （180 + 12）
 四个已封版包：零 diff
-jian_pcs/：零依赖，不 import urllib/socket
+aiinvite.pcs/：零依赖，不 import urllib/socket
 ```
 
 ## 2. 我独立复现的 12 项（全过）

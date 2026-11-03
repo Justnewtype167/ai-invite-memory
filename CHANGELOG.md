@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## v0.22-m18 · 2026-11-03
+
+**改名：竹简 / Jian → AI Invite · Memory（爱邀记忆内核）。**
+
+- 命名空间：8 个顶层包合并为单一 `aiinvite`（`aiinvite.cn` / `.recall` / `.kernel` / `.pcs` /
+  `.projection` / `.persona` / `.succession`），CLI 为 `aiinvite`
+- 发行名：`ai-invite-memory`；基础异常 `JianError` → `AiInviteError`
+- `pyproject.toml` 修正：此前只声明了 5 个包，`pcs` / `persona` / `succession` 未被打包
+- S6 冻结基线在本次重命名后**重新生成**（重命名改动了每个文件的字节，属一次性事件）；
+  N5 的行级编辑账本并入基线。不变量不变：此后任何字节变动仍会失败
+- 测试 358 全绿
+- 命名背景：GitHub `aiinvite` 零占用、PyPI 两个名字均空闲；加限定词 `Memory` 以避开
+  「AI invite = 邀请函」的语义碰撞
+
 ## v0.21-m17.1 · 2026-11-02
 
 接入层审计修复 + 用户卡修复 + 事实召回首次可测。
@@ -28,7 +42,7 @@
 
 特质、风格卡与用户卡。**宪章里 A2 与 A5 首次有了落地物。**
 
-- 新包 `jian_persona/`（L2）：特质表、风格卡、用户卡、共用 `PersonaView`
+- 新包 `aiinvite.persona/`（L2）：特质表、风格卡、用户卡、共用 `PersonaView`
 - **P0 修复**：`refusal` 事件此前会让内核编不了（`EVENT_TYPES` 缺项）。现在人格事件统一跳过，
   不进 `canon` / `self` / `state` / `graph`——600 条人格事件后 `kid` 与内核产物逐字节不变
 - 特质：≤5 条、冲突显式解决、高风险按模式门控、来源不混（`directive` vs `proposal` + 批准记录）
@@ -43,7 +57,7 @@
 
 CLI 默认验链。审计发现「编译不校验哈希」，本轮在边界补上门。
 
-- `jian-kernel compile` 默认先验链，篡改即 `E_KN_TAMPER`；`--no-verify` 为显式快路径
+- `aiinvite kernel compile` 默认先验链，篡改即 `E_KN_TAMPER`；`--no-verify` 为显式快路径
 - 库函数 `compile_kernel` 保持纯派生（`verify=False` 默认），信任判定留在边界
 - 实测校验开销 **约为编译的 5%**（2000 条事件），没有理由为速度关掉
 - 新增 4 个测试（`tests/test_compile_verify.py`），全量 **274**
@@ -139,7 +153,7 @@ CLI 默认验链。审计发现「编译不校验哈希」，本轮在边界补�
 
 人格可以重算。
 
-- `jian_kernel/`：确定性编译、四条漂移门控、HISTORY 只追加、全量溯源
+- `aiinvite.kernel/`：确定性编译、四条漂移门控、HISTORY 只追加、全量溯源
 - 跨进程 `kid` 一致（不同 `PYTHONHASHSEED`）
 - 手改内核 → `record` 拒绝；`--force` 治愈并留 `tamper_healed` 审计行
 - 29 个测试（共 131）
@@ -148,7 +162,7 @@ CLI 默认验链。审计发现「编译不校验哈希」，本轮在边界补�
 
 检索与 4k 预算装配。
 
-- `jian_recall/`：FTS5 + 中文二元切分、LSN 增量索引、可对账的派生缓存
+- `aiinvite.recall/`：FTS5 + 中文二元切分、LSN 增量索引、可对账的派生缓存
 - 预算装配：槽位是**上限**不是份额；候选不足不强凑
 - 20 万事件：建索引 12.3s，装配 p50 13ms / p95 23ms
 - 保真度：4k 与 32k 同为 20/20
@@ -157,7 +171,7 @@ CLI 默认验链。审计发现「编译不校验哈希」，本轮在边界补�
 
 中文规则层，零模型。
 
-- `jian_cn/`：称谓图（含「的」组合）、相对时间（四组原语组合器）、梗的时效、繁简规范化
+- `aiinvite.cn/`：称谓图（含「的」组合）、相对时间（四组原语组合器）、梗的时效、繁简规范化
 - 留出集：timex 14/14，称谓未公开集 7/8，梗 24/24
 - 44 个测试（共 75）
 

@@ -9,9 +9,9 @@
 
 ```
 改：jian/event.py（加第 6 种事件 proposal）
-    jian_kernel/* 全部
+    aiinvite.kernel/* 全部
     6 个新测试 P1–P6 + test_all_regression 更新
-未改：jian_cn/、jian_recall/、jian/capsule.py、jian/cli.py
+未改：aiinvite.cn/、aiinvite.recall/、jian/capsule.py、jian/cli.py
 ```
 
 **测试：163 个（148 + 15），0 skipped。**

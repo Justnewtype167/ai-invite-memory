@@ -16,13 +16,13 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 import rc_fixtures
 
-from jian.capsule import verify_path
-from jian_recall import Chunk, StreamSession, StreamStats, join_chunks
-from jian_recall.assemble import RECENT_LIMIT, RETRIEVE_K, assemble
-from jian_recall.errors import E_RC_BAD_BUDGET, E_RC_NO_INDEX, E_RC_STREAM, RecallError
-from jian_recall.index import build_index, index_status
-from jian_recall.stream import CHUNK_SLOTS, RECENT_CHUNK_LIMIT
-from jian_recall.trigger import PROMISE_LIMIT, SAME_DAY_LIMIT
+from aiinvite.capsule import verify_path
+from aiinvite.recall import Chunk, StreamSession, StreamStats, join_chunks
+from aiinvite.recall.assemble import RECENT_LIMIT, RETRIEVE_K, assemble
+from aiinvite.recall.errors import E_RC_BAD_BUDGET, E_RC_NO_INDEX, E_RC_STREAM, RecallError
+from aiinvite.recall.index import build_index, index_status
+from aiinvite.recall.stream import CHUNK_SLOTS, RECENT_CHUNK_LIMIT
+from aiinvite.recall.trigger import PROMISE_LIMIT, SAME_DAY_LIMIT
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 NOW = "2026-10-29T10:00:00+08:00"
@@ -54,7 +54,7 @@ def _base_events(count: int = 60) -> list[tuple[str, str]]:
 class TestStreamSession(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.root = pathlib.Path(tempfile.mkdtemp(prefix="jian_rc_stream_"))
+        cls.root = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_rc_stream_"))
         rc_fixtures.write_store(cls.root, _base_events())
         build_index(cls.root)
 
@@ -63,7 +63,7 @@ class TestStreamSession(unittest.TestCase):
         shutil.rmtree(cls.root, True)
 
     def _new_store(self, events: list[tuple[str, str]]) -> pathlib.Path:
-        root = pathlib.Path(tempfile.mkdtemp(prefix="jian_rc_stream_t_"))
+        root = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_rc_stream_t_"))
         self.addCleanup(shutil.rmtree, root, True)
         rc_fixtures.write_store(root, events)
         build_index(root)
@@ -313,7 +313,7 @@ class TestStreamSession(unittest.TestCase):
         with self.assertRaises(RecallError) as error:
             StreamSession(self.root, 100)
         self.assertEqual(error.exception.code, E_RC_BAD_BUDGET)
-        missing = pathlib.Path(tempfile.mkdtemp(prefix="jian_rc_stream_noidx_"))
+        missing = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_rc_stream_noidx_"))
         self.addCleanup(shutil.rmtree, missing, True)
         (missing / "evidence").mkdir()
         with self.assertRaises(RecallError) as error:
@@ -349,7 +349,7 @@ class TestStreamSession(unittest.TestCase):
         code = (
             "import json, sys\n"
             "from pathlib import Path\n"
-            "from jian_recall import StreamSession, join_chunks\n"
+            "from aiinvite.recall import StreamSession, join_chunks\n"
             "session = StreamSession(Path(sys.argv[1]), int(sys.argv[2]), sys.argv[3])\n"
             "context = session.context(sys.argv[4])\n"
             "chunks = list(session.iter_context(sys.argv[4]))\n"

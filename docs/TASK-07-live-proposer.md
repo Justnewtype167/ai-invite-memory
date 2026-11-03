@@ -20,7 +20,7 @@
 | 可改 | 不可改 |
 |---|---|
 | `jian/event.py`（`proposal` 增加 4 个可选字段） | `jian/capsule.py`、`jian/cli.py` |
-| `jian_kernel/*` | `jian_cn/`、`jian_recall/` 全部 |
+| `aiinvite.kernel/*` | `aiinvite.cn/`、`aiinvite.recall/` 全部 |
 | `tools/proposer_*.py`（新增） | 事件哈希算法、canonical 规则 |
 | `tests/` 新增 | —— |
 
@@ -151,13 +151,13 @@ models:    ["qwen3.5:9b/Q4_K_M/9f8e7d6c", ...]   ← 参与过的模型，升序
 | Q3 | `test_kn_thin_evidence` | 9 条事件 → `record_proposal` 抛 `E_KN_THIN_EVIDENCE`；10 条 → 成功 |
 | Q4 | `test_kn_subprocess_proposer` | 用**假提案器脚本**（固定输出）跑 `SubprocessProposer`：成功/失败/超时三条路径；**全程不联网** |
 | Q5 | `test_kn_models_in_meta` | 两个不同 model 的提案 → `META.models` 有两条且升序；`kid` 与单模型时不同 |
-| Q6 | `test_all_regression` | 现有 **163 个测试仍全绿**；`jian_cn/`、`jian_recall/` 零 diff |
+| Q6 | `test_all_regression` | 现有 **163 个测试仍全绿**；`aiinvite.cn/`、`aiinvite.recall/` 零 diff |
 
 ---
 
 ## 8. 禁止
 
-1. 不许在 `jian_kernel/` 里 `import urllib`、`socket`、`requests`（网络只允许出现在 `tools/`）
+1. 不许在 `aiinvite.kernel/` 里 `import urllib`、`socket`、`requests`（网络只允许出现在 `tools/`）
 2. 不许测试里调真模型（只用假提案器脚本）
 3. 不许让提案影响 `canon` / `state` / `graph`
 4. 不许用 float 存温度

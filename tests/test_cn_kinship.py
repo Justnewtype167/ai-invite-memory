@@ -6,10 +6,10 @@ import json
 import pathlib
 import unittest
 
-from jian_cn.errors import CnError, E_CN_UNKNOWN_TERM
-from jian_cn.kinship import Kinship, lexicon_terms, parse_kinship
+from aiinvite.cn.errors import CnError, E_CN_UNKNOWN_TERM
+from aiinvite.cn.kinship import Kinship, lexicon_terms, parse_kinship
 
-DATA = pathlib.Path(__file__).resolve().parents[1] / "jian_cn" / "data"
+DATA = pathlib.Path(__file__).resolve().parents[1] / "aiinvite/cn" / "data"
 EDGES = frozenset({"F", "M", "H", "W", "OB", "YB", "OS", "YS", "S", "B", "s", "d"})
 
 

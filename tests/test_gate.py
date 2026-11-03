@@ -16,13 +16,13 @@ import tempfile
 import unittest
 from types import SimpleNamespace
 
-from jian.capsule import append_event, append_refusal, init_store, verify_path
-from jian.errors import E_SCHEMA, JianError
-from jian_kernel.compiler import compile_kernel
-from jian_kernel.kernel import CanonEntry, Policy
+from aiinvite.capsule import append_event, append_refusal, init_store, verify_path
+from aiinvite.errors import E_SCHEMA, AiInviteError
+from aiinvite.kernel.compiler import compile_kernel
+from aiinvite.kernel.kernel import CanonEntry, Policy
 
-import jian_projection.gate as gate_module
-from jian_projection import (
+import aiinvite.projection.gate as gate_module
+from aiinvite.projection import (
     Trace,
     Verdict,
     check,
@@ -32,7 +32,7 @@ from jian_projection import (
     project_text,
     trace_digest,
 )
-from jian_projection.errors import (
+from aiinvite.projection.errors import (
     E_PR_GATE_RULES,
     E_PR_GATE_SCOPE,
     ProjectionError,
@@ -70,7 +70,7 @@ class TestGateSchema(unittest.TestCase):
     """V1: Verdict fields and rule-data validation with fixed error codes."""
 
     def setUp(self) -> None:
-        self.root = pathlib.Path(tempfile.mkdtemp(prefix="jian_gate_schema_"))
+        self.root = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_gate_schema_"))
         self.addCleanup(shutil.rmtree, self.root, True)
 
     def _assert_code(self, code: str, payload: object) -> None:
@@ -156,7 +156,7 @@ class TestGateDecision(unittest.TestCase):
     """V3-V6: allow, refuse, data-driven rules and the no-canon case."""
 
     def setUp(self) -> None:
-        self.root = pathlib.Path(tempfile.mkdtemp(prefix="jian_gate_"))
+        self.root = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_gate_"))
         self.addCleanup(shutil.rmtree, self.root, True)
         self.store = self.root / "mem"
         init_store(self.store)
@@ -277,10 +277,10 @@ class TestGateDecision(unittest.TestCase):
     def test_refusal_rejects_bad_shape(self) -> None:
         """V4: refusal target and trace are validated at the evidence boundary."""
         digest = trace_digest(project_action(self.kernel))
-        with self.assertRaises(JianError) as caught:
+        with self.assertRaises(AiInviteError) as caught:
             append_refusal(self.store, "audio", "禁称呼", digest, t=STAMP)
         self.assertEqual(caught.exception.code, E_SCHEMA)
-        with self.assertRaises(JianError) as caught:
+        with self.assertRaises(AiInviteError) as caught:
             append_refusal(self.store, "text", "禁称呼", "sha256:ABC", t=STAMP)
         self.assertEqual(caught.exception.code, E_SCHEMA)
 

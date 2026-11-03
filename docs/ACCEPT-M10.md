@@ -32,7 +32,7 @@
 ```python
 ALLOWED_CHANGES = {
     "jian/capsule.py": "M10: payload API, v2 seal/export/import, event_full_text",
-    "jian_kernel/compiler.py": "M10: identity layer reads full text through event_full_text",
+    "aiinvite.kernel/compiler.py": "M10: identity layer reads full text through event_full_text",
     ...
 }
 ```

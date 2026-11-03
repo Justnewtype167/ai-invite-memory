@@ -19,9 +19,9 @@ trigger    按查询谓词分桶缓存，可独立失效，真省工
 
 | 文件 | 改动 |
 |---|---|
-| `jian_recall/trigger.py` | 拆出 `trigger_parts`，两个子查询可独立取数 |
-| `jian_recall/assemble.py` | 拆出 `_assemble_pools`，与流式会话共享 pool → context |
-| `jian_recall/stream.py` | 四计数 + `(key, generation)` 谓词缓存 + 索引重建检测 |
+| `aiinvite.recall/trigger.py` | 拆出 `trigger_parts`，两个子查询可独立取数 |
+| `aiinvite.recall/assemble.py` | 拆出 `_assemble_pools`，与流式会话共享 pool → context |
+| `aiinvite.recall/stream.py` | 四计数 + `(key, generation)` 谓词缓存 + 索引重建检测 |
 | `tests/test_stream.py` | X1–X5、X3b 与 W3–W6 |
 | `tests/test_all_regression.py` | `ALLOWED_CHANGES` 增 `trigger.py`、`assemble.py` |
 | `tests/test_env_v2.py` | `stream.py` 新钉值；`M12_EDITS` 增两个 recall 文件；`len(changed)` 8 → 10 |

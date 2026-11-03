@@ -9,11 +9,11 @@ import unittest
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from jian_pcs.judge import ALLOWED_OPERATORS
-from jian_pcs.probes import V2_OPERATORS, load_all_probes
+from aiinvite.pcs.judge import ALLOWED_OPERATORS
+from aiinvite.pcs.probes import V2_OPERATORS, load_all_probes
 
-JUDGE_SOURCE = ROOT / "jian_pcs" / "judge.py"
-PROBES_SOURCE = ROOT / "jian_pcs" / "probes.py"
+JUDGE_SOURCE = ROOT / "aiinvite/pcs" / "judge.py"
+PROBES_SOURCE = ROOT / "aiinvite/pcs" / "probes.py"
 LEGACY_TOKENS = (
     "must_not_apologize",
     "max_agreement_shifts",

@@ -3,7 +3,7 @@
 Sends every probe to the model and writes one reply JSONL line per probe.
 With ``--multi`` each turn is sent through /api/chat and every intermediate
 reply is kept in ``turns_replied`` so the collapse depth ``D`` can be scored.
-Network access lives here and only here; ``jian_pcs`` never imports urllib.
+Network access lives here and only here; ``aiinvite.pcs`` never imports urllib.
 
 Pinned for an 8 GB card: num_ctx=2048, num_predict=200, keep_alive=1h,
 think=false. Sampling is controlled by --temp-milli and --seed.
@@ -25,7 +25,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from jian_pcs.probes import (  # noqa: E402
+from aiinvite.pcs.probes import (  # noqa: E402
     MODE_CONSULT,
     MODE_SUPPORT,
     load_consult_probes,
@@ -206,11 +206,11 @@ def main(argv: list[str] | None = None) -> int:
     if args.probes is not None:
         probe_path = Path(args.probes)
     elif args.multi:
-        probe_path = ROOT / "jian_pcs" / "data" / "probes_hard.jsonl"
+        probe_path = ROOT / "aiinvite/pcs" / "data" / "probes_hard.jsonl"
     elif args.mode == MODE_CONSULT:
-        probe_path = ROOT / "jian_pcs" / "data" / "probes_consult.jsonl"
+        probe_path = ROOT / "aiinvite/pcs" / "data" / "probes_consult.jsonl"
     else:
-        probe_path = ROOT / "jian_pcs" / "data" / "probes.jsonl"
+        probe_path = ROOT / "aiinvite/pcs" / "data" / "probes.jsonl"
     try:
         records, errors = collect(
             probe_path, args.model, args.temp_milli, args.seed, args.multi,

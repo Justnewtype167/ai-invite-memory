@@ -23,13 +23,13 @@ import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
 
-from jian.canonical import dumps
-from jian.capsule import append_event, append_refusal, init_store
-from jian_kernel.compiler import compile_kernel, read_evidence
-from jian_kernel.history import record_kernel, verify_kernel
-from jian_kernel.incremental import compile_kernel_incremental, reconcile
-from jian_kernel.kernel import HISTORY_FILE, KERNEL_DIR, Policy
-from jian_persona.errors import (
+from aiinvite.canonical import dumps
+from aiinvite.capsule import append_event, append_refusal, init_store
+from aiinvite.kernel.compiler import compile_kernel, read_evidence
+from aiinvite.kernel.history import record_kernel, verify_kernel
+from aiinvite.kernel.incremental import compile_kernel_incremental, reconcile
+from aiinvite.kernel.kernel import HISTORY_FILE, KERNEL_DIR, Policy
+from aiinvite.persona.errors import (
     E_PERSONA_TRAIT_CAP,
     E_PERSONA_TRAIT_CONFLICT,
     E_PERSONA_TRAIT_MODE,
@@ -37,7 +37,7 @@ from jian_persona.errors import (
     E_PERSONA_UNAPPROVED,
     PersonaError,
 )
-from jian_persona.traits import load_vocabulary, resolve_traits
+from aiinvite.persona.traits import load_vocabulary, resolve_traits
 
 NOW = "2026-01-05T10:00:00+08:00"
 TRACE = "sha256:" + hashlib.sha256(b"trace").hexdigest()
@@ -105,7 +105,7 @@ def _append_all_persona(store: pathlib.Path) -> None:
 
 class TestPersonaSkip(unittest.TestCase):
     def setUp(self) -> None:
-        self.root = pathlib.Path(tempfile.mkdtemp(prefix="jian_persona_"))
+        self.root = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite.persona_"))
         self.addCleanup(shutil.rmtree, self.root, True)
 
     def _store(self, name: str, seed: bool = True) -> pathlib.Path:
@@ -206,7 +206,7 @@ class TestTraits(unittest.TestCase):
     VOCAB = ("可爱", "毒舌", "闷骚", "温柔", "高冷", "话痨")
 
     def setUp(self) -> None:
-        self.root = pathlib.Path(tempfile.mkdtemp(prefix="jian_traits_"))
+        self.root = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_traits_"))
         self.addCleanup(shutil.rmtree, self.root, True)
 
     def _store(self) -> pathlib.Path:

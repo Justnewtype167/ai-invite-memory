@@ -15,10 +15,10 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 import kn_fixtures
 
-from jian_kernel.compiler import compile_kernel
-from jian_kernel.errors import E_PROPOSER_FAILED, KernelError
-from jian_kernel.kernel import ORIGIN_RULE_FALLBACK, ORIGIN_RULE_ONLY, Policy
-from jian_kernel.proposer import ingest_live
+from aiinvite.kernel.compiler import compile_kernel
+from aiinvite.kernel.errors import E_PROPOSER_FAILED, KernelError
+from aiinvite.kernel.kernel import ORIGIN_RULE_FALLBACK, ORIGIN_RULE_ONLY, Policy
+from aiinvite.kernel.proposer import ingest_live
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 NOW = "2026-10-29T10:00:00+08:00"
@@ -45,7 +45,7 @@ sys.stdout.write(json.dumps({"ok": True, "text": "回答前先停半秒",
 
 class TestLiveFallback(unittest.TestCase):
     def setUp(self) -> None:
-        self.root = pathlib.Path(tempfile.mkdtemp(prefix="jian_fb_"))
+        self.root = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_fb_"))
         self.addCleanup(shutil.rmtree, self.root, True)
         kn_fixtures.write_store(self.root, kn_fixtures.chat_turns(10))
         self.fail_script = self.root / "fail.py"
@@ -117,7 +117,7 @@ class TestLiveFallback(unittest.TestCase):
 
     def _cli(self, extra: list[str]) -> subprocess.CompletedProcess[str]:
         command = [
-            sys.executable, "-m", "jian_kernel.cli", "compile",
+            sys.executable, "-m", "aiinvite.kernel.cli", "compile",
             str(self.root), "--now", NOW, *extra,
         ]
         return subprocess.run(

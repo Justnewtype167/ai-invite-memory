@@ -9,10 +9,10 @@ import tempfile
 import unittest
 import zipfile
 
-from jian.capsule import append_event, init_store, seal_store, verify_path
-from jian_kernel.kernel import Policy
+from aiinvite.capsule import append_event, init_store, seal_store, verify_path
+from aiinvite.kernel.kernel import Policy
 
-from jian_succession import (
+from aiinvite.succession import (
     LegacyInfo,
     Letter,
     SuccessionError,
@@ -23,15 +23,15 @@ from jian_succession import (
     recompute_kid,
     verify_legacy,
 )
-from jian_succession import archive
-from jian_succession.errors import (
+from aiinvite.succession import archive
+from aiinvite.succession.errors import (
     E_SUCC_HEADER,
     E_SUCC_IO,
     E_SUCC_MODE,
     E_SUCC_REDACTION,
     E_SUCC_SCHEMA,
 )
-from jian_succession.model import (
+from aiinvite.succession.model import (
     MODE_INHERIT,
     POLICY_PATH,
     REDACTION_PATH,
@@ -99,7 +99,7 @@ def read_entry(path: pathlib.Path, name: str) -> dict[str, object]:
 class TestSuccession(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.root = pathlib.Path(tempfile.mkdtemp(prefix="jian_m15_"))
+        cls.root = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_m15_"))
         cls.store = build_store(cls.root)
         cls.policy = Policy(now=NOW)
         cls.origin_kid = recompute_kid(cls.store, cls.policy)
@@ -187,7 +187,7 @@ class TestSuccession(unittest.TestCase):
     def test_successor_kid_is_recomputable(self) -> None:
         """Y4b: the successor kid follows from evidence and policy alone."""
         entries = archive.read_zip(self.redacted)
-        with tempfile.TemporaryDirectory(prefix="jian_m15_re_") as folder:
+        with tempfile.TemporaryDirectory(prefix="aiinvite_m15_re_") as folder:
             scratch = pathlib.Path(folder)
             for name, data in entries.items():
                 if archive.entry_kind(name) is None:
@@ -333,7 +333,7 @@ class TestSuccession(unittest.TestCase):
         self.assertEqual(
             set(listed), set(archive.read_zip(self.plain)) - {"manifest.json"}
         )
-        self.assertEqual(manifest["format"], "jian.legacy/1")
+        self.assertEqual(manifest["format"], "aiinvite.legacy/1")
 
     def test_manifest_and_chain_case_is_typed(self) -> None:
         """C11: the declared info type stays what callers receive."""

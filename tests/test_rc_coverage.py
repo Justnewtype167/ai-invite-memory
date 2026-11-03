@@ -12,8 +12,8 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 import rc_fixtures
 
-from jian_recall.index import build_index
-from jian_recall.retrieve import search
+from aiinvite.recall.index import build_index
+from aiinvite.recall.retrieve import search
 
 NOW = "2026-10-29T10:00:00+08:00"
 TOP_K = 5
@@ -22,7 +22,7 @@ TOP_K = 5
 class TestCoverage(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.root = pathlib.Path(tempfile.mkdtemp(prefix="jian_rc_cov_"))
+        cls.root = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_rc_cov_"))
         rc_fixtures.quality_store(cls.root)
         build_index(cls.root)
 
@@ -54,7 +54,7 @@ class TestCoverage(unittest.TestCase):
 
     def test_full_coverage_beats_partial(self) -> None:
         """S4: the text with every query bigram outranks a partial match."""
-        root = pathlib.Path(tempfile.mkdtemp(prefix="jian_rc_cov2_"))
+        root = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_rc_cov2_"))
         self.addCleanup(shutil.rmtree, root, True)
         gold = "我妈下周三做手术"
         rc_fixtures.write_store(root, [

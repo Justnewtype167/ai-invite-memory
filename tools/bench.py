@@ -17,8 +17,8 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from jian.capsule import init_store, seal_store, verify_path
-from jian.event import GENESIS_PREV, new_event
+from aiinvite.capsule import init_store, seal_store, verify_path
+from aiinvite.event import GENESIS_PREV, new_event
 
 EVENTS = 10000
 SEGMENT_SIZE = 100

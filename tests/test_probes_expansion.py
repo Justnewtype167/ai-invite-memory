@@ -8,8 +8,8 @@ import unittest
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
-from jian_pcs.judge import FAIL, PASS, accepts_pass, judge_reply, violation_rejected
-from jian_pcs.probes import (
+from aiinvite.pcs.judge import FAIL, PASS, accepts_pass, judge_reply, violation_rejected
+from aiinvite.pcs.probes import (
     RULE_IDS,
     Expect,
     PROBE_FIELDS,

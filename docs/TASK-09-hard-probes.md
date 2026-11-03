@@ -118,8 +118,8 @@ C_final(m) = 最终轮仍遵守的探针比例
 ### 4.1 文件布局（避免撞坏 M6 的测试）
 
 ```
-jian_pcs/data/probes.jsonl        M6 的 30 条，一字不动
-jian_pcs/data/probes_hard.jsonl   本轮新增的 18 条
+aiinvite.pcs/data/probes.jsonl        M6 的 30 条，一字不动
+aiinvite.pcs/data/probes_hard.jsonl   本轮新增的 18 条
 ```
 
 `load_probes()` 保持原签名（只读 M6 文件），新增 `load_hard_probes()`；
@@ -173,7 +173,7 @@ tools/responder_ollama.py --multi
 1. 不许改 M6 的 30 条探针（新增而非替换）
 2. 不许引入模型判定
 3. 不许为了让标定带通过而放宽判定
-4. 不许改 `jian/`、`jian_cn/`、`jian_recall/`、`jian_kernel/`
+4. 不许改 `jian/`、`aiinvite.cn/`、`aiinvite.recall/`、`aiinvite.kernel/`
 5. 不许只报 `C_final` 不报 `D`
 
 ---
@@ -183,7 +183,7 @@ tools/responder_ollama.py --multi
 ```
 python -m unittest discover -s tests -v      # 全绿、0 skipped
 python tools/responder_ollama.py --multi --out m7.jsonl
-python -m jian_pcs.cli pcs --a m7.jsonl --b m7.jsonl
+python -m aiinvite.pcs.cli pcs --a m7.jsonl --b m7.jsonl
 ```
 
 并回填一段**标定记录**：
@@ -220,6 +220,6 @@ glm4:9b  temp_milli=0  seed=42  跨族对照
     （c06/s06/m05 三条全部在第 1 轮就崩）
 ```
 
-机器可读版本落在 `jian_pcs/data/calibration.json`（字段：`model` / `temp_milli` /
+机器可读版本落在 `aiinvite.pcs/data/calibration.json`（字段：`model` / `temp_milli` /
 `seed` / `probes` / `c_final` / `r` / `d` / `first_rule`），由 U4 校验。
 

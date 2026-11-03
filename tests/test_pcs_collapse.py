@@ -8,8 +8,8 @@ import unittest
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
-from jian_pcs.probes import load_hard_probes
-from jian_pcs.score import Reply, score_collapse
+from aiinvite.pcs.probes import load_hard_probes
+from aiinvite.pcs.score import Reply, score_collapse
 
 
 class TestCollapse(unittest.TestCase):

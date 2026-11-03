@@ -10,9 +10,9 @@
 
 | 文件 | 内容 |
 |---|---|
-| `jian_recall/stream.py` | `StreamSession`、`Chunk`、`StreamStats`、`join_chunks` |
-| `jian_recall/errors.py` | 新增 `E_RC_STREAM`（块边界不连续） |
-| `jian_recall/__init__.py` | 导出 `Chunk` / `StreamSession` / `StreamStats` / `join_chunks` |
+| `aiinvite.recall/stream.py` | `StreamSession`、`Chunk`、`StreamStats`、`join_chunks` |
+| `aiinvite.recall/errors.py` | 新增 `E_RC_STREAM`（块边界不连续） |
+| `aiinvite.recall/__init__.py` | 导出 `Chunk` / `StreamSession` / `StreamStats` / `join_chunks` |
 | `tests/test_stream.py` | W1–W6 共 8 个测试 |
 | `tests/test_all_regression.py` | `ALLOWED_ADDITIONS` 增 `stream.py`；`ALLOWED_CHANGES` 增 `errors.py`、`__init__.py` |
 | `tests/test_env_v2.py` | N5 基线增 `stream.py` 与两个 recall 文件的钉值，`len(changed)` 6 → 8 |
@@ -187,8 +187,8 @@ R8 frozen tests=75 failures=0 errors=0 skipped=0
 ```
 
 - M13 基线 286 → M14 增加 8 个流式测试，共 **294**，0 skipped、0 failures、0 errors。
-- W7：`jian/`、`jian_cn/`、`jian_kernel/`、`jian_pcs/`、`jian_projection/` 零 diff；
-  `jian_recall/` 的三处（新增 `stream.py`、`errors.py` 的 `E_RC_STREAM`、
+- W7：`jian/`、`aiinvite.cn/`、`aiinvite.kernel/`、`aiinvite.pcs/`、`aiinvite.projection/` 零 diff；
+  `aiinvite.recall/` 的三处（新增 `stream.py`、`errors.py` 的 `E_RC_STREAM`、
   `__init__.py` 的导出）在 `tests/test_all_regression.py` 与
   `tests/test_env_v2.py` 的 N5 两处棘轮均已声明并钉值。
 

@@ -12,14 +12,14 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 import rc_fixtures
 
-from jian_recall.index import build_index
-from jian_recall.retrieve import search
+from aiinvite.recall.index import build_index
+from aiinvite.recall.retrieve import search
 
 
 class TestRetrieve(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.root = pathlib.Path(tempfile.mkdtemp(prefix="jian_rc_hits_"))
+        cls.root = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_rc_hits_"))
         labels = rc_fixtures.qa_labels()
         rc_fixtures.write_store(
             cls.root, [(item["ts"], item["gold"]) for item in labels]

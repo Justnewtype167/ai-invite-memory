@@ -13,9 +13,9 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 import kn_fixtures
 
-from jian.errors import E_SCHEMA, JianError
-from jian.event import Event, new_event, parse_event
-from jian_kernel.proposer import record_proposal
+from aiinvite.errors import E_SCHEMA, AiInviteError
+from aiinvite.event import Event, new_event, parse_event
+from aiinvite.kernel.proposer import record_proposal
 
 STAMP = "2026-10-29T02:00:00Z"
 GENESIS = "0" * 64
@@ -37,7 +37,7 @@ def _proposal_event(**overrides: object) -> Event:
 
 class TestProposalFields(unittest.TestCase):
     def setUp(self) -> None:
-        self.root = pathlib.Path(tempfile.mkdtemp(prefix="jian_q1_"))
+        self.root = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_q1_"))
         self.addCleanup(shutil.rmtree, self.root, True)
         kn_fixtures.write_store(self.root, kn_fixtures.chat_turns(10))
 
@@ -80,7 +80,7 @@ class TestProposalFields(unittest.TestCase):
             ("weights not hex", {"weights_sha": "zz"}),
         ]
         for label, overrides in cases:
-            with self.assertRaises(JianError) as caught:
+            with self.assertRaises(AiInviteError) as caught:
                 _proposal_event(**overrides)
             print(f"Q1 {label} -> {caught.exception.code}")
             self.assertEqual(caught.exception.code, E_SCHEMA)
@@ -95,7 +95,7 @@ class TestProposalFields(unittest.TestCase):
         for name, value in (("temp_milli", 2500), ("seed", -3)):
             broken = dict(base)
             broken[name] = value
-            with self.assertRaises(JianError) as caught:
+            with self.assertRaises(AiInviteError) as caught:
                 parse_event(broken)
             print(f"Q1 stored {name}={value} -> {caught.exception.code}")
             self.assertEqual(caught.exception.code, E_SCHEMA)
@@ -107,7 +107,7 @@ class TestProposalFields(unittest.TestCase):
         )
         broken = self._last_line()
         broken["temperature"] = 0.7
-        with self.assertRaises(JianError) as caught:
+        with self.assertRaises(AiInviteError) as caught:
             parse_event(broken)
         print(f"Q1 temperature field -> {caught.exception.code}")
         self.assertEqual(caught.exception.code, E_SCHEMA)

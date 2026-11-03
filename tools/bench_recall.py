@@ -31,9 +31,9 @@ for path in (ROOT, ROOT / "tests"):
 
 import rc_fixtures
 
-from jian_recall.assemble import assemble
-from jian_recall.errors import RecallError
-from jian_recall.index import build_index, index_status
+from aiinvite.recall.assemble import assemble
+from aiinvite.recall.errors import RecallError
+from aiinvite.recall.index import build_index, index_status
 
 NOW = "2026-10-29T10:00:00+08:00"
 TARGET_MS = 80.0
@@ -84,7 +84,7 @@ def main(argv: list[str] | None = None) -> int:
 
     temporary = args.store is None
     if temporary:
-        store = Path(tempfile.mkdtemp(prefix="jian_bench_"))
+        store = Path(tempfile.mkdtemp(prefix="aiinvite_bench_"))
         rc_fixtures.write_bulk_store(store, args.scale)
     else:
         store = Path(args.store)

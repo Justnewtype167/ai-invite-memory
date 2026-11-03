@@ -24,16 +24,16 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tools"))
 
-from jian.canonical import dumps  # noqa: E402
-from jian.capsule import append_payload_event, init_store  # noqa: E402
-from jian_pcs.probes import load_all_probes, load_rules_v2  # noqa: E402
-from jian_pcs.score import Reply, compute_pcs  # noqa: E402
-from jian_persona.style_card import echo_guard, parse_style_card, record_style_card  # noqa: E402
-from jian_persona.view import build_persona_view  # noqa: E402
-from jian_recall.tokenizer import estimate_tokens  # noqa: E402
+from aiinvite.canonical import dumps  # noqa: E402
+from aiinvite.capsule import append_payload_event, init_store  # noqa: E402
+from aiinvite.pcs.probes import load_all_probes, load_rules_v2  # noqa: E402
+from aiinvite.pcs.score import Reply, compute_pcs  # noqa: E402
+from aiinvite.persona.style_card import echo_guard, parse_style_card, record_style_card  # noqa: E402
+from aiinvite.persona.view import build_persona_view  # noqa: E402
+from aiinvite.recall.tokenizer import estimate_tokens  # noqa: E402
 from responder_ollama import build_system, call_ollama  # noqa: E402
 
-FACTS_PATH = ROOT / "jian_persona" / "data" / "facts.jsonl"
+FACTS_PATH = ROOT / "aiinvite/persona" / "data" / "facts.jsonl"
 GROUPS = ("A", "B", "C", "D")
 DEFAULT_MODELS = ("qwen3.5:9b", "glm4:9b")
 TEMP_MILLI = 0
@@ -181,7 +181,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.limit < 1:
         parser.error("--limit must be positive")
 
-    root = pathlib.Path(tempfile.mkdtemp(prefix="jian_style_exp_"))
+    root = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_style_exp_"))
     try:
         if args.store is None:
             store = build_demo_store(root)

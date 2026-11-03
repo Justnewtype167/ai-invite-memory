@@ -6,10 +6,10 @@ import json
 import pathlib
 import unittest
 
-from jian_cn.errors import CnError, E_CN_BAD_ANCHOR, E_CN_PARSE
-from jian_cn.timex import parse_time
+from aiinvite.cn.errors import CnError, E_CN_BAD_ANCHOR, E_CN_PARSE
+from aiinvite.cn.timex import parse_time
 
-DATA = pathlib.Path(__file__).resolve().parents[1] / "jian_cn" / "data"
+DATA = pathlib.Path(__file__).resolve().parents[1] / "aiinvite/cn" / "data"
 ANCHOR = "2026-10-29T10:00:00+08:00"
 
 # Spec 4.6 holdout: given by the spec owner, never stored in any data file.

@@ -3,8 +3,8 @@
 > 结论：**增量与全量逐字节相同；快照删掉后退化为全量、kid 不变；篡改与漂移都会被拒。**
 > 全量 `270` 个测试全绿、`0 skipped`；`compile_kernel` 一行未改。
 
-本轮新增 `jian_kernel/snapshot.py`（快照结构与自证摘要）与
-`jian_kernel/incremental.py`（续算与对账）。`jian_kernel/` 的三处既有改动
+本轮新增 `aiinvite.kernel/snapshot.py`（快照结构与自证摘要）与
+`aiinvite.kernel/incremental.py`（续算与对账）。`aiinvite.kernel/` 的三处既有改动
 （`errors.py`、`__init__.py`、`cli.py`）已在
 `tests/test_all_regression.py` 的 `ALLOWED_CHANGES` 与
 `tests/test_env_v2.py` 的 `M12_EDITS` 中声明。
@@ -19,7 +19,7 @@
 | R4 | `test_snapshot_tamper` | 改 `kid` / 改 `digest` / 删字段 → `E_KN_SNAPSHOT`；`head` 指向不存在事件 → `E_KN_STALE` |
 | R5 | `test_work_is_delta_sized` | 事件计数而非墙钟：`full=20`，之后每次增量 `delta=1,1,1,1`，无新增时 `idle=0` |
 | R6 | `test_reconcile_detects_drift` | 人为写入全零 `kid`：`reconcile` 与 CLI 均报 `E_KN_DRIFT`，退出码非零 |
-| R7 | `test_all_regression` | `178` 个冻结测试全绿；`jian/`、`jian_cn/`、`jian_recall/`、`jian_pcs/`、`jian_projection/` 零 diff；`jian_kernel/` 改动已声明 |
+| R7 | `test_all_regression` | `178` 个冻结测试全绿；`jian/`、`aiinvite.cn/`、`aiinvite.recall/`、`aiinvite.pcs/`、`aiinvite.projection/` 零 diff；`aiinvite.kernel/` 改动已声明 |
 
 R5 的关键断言是「处理了几条」，不是「快了多少」：增量路径的计数器等于
 `id > head` 的事件条数，与机器负载无关（C14）。

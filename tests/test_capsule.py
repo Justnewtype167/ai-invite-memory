@@ -10,7 +10,7 @@ import unittest
 import zipfile
 from pathlib import Path
 
-from jian.capsule import (
+from aiinvite.capsule import (
     append_event,
     export_capsule,
     import_capsule,
@@ -19,17 +19,17 @@ from jian.capsule import (
     seal_store,
     verify_path,
 )
-from jian.cli import main
-from jian.errors import (
+from aiinvite.cli import main
+from aiinvite.errors import (
     E_CHAIN_MISSING,
     E_HEADER_MISMATCH,
     E_IO,
     E_NOT_CANONICAL,
     E_SCHEMA,
     E_TAMPER,
-    JianError,
+    AiInviteError,
 )
-from jian.event import GENESIS_PREV, new_event
+from aiinvite.event import GENESIS_PREV, new_event
 
 
 def _stamp(index: int) -> str:
@@ -72,7 +72,7 @@ class TamperTest(unittest.TestCase):
             marker = b'"text":"msg-0005"'
             self.assertEqual(original.count(marker), 1)
             path.write_bytes(original.replace(marker, b'"text":"msg-0006"'))
-            with self.assertRaises(JianError) as context:
+            with self.assertRaises(AiInviteError) as context:
                 verify_path(store)
             self.assertEqual(context.exception.code, E_TAMPER)
             self.assertEqual(context.exception.event_id, "ev_000005")
@@ -87,7 +87,7 @@ class TamperTest(unittest.TestCase):
             original = path.read_bytes()
             self.assertEqual(original.count(b'"text":"a/b"'), 1)
             path.write_bytes(original.replace(b'"text":"a/b"', b'"text":"a\\/b"'))
-            with self.assertRaises(JianError) as context:
+            with self.assertRaises(AiInviteError) as context:
                 verify_path(store)
             self.assertEqual(context.exception.code, E_NOT_CANONICAL)
 
@@ -100,7 +100,7 @@ class TamperTest(unittest.TestCase):
             marker = b',"type":"turn","v":1}\n'
             self.assertEqual(original.count(marker), 5)
             path.write_bytes(original.replace(marker, b',"type":"turn","v":1}\r\n', 1))
-            with self.assertRaises(JianError) as context:
+            with self.assertRaises(AiInviteError) as context:
                 verify_path(store)
             self.assertEqual(context.exception.code, E_NOT_CANONICAL)
 
@@ -113,7 +113,7 @@ class MissingSegmentTest(unittest.TestCase):
             store = Path(tmp) / "mem"
             _make_store(store, 250)
             (store / "evidence" / "seg-0002.jsonl").unlink()
-            with self.assertRaises(JianError) as context:
+            with self.assertRaises(AiInviteError) as context:
                 verify_path(store)
             self.assertEqual(context.exception.code, E_CHAIN_MISSING)
 
@@ -140,7 +140,7 @@ class ZipDeterminismTest(unittest.TestCase):
 
             unsealed = Path(tmp) / "unsealed"
             _make_store(unsealed, 3, sealed=False)
-            with self.assertRaises(JianError) as context:
+            with self.assertRaises(AiInviteError) as context:
                 export_capsule(unsealed, Path(tmp) / "c.aiem")
             self.assertEqual(context.exception.code, E_SCHEMA)
 
@@ -220,7 +220,7 @@ class VerifyModesTest(unittest.TestCase):
                 no_manifest,
                 lambda entries: {k: v for k, v in entries.items() if k != "manifest.json"},
             )
-            with self.assertRaises(JianError) as context:
+            with self.assertRaises(AiInviteError) as context:
                 verify_path(no_manifest)
             self.assertEqual(context.exception.code, E_HEADER_MISMATCH)
 
@@ -233,14 +233,14 @@ class VerifyModesTest(unittest.TestCase):
                 return entries
 
             _rewrite_zip(capsule, bad_header, _tamper)
-            with self.assertRaises(JianError) as context:
+            with self.assertRaises(AiInviteError) as context:
                 verify_path(bad_header)
             self.assertEqual(context.exception.code, E_HEADER_MISMATCH)
 
             broken = Path(tmp) / "broken"
             _make_store(broken, 4)
             (broken / "chain.json").unlink()
-            with self.assertRaises(JianError) as context:
+            with self.assertRaises(AiInviteError) as context:
                 verify_path(broken)
             self.assertEqual(context.exception.code, E_HEADER_MISMATCH)
             failed = self._run(["verify", str(broken)])
@@ -275,7 +275,7 @@ class CapsuleUnitsTest(unittest.TestCase):
             capsule = Path(tmp) / "mem.aiem"
             export_capsule(store, capsule)
             info = inspect_capsule(capsule)
-            self.assertEqual(info.schema, "jian.capsule/1")
+            self.assertEqual(info.schema, "aiinvite/capsule/1")
             self.assertEqual(info.version, 1)
             self.assertEqual(info.events, 25)
             self.assertEqual(info.segments, 1)
@@ -290,7 +290,7 @@ class CapsuleUnitsTest(unittest.TestCase):
             target = Path(tmp) / "target"
             target.mkdir()
             (target / "note.txt").write_text("x", encoding="utf-8")
-            with self.assertRaises(JianError) as context:
+            with self.assertRaises(AiInviteError) as context:
                 import_capsule(capsule, target)
             self.assertEqual(context.exception.code, E_IO)
 

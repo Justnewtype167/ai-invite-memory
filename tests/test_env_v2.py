@@ -11,7 +11,7 @@ import shutil
 import tempfile
 import unittest
 
-from jian.capsule import (
+from aiinvite.capsule import (
     BLOBS_DIR,
     append_event,
     append_payload_event,
@@ -24,59 +24,48 @@ from jian.capsule import (
     seal_store,
     verify_path,
 )
-from jian.errors import E_BLOB_MISMATCH, E_BLOB_MISSING, E_SCHEMA, JianError
-from jian.event import event_text, parse_event
+from aiinvite.errors import E_BLOB_MISMATCH, E_BLOB_MISSING, E_SCHEMA, AiInviteError
+from aiinvite.event import event_text, parse_event
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 STAMP = "2026-11-01T10:00:00Z"
 MODALITIES = ("text", "audio", "vision", "action", "sensor")
 BASELINE = {
-    "jian_cn/__init__.py": "4da6b5679be5c8112b1a8aff17dbcc860cee86473333a761aab1614e28795c77",
-    "jian_cn/cli.py": "1752a9843e20f1cea94aa4f968abe37b3124ce857afea649c543ddc7385db7fb",
-    "jian_cn/errors.py": "dd420a844a9d83c4938e212607822e5c8e7dd408c9eaf361759f11b8c130a6a4",
-    "jian_cn/kinship.py": "77b623ee3bcfa15f87ac44e32925f071b3575eccdc4fb1f6c5585f8da31e5dcb",
-    "jian_cn/normalize.py": "eb324c8ee8e47a3c78bbcdd5e48b746987b03a2f8b0f45fb82c2905d1d120525",
-    "jian_cn/slang.py": "42df9313d2b66162ee8f24307d129b34c38d0b2be89e591192a79946be382b42",
-    "jian_cn/timex.py": "f9602049ef99c4b155ba8c726b51e952a53797fbc99abb8a209a4c4f89d7574d",
-    "jian_recall/__init__.py": "f2e8f89eee35011563c2111656ea0a3abf76740da5fc57f276967d4b4413e4cf",
-    "jian_recall/assemble.py": "ccb5ad2eddfe50151439c1ef4df83f1e477dff7f7f630bda6dc95e10455f8570",
-    "jian_recall/cli.py": "33ecd64bdc8c9f42547c82cdd688fedfe44c5a04ab32c5d6541334c9b5a180ac",
-    "jian_recall/errors.py": "37000fa2d668cc8ea8ce314f12f7331f945be6f79854a84f7001d23bdbffad4f",
-    "jian_recall/index.py": "a532fa489a87a259c32d4335f061e9657429961fbf45c967a6847106d93ad329",
-    "jian_recall/retrieve.py": "f551191730355077f40fc7cd80cba89b6190cb3975dc3e2a1a38c1799566082b",
-    "jian_recall/tokenizer.py": "c815698f2e448734111fbbda6ce6613fcf68f162276dde91a30dfdc9e30ccfe4",
-    "jian_recall/trigger.py": "4f198c620461a3ab204eb9b21a2f9438a2d0ff75af1bfb6b78fc8945c81fca92",
-    "jian_kernel/__init__.py": "0e6abd2f4d27d87a94453ee36aab70ac093d1b002ed9f453365146146f258f80",
-    "jian_kernel/cli.py": "9c45b7aa55f42e4af4350ab9bcbcbbe5ce07513f8be78d3f0b6db54ceec63902",
-    "jian_kernel/compiler.py": "a4be2a88409429589dd4084b1b60a316fb51a1550aeeb47b3c6ed9d8f43c2e46",
-    "jian_kernel/errors.py": "9a33269b938c633672b2e22f22df1023c4eaed5e378559d04d4a4575cd581ca5",
-    "jian_kernel/gate.py": "960fb8b655a16515c43c478f5ee8bac5762a1f8a059588670a75e806c26a872a",
-    "jian_kernel/history.py": "d08c85ded030a0a4c5c301b25d96ed24df8011a3140782f932789443c34c3ace",
-    "jian_kernel/kernel.py": "faac0333bdd0892edecae94b550a7b49da6e478898ccceeb62410ada5ba4749c",
-    "jian_kernel/proposer.py": "8c7ffaba5432c08b326d8bfb8894405bd3eb85ef3bddd65b55f7d2b037e4d508",
-    "jian_pcs/__init__.py": "250a01df396288b8752489db1dd0ec7c90a493a9c9a7c171f82612f6aefab6f9",
-    "jian_pcs/cli.py": "9f2f4d9ad39875d90365c3616f5d512013a4eb0f54ab0010943436141fe68c99",
-    "jian_pcs/errors.py": "6efdc1fca8edad3078bfbd5fbaaf5277ad8d077434bf9ccc7741d92ee5ac0928",
-    "jian_pcs/judge.py": "45b1cfb63c21d5b867e4638c2d6e6674e3eefb13f7445a45a0d72d127816a412",
-    "jian_pcs/probes.py": "4de3b690641c236cc94ce37507e310b421731d5df2941eef3add13c7f1de047e",
-    "jian_pcs/report.py": "26633cb51d822e729158da133b68ac336b934232b4a12b30135913b373700bdc",
-    "jian_pcs/score.py": "28fe4f226ce8e7d052d80ee8409763c062f114ed7921adad964a8b1a7b08d88b",
+    "aiinvite/cn/__init__.py": "fac7793cd32e5fdbbadaad311de0c9fddf55754bcbcd68a45883c17f3df229df",
+    "aiinvite/cn/cli.py": "899c424af5122e91026af1ea2e64ffe1e1b584bbf5e78c800d54f683df4fe642",
+    "aiinvite/cn/errors.py": "dd420a844a9d83c4938e212607822e5c8e7dd408c9eaf361759f11b8c130a6a4",
+    "aiinvite/cn/kinship.py": "08a84b598fe54c80bb82382b0dcc1ec4db5cf3e013a0c844089f3d789b39f2fa",
+    "aiinvite/cn/normalize.py": "074bf3e86485825154c0adac95a53e7e47c1955939723ce5aa8752bb8c110f7f",
+    "aiinvite/cn/slang.py": "141107855ecf33339dcd5ba00d38ac5ed3e8a76483738a75958671b747b7418c",
+    "aiinvite/cn/timex.py": "4ffcd7a8590957685cb736bf6c759552d93dfcdb4fa65d8d6bcc213301627742",
+    "aiinvite/kernel/__init__.py": "ead1a2cfd56a9f6eedd245b78501d1f288f69129c8c974bf77cdaedd6446ef08",
+    "aiinvite/kernel/cli.py": "03467453b9d7109fe1c6b5aaef9293a434dd10fd4b1aa4037e47ed7e39654fcc",
+    "aiinvite/kernel/compiler.py": "10dc8072e2b710c94eeaa6d7d1de2fa12e663d766c27bf03066e41248fe7c03c",
+    "aiinvite/kernel/errors.py": "de6ffacb29752d23d4eae28931f80ca8fd1eacde11dc47ddef3f1a6ee0f4274c",
+    "aiinvite/kernel/gate.py": "99dbda8d4119705140046b2563cee113ceb0b1c466db6ed2ff338bd6bec1b2a7",
+    "aiinvite/kernel/history.py": "f44cbd54f1926d1229f1da9a0fd005049be45c12489c47ecc804311481d0faa8",
+    "aiinvite/kernel/incremental.py": "82983f66cec62d82f039e8d24b8afe526f46f7dec50ddea4ec7e4f29fec513d2",
+    "aiinvite/kernel/kernel.py": "4d8694a86c70dfc35a9a379b117358e7456152727de106e0d01269fc6b20c393",
+    "aiinvite/kernel/proposer.py": "998f7c4015d6fe2a8a987a80d93f214ab20e0ecf53d25efc138509065e9247ff",
+    "aiinvite/kernel/snapshot.py": "4006adda2873324897dfda85958abd3edfe613562f82f71f9a23ffb6e3e87d8a",
+    "aiinvite/pcs/__init__.py": "a1ca0aaf61d5f3c252490f410c4f0a1ed86ecf3e2c88c161355ae3612f88a008",
+    "aiinvite/pcs/cli.py": "8c804bdabaed68db1d624308cf21dd3f10fdd9e02ff2e35d0e2f6948569301b2",
+    "aiinvite/pcs/errors.py": "6efdc1fca8edad3078bfbd5fbaaf5277ad8d077434bf9ccc7741d92ee5ac0928",
+    "aiinvite/pcs/judge.py": "4be709cd849de52f5dfded20842d44fd652d9c88f1470fd8a26ddd39a3c30183",
+    "aiinvite/pcs/probes.py": "f17cfc27e9d2817ee92172120945a940fc215905da751c60df274ae9da6548dc",
+    "aiinvite/pcs/report.py": "db2e6795b886759b935578b72273d22aeb9ec3687b5e4125923f2c693ea05493",
+    "aiinvite/pcs/score.py": "047019d3030f34025b5a089fa9f9669b49469e13394db886e62527c215ac82be",
+    "aiinvite/recall/__init__.py": "09b76826eea26433cc2084f862a381e25f01522858205379d5bcba79d82775b3",
+    "aiinvite/recall/assemble.py": "afca1b8e986939c927ebd08fb5881732bc6ed4a123d81f39c16d20973889f52d",
+    "aiinvite/recall/cli.py": "2d391e5aaaeab5b695385f13f25272ae605c9b1931619f1997544d34a8b4267f",
+    "aiinvite/recall/errors.py": "a70c36dd64a63d9309f28689e9ff2779b598ec207e00f32bd16d481eeed7517f",
+    "aiinvite/recall/index.py": "dbd1959ec30a93a0d6b6cfb7a5597891364e896a277d0133534ca62e7b05f2f2",
+    "aiinvite/recall/retrieve.py": "19c820ed9faa082a4ea6a148326b03c8c92d858f17bfc1ef9cf2e503dab6b345",
+    "aiinvite/recall/stream.py": "287f9ba247944155afe47ca60709d3f791eebed1bf92db41e535cfec19141366",
+    "aiinvite/recall/tokenizer.py": "c815698f2e448734111fbbda6ce6613fcf68f162276dde91a30dfdc9e30ccfe4",
+    "aiinvite/recall/trigger.py": "49e704e2a37e5e81e29bfcbf9d57ffa8d6c8b0bfd8cc6a3d3b727a707eae2542",
 }
-EDITS = {
-    "jian_recall/index.py": {
-        "added": ["from jian.event import event_text\n"],
-        "replaced": [
-            ('    text = event_text(data)\n', '    text = data.get("text")\n'),
-        ],
-    },
-
-    "jian_kernel/proposer.py": {
-        "added": ["    event_text,\n"],
-        "replaced": [
-            ('    text = event_text(data)\n', '    text = data.get("text")\n'),
-        ],
-    },
-}
+EDITS = {}
 
 # M12 adds two kernel modules and touches kernel files for the snapshot API;
 # M12.1 adds verify-on-CLI; M14 adds the recall stream session. Their current
@@ -85,54 +74,8 @@ EDITS = {
 # compiler.py moved here from EDITS: it now carries two milestones of edits
 # (M10 full-text reads, M12.1 verify_evidence), so the line-level restore
 # check no longer reproduces the M10 baseline.
-M12_ADDITIONS = {
-    "jian_kernel/incremental.py": (
-        "ac8061b37e98ee9509b600713707f90d9498f121d22054daa31a7f934ff9525c"
-    ),
-    "jian_kernel/snapshot.py": (
-        "71489979a001867a03ccdce5ea71250ff9025a5f7fcca9b7527a956511fe2d40"
-    ),
-    "jian_recall/stream.py": (
-        "2bb52d5b82e8535ffda2877615a508273934b6e0f4b2b523fa80abdf7395ff57"
-    ),
-}
-M12_EDITS = {
-    "jian_kernel/__init__.py": (
-        "e6b96cf565c8efafa86fc5812a7a3dc05c3eb31608219607de8eb8cc7005c4a5"
-    ),
-    # M12.1: --no-verify flag, verify_evidence, E_KN_TAMPER
-    "jian_kernel/cli.py": (
-        "7e9c3091597e20287060416e498b969456c2742c2726fc2ff34d4390d101fc5f"
-    ),
-    # M16: refusal event type and the persona skip list
-    "jian_kernel/compiler.py": (
-        "33883fb06716680551c3a285f93b52872817321ded30f963ca410869c36c87ea"
-    ),
-    "jian_kernel/errors.py": (
-        "de6ffacb29752d23d4eae28931f80ca8fd1eacde11dc47ddef3f1a6ee0f4274c"
-    ),
-    # M16: persona targets join the proposal whitelist and kernel constants
-    "jian_kernel/gate.py": (
-        "4614f640dc02b4f0ac95a5c30ffff1a873ef711a04236a22139e84ea62000c03"
-    ),
-    "jian_kernel/kernel.py": (
-        "8c4bf6aa9799680101e12772f6059690b00c6ff232036df7acbd78469f8d416a"
-    ),
-    # M14: E_RC_STREAM and the stream session exports
-    "jian_recall/errors.py": (
-        "a70c36dd64a63d9309f28689e9ff2779b598ec207e00f32bd16d481eeed7517f"
-    ),
-    "jian_recall/__init__.py": (
-        "a7770481301b7d1d8057dde2018d1aa830a77966c748e8690a8f644655adcc90"
-    ),
-    # M14.1: trigger parts and the shared assemble step
-    "jian_recall/trigger.py": (
-        "dad98180de461f3b6b6a3a63519b706ee1569e016ca9e86ad5c2649fd9e2db7b"
-    ),
-    "jian_recall/assemble.py": (
-        "4dc73ccb9fcd536827d8cfb075e75524ea9d6392a81a923028dfcb60bbcfeb72"
-    ),
-}
+M12_ADDITIONS = {}
+M12_EDITS = {}
 
 
 def _load(name: str):
@@ -158,7 +101,7 @@ class TestEnvV2(unittest.TestCase):
     """N1: five modalities write, seal and verify; bad envelopes fail."""
 
     def setUp(self) -> None:
-        self.root = pathlib.Path(tempfile.mkdtemp(prefix="jian_env_v2_"))
+        self.root = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_env_v2_"))
         self.addCleanup(shutil.rmtree, self.root, True)
         self.store = self.root / "mem"
         init_store(self.store)
@@ -210,10 +153,10 @@ class TestEnvV2(unittest.TestCase):
             with self.subTest(change=change):
                 data = json.loads(json.dumps(good))
                 change(data)
-                with self.assertRaises(JianError) as context:
+                with self.assertRaises(AiInviteError) as context:
                     parse_event(data)
                 self.assertEqual(context.exception.code, E_SCHEMA)
-        with self.assertRaises(JianError) as context:
+        with self.assertRaises(AiInviteError) as context:
             append_payload_event(
                 self.store, "video", "摘要", b"x", role="user", t=STAMP
             )
@@ -243,11 +186,11 @@ class TestEnvV2(unittest.TestCase):
         self.assertEqual(event_full_text(self.store, rows[1]), "一段语音")
         self.assertEqual(event_full_text(self.store, {"v": 1, "text": "旧"}), "旧")
         missing = dict(rows[0], payload="sha256:" + "0" * 64)
-        with self.assertRaises(JianError) as context:
+        with self.assertRaises(AiInviteError) as context:
             event_full_text(self.store, missing)
         self.assertEqual(context.exception.code, E_BLOB_MISSING)
 
-        from jian_kernel.compiler import read_evidence
+        from aiinvite.kernel.compiler import read_evidence
 
         events = read_evidence(self.store)
         self.assertEqual(events[0].text, full)
@@ -258,7 +201,7 @@ class TestBlobStore(unittest.TestCase):
     """N2: content addressed writes, dedupe, tamper and deletion detection."""
 
     def setUp(self) -> None:
-        self.root = pathlib.Path(tempfile.mkdtemp(prefix="jian_blob_"))
+        self.root = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_blob_"))
         self.addCleanup(shutil.rmtree, self.root, True)
         self.store = self.root / "mem"
         init_store(self.store)
@@ -278,12 +221,12 @@ class TestBlobStore(unittest.TestCase):
         digest = hashlib.sha256(b"voice").hexdigest()
         path = self.store / BLOBS_DIR / digest
         path.write_bytes(b"tampered")
-        with self.assertRaises(JianError) as context:
+        with self.assertRaises(AiInviteError) as context:
             verify_path(self.store)
         self.assertEqual(context.exception.code, E_BLOB_MISMATCH)
         path.write_bytes(b"voice")
         path.unlink()
-        with self.assertRaises(JianError) as context:
+        with self.assertRaises(AiInviteError) as context:
             verify_path(self.store)
         self.assertEqual(context.exception.code, E_BLOB_MISSING)
 
@@ -293,7 +236,7 @@ class TestEnvRoundtrip(unittest.TestCase):
 
     def test_env_roundtrip(self) -> None:
         """N3: blobs travel inside the capsule and survive a round trip."""
-        root = pathlib.Path(tempfile.mkdtemp(prefix="jian_env_trip_"))
+        root = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_env_trip_"))
         self.addCleanup(shutil.rmtree, root, True)
         store = root / "mem"
         init_store(store)
@@ -318,7 +261,7 @@ class TestEnvV1Compat(unittest.TestCase):
 
     def test_env_v1_compat(self) -> None:
         """N4: v1 verify/export/import and seal keep working."""
-        root = pathlib.Path(tempfile.mkdtemp(prefix="jian_env_v1_"))
+        root = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_env_v1_"))
         self.addCleanup(shutil.rmtree, root, True)
         store = root / "mem"
         init_store(store)
@@ -365,7 +308,7 @@ class TestUpperLayersTouchLimit(unittest.TestCase):
         """N5: only declared files differ; restoring the M10 lines rebuilds baseline."""
         found = {
             path.relative_to(ROOT).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
-            for package in ("jian_cn", "jian_recall", "jian_kernel", "jian_pcs")
+            for package in ("aiinvite/cn", "aiinvite/recall", "aiinvite/kernel", "aiinvite/pcs")
             for path in sorted((ROOT / package).rglob("*.py"))
         }
         self.assertEqual(sorted(found), sorted(list(BASELINE) + list(M12_ADDITIONS)))
@@ -390,20 +333,17 @@ class TestUpperLayersTouchLimit(unittest.TestCase):
                 BASELINE[name],
                 f"undeclared change in {name}",
             )
-        for package in ("jian_cn", "jian_pcs"):
+        for package in ("aiinvite/cn", "aiinvite/pcs"):
             self.assertFalse(
                 [name for name in changed if name.startswith(package + "/")],
                 f"{package} must stay byte-identical",
             )
-        # M10 touched three files with one functional line each; M12.1 added
-        # the verify gate, which moved compiler.py to the whole-file pin above;
-        # M14 touched two recall files for the stream session; M14.1 touched
-        # trigger.py and assemble.py so the session can cache sub-queries;
-        # M16 touched compiler.py, gate.py and kernel.py for the persona skip.
-        self.assertEqual(len(changed), 12)
+        # M18 re-baselined this ledger: the rename moved every file, so the
+        # historical per-line edit records were folded into the baseline. The
+        # invariant that matters is unchanged: any future byte change fails.
+        self.assertEqual(changed, [], "no file may drift from the M18 baseline")
         replaced = sum(len(entry["replaced"]) for entry in EDITS.values())
-        self.assertEqual(replaced, 2, "two remaining M10 line-level edits")
-        self.assertIn("jian_kernel/compiler.py", M12_EDITS, "compiler.py must stay pinned")
+        self.assertEqual(replaced, 0, "the line-level ledger was folded into the baseline")
 
 
 class TestSummaryOnlyRetrieval(unittest.TestCase):
@@ -411,10 +351,10 @@ class TestSummaryOnlyRetrieval(unittest.TestCase):
 
     def test_summary_only_retrieval(self) -> None:
         """N6: swapping payload bytes for equal-length random bytes changes nothing."""
-        from jian_recall.index import build_index
-        from jian_recall.retrieve import search
+        from aiinvite.recall.index import build_index
+        from aiinvite.recall.retrieve import search
 
-        root = pathlib.Path(tempfile.mkdtemp(prefix="jian_env_retrieval_"))
+        root = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_env_retrieval_"))
         self.addCleanup(shutil.rmtree, root, True)
         store = root / "mem"
         init_store(store)

@@ -7,11 +7,11 @@ import shutil
 import tempfile
 import unittest
 
-from jian.capsule import init_store, append_event, seal_store
-from jian.errors import E_TAMPER, JianError
-from jian_kernel.compiler import compile_kernel
-from jian_kernel.errors import E_KN_TAMPER, KernelError
-from jian_kernel.kernel import Policy
+from aiinvite.capsule import init_store, append_event, seal_store
+from aiinvite.errors import E_TAMPER, AiInviteError
+from aiinvite.kernel.compiler import compile_kernel
+from aiinvite.kernel.errors import E_KN_TAMPER, KernelError
+from aiinvite.kernel.kernel import Policy
 
 POLICY = Policy(now="2026-10-29T10:00:00+08:00")
 STAMP = "2026-10-29T09:00:00+08:00"
@@ -21,7 +21,7 @@ class TestCompileVerifies(unittest.TestCase):
     """A tampered store must not compile into a persona."""
 
     def setUp(self) -> None:
-        self.root = pathlib.Path(tempfile.mkdtemp(prefix="jian_verify_"))
+        self.root = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_verify_"))
         self.addCleanup(shutil.rmtree, self.root, True)
         self.store = self.root / "mem"
         init_store(self.store)
@@ -60,7 +60,7 @@ class TestCompileVerifies(unittest.TestCase):
         self._tamper()
         with self.assertRaises(KernelError) as context:
             compile_kernel(self.store, POLICY, verify=True)
-        self.assertIsInstance(context.exception.__cause__, JianError)
+        self.assertIsInstance(context.exception.__cause__, AiInviteError)
 
 
 if __name__ == "__main__":

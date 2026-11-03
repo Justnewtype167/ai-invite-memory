@@ -73,8 +73,8 @@ reconcile(store, policy)                         # 全量重算并与快照比�
 **CLI**：
 
 ```
-jian-kernel compile --incremental       # 增量（无快照自动全量）
-jian-kernel reconcile                   # 对账，不一致退出码非零
+aiinvite kernel compile --incremental       # 增量（无快照自动全量）
+aiinvite kernel reconcile                   # 对账，不一致退出码非零
 ```
 
 ---
@@ -100,7 +100,7 @@ jian-kernel reconcile                   # 对账，不一致退出码非零
 | R4 | `test_snapshot_tamper` | 改快照任一字段 / 改 `digest` → `E_KN_SNAPSHOT`；`head` 指向不存在事件 → `E_KN_STALE` |
 | R5 | `test_work_is_delta_sized` | **工作量按事件条数计，不按秒计**：增量处理的事件数 == 新增事件数（用计数器断言，不用墙钟） |
 | R6 | `test_reconcile_detects_drift` | 人为写入错误 kid 的快照 → `reconcile` 报 `E_KN_DRIFT`，退出码非零 |
-| R7 | `test_all_regression` | 现有 **264 个测试全绿**；`jian/`、`jian_cn/`、`jian_recall/`、`jian_pcs/`、`jian_projection/` 零 diff；`jian_kernel/` 改动必须在 `ALLOWED_CHANGES` 声明 |
+| R7 | `test_all_regression` | 现有 **264 个测试全绿**；`jian/`、`aiinvite.cn/`、`aiinvite.recall/`、`aiinvite.pcs/`、`aiinvite.projection/` 零 diff；`aiinvite.kernel/` 改动必须在 `ALLOWED_CHANGES` 声明 |
 
 **R5 是这一轮的方法论要求**：不要用「快了 N 倍」证明增量，用「处理了 N 条」证明。
 墙钟受机器负载影响（C14 的教训），事件计数是确定的。

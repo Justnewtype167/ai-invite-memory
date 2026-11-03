@@ -8,7 +8,7 @@ import shutil
 import tempfile
 import unittest
 
-from jian.capsule import (
+from aiinvite.capsule import (
     append_event,
     export_capsule,
     import_capsule,
@@ -16,15 +16,15 @@ from jian.capsule import (
     seal_store,
     verify_path,
 )
-from jian.errors import E_SCHEMA, JianError
-from jian.event import parse_event
+from aiinvite.errors import E_SCHEMA, AiInviteError
+from aiinvite.event import parse_event
 
 STAMP = "2026-10-28T09:00:00Z"
 
 
 class TestEventTypes(unittest.TestCase):
     def setUp(self) -> None:
-        self.root = pathlib.Path(tempfile.mkdtemp(prefix="jian_ev_"))
+        self.root = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_ev_"))
         self.addCleanup(shutil.rmtree, self.root, True)
         self.store = self.root / "mem"
         init_store(self.store)
@@ -81,7 +81,7 @@ class TestEventTypes(unittest.TestCase):
     def _broken(self, event, change) -> None:
         data = json.loads(event.to_line())
         change(data)
-        with self.assertRaises(JianError) as context:
+        with self.assertRaises(AiInviteError) as context:
             parse_event(data)
         self.assertEqual(context.exception.code, E_SCHEMA)
 
@@ -115,7 +115,7 @@ class TestEventTypes(unittest.TestCase):
         )
         for extra in cases:
             with self.subTest(extra=extra):
-                with self.assertRaises(JianError) as context:
+                with self.assertRaises(AiInviteError) as context:
                     append_event(self.store, text="x", t=STAMP, **extra)
                 self.assertEqual(context.exception.code, E_SCHEMA)
 

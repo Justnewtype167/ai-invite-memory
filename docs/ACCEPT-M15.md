@@ -10,15 +10,15 @@
 
 | 文件 | 内容 |
 |---|---|
-| `jian_succession/errors.py` | `E_SUCC_MODE / DRIFT / REDACTION / HEADER / SCHEMA / IO` |
-| `jian_succession/model.py` | 常量、`Letter`、`LegacyInfo`、策略编解码、`recompute_kid` |
-| `jian_succession/archive.py` | zip / JSON / 证据 / 载荷 / 编译原语 |
-| `jian_succession/legacy.py` | `export_legacy` / `verify_legacy` / `import_legacy` |
-| `jian_succession/__init__.py` | 公开 API |
+| `aiinvite.succession/errors.py` | `E_SUCC_MODE / DRIFT / REDACTION / HEADER / SCHEMA / IO` |
+| `aiinvite.succession/model.py` | 常量、`Letter`、`LegacyInfo`、策略编解码、`recompute_kid` |
+| `aiinvite.succession/archive.py` | zip / JSON / 证据 / 载荷 / 编译原语 |
+| `aiinvite.succession/legacy.py` | `export_legacy` / `verify_legacy` / `import_legacy` |
+| `aiinvite.succession/__init__.py` | 公开 API |
 | `tests/test_succession.py` | Y1–Y6 共 17 个测试 |
-| `tests/test_all_regression.py` | 扫描包加 `jian_succession`；`ALLOWED_ADDITIONS` 声明 5 个新文件 |
+| `tests/test_all_regression.py` | 扫描包加 `aiinvite.succession`；`ALLOWED_ADDITIONS` 声明 5 个新文件 |
 
-`jian/`、`jian_kernel/`、`jian_recall/` **一个字节都没动**：遗赠层只调用它们的公开 API。
+`jian/`、`aiinvite.kernel/`、`aiinvite.recall/` **一个字节都没动**：遗赠层只调用它们的公开 API。
 
 ---
 
@@ -194,8 +194,8 @@ OK
 
 ```
 测试    315 全绿（294 + 21）
-包      7 个（新增 jian_succession）
-既有包  jian/ jian_kernel/ jian_recall/ 一个字节都没动
+包      7 个（新增 aiinvite.succession）
+既有包  jian/ aiinvite.kernel/ aiinvite.recall/ 一个字节都没动
 ```
 
 ## 4. 结论

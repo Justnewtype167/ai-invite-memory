@@ -10,8 +10,8 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 import pcs_fixtures
 
-from jian_pcs.probes import load_probes
-from jian_pcs.score import Reply, compute_pcs
+from aiinvite.pcs.probes import load_probes
+from aiinvite.pcs.score import Reply, compute_pcs
 
 
 def _all(probes, obey: bool) -> dict[str, Reply]:

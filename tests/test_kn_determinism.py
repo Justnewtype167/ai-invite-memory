@@ -13,16 +13,16 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 import kn_fixtures
 
-from jian_kernel.compiler import compile_kernel
-from jian_kernel.history import history, record_kernel, restore
-from jian_kernel.kernel import Policy
+from aiinvite.kernel.compiler import compile_kernel
+from aiinvite.kernel.history import history, record_kernel, restore
+from aiinvite.kernel.kernel import Policy
 
 NOW = "2026-10-29T10:00:00+08:00"
 
 
 class TestDeterminism(unittest.TestCase):
     def setUp(self) -> None:
-        self.root = pathlib.Path(tempfile.mkdtemp(prefix="jian_kn_det_"))
+        self.root = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_kn_det_"))
         self.addCleanup(shutil.rmtree, self.root, True)
         events = kn_fixtures.directives(5) + [
             ("2026-01-06T09:00:00Z", "今天天气不错", "turn", None),

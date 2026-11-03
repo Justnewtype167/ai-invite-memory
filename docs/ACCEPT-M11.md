@@ -63,7 +63,7 @@ action_v1 → 片段数 5
 
 | 不变量 | 落点 |
 |---|---|
-| I1 投影只读内核 | [`project()`](file:///d:/projects/Memory/jian_projection/__init__.py) 只接收 `kernel` 与投影器名；`project_text` / `project_action` 签名只有 `kernel` |
+| I1 投影只读内核 | [`project()`](file:///d:/projects/Memory/aiinvite.projection/__init__.py) 只接收 `kernel` 与投影器名；`project_text` / `project_action` 签名只有 `kernel` |
 | I2 投影不改身份 | `Kernel` 本身是 frozen dataclass；投影只读 `kid` / `self_md` / `canon` |
 | I3 确定性 | `Trace` 不含时间戳、路径、证据；序列化复用 `jian.canonical.dumps`，浮点禁用 |
 | I4 形态分离 | 两个投影器输出不同 segments，但 `Trace.kid` 都来自同一个内核 |
@@ -74,7 +74,7 @@ action_v1 → 片段数 5
 为将来把 PCS 定义到轨迹上留锚点。序列化字段固定为
 `{"dur_ms","kind","source","value"}`。
 
-`jian_projection/errors.py` 的固定码：
+`aiinvite.projection/errors.py` 的固定码：
 
 ```
 E_PR_SCHEMA              非法片段类型 / 字段类型 / segments 非元组
@@ -90,7 +90,7 @@ E_PR_MAP_INVALID         映射表结构、keywords 或动作非法
 
 1. 关键词匹配是**数据驱动的字面包含**，不是语义理解。词表覆盖了常见风格概念，
    未覆盖的措辞走 `_default`（`idle 500ms`）——永不空转，但动作可能不贴切。
-2. 映射表与词表的扩充只改 `jian_projection/data/action_map.json`，不改代码。
+2. 映射表与词表的扩充只改 `aiinvite.projection/data/action_map.json`，不改代码。
 3. 动作只到“原语 + 时长”，没有真机驱动、没有语音、没有模型调用。
 4. `Trace` 尚无解析器（`from_bytes`）；本轮只证明“能稳定产出”。
 

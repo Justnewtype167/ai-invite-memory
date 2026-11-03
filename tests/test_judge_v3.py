@@ -8,8 +8,8 @@ import unittest
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
-from jian_pcs.judge import FAIL, PASS, judge_reply
-from jian_pcs.probes import Expect
+from aiinvite.pcs.judge import FAIL, PASS, judge_reply
+from aiinvite.pcs.probes import Expect
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import pcs_fixtures

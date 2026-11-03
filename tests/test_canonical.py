@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import unittest
 
-from jian.canonical import dumps
-from jian.errors import E_NOT_CANONICAL, JianError
+from aiinvite.canonical import dumps
+from aiinvite.errors import E_NOT_CANONICAL, AiInviteError
 
 
 class CanonicalVectorsTest(unittest.TestCase):
@@ -64,12 +64,12 @@ class CanonicalRejectsTest(unittest.TestCase):
         ]
         for value in bad_values:
             with self.subTest(value=repr(value)):
-                with self.assertRaises(JianError) as context:
+                with self.assertRaises(AiInviteError) as context:
                     dumps(value)
                 self.assertEqual(context.exception.code, E_NOT_CANONICAL)
 
     def test_non_string_key_rejected(self) -> None:
-        with self.assertRaises(JianError) as context:
+        with self.assertRaises(AiInviteError) as context:
             dumps({1: "x"})
         self.assertEqual(context.exception.code, E_NOT_CANONICAL)
 

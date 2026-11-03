@@ -17,11 +17,11 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 import kn_fixtures
 
-from jian_kernel.compiler import compile_kernel
-from jian_kernel.kernel import CanonEntry, Policy
+from aiinvite.kernel.compiler import compile_kernel
+from aiinvite.kernel.kernel import CanonEntry, Policy
 
-import jian_projection.action as action_module
-from jian_projection import (
+import aiinvite.projection.action as action_module
+from aiinvite.projection import (
     ACTION_WHITELIST,
     PROJECTORS,
     ProjectionError,
@@ -32,7 +32,7 @@ from jian_projection import (
     project_action,
     project_text,
 )
-from jian_projection.errors import (
+from aiinvite.projection.errors import (
     E_PR_BAD_DURATION,
     E_PR_EMPTY,
     E_PR_MISSING_KID,
@@ -129,7 +129,7 @@ class TestTraceSchema(unittest.TestCase):
 class TestProjectionInvariants(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.root = pathlib.Path(tempfile.mkdtemp(prefix="jian_pr_"))
+        cls.root = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_pr_"))
         cls.addClassCleanup(shutil.rmtree, cls.root, True)
         events = [("2026-01-01T09:00:00Z", "今天天气不错", "turn", None)]
         day = 2
@@ -190,9 +190,9 @@ class TestProjectionInvariants(unittest.TestCase):
         code = (
             "import sys\n"
             "from pathlib import Path\n"
-            "from jian_kernel.compiler import compile_kernel\n"
-            "from jian_kernel.kernel import Policy\n"
-            "from jian_projection import project\n"
+            "from aiinvite.kernel.compiler import compile_kernel\n"
+            "from aiinvite.kernel.kernel import Policy\n"
+            "from aiinvite.projection import project\n"
             "kernel = compile_kernel(Path(sys.argv[1]), Policy(now=sys.argv[2]))\n"
             "sys.stdout.write(project(kernel, 'text_v1').to_bytes().hex())\n"
         )

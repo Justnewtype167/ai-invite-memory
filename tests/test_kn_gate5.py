@@ -13,12 +13,12 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 import kn_fixtures
 
-from jian.canonical import dumps
-from jian.event import compute_hash, format_id, normalize_time
-from jian_kernel.compiler import compile_kernel
-from jian_kernel.errors import E_KN_BAD_PROPOSAL, E_KN_BAD_TARGET, KernelError
-from jian_kernel.kernel import STYLE_MAX_PER_TARGET, Policy
-from jian_kernel.proposer import record_proposal
+from aiinvite.canonical import dumps
+from aiinvite.event import compute_hash, format_id, normalize_time
+from aiinvite.kernel.compiler import compile_kernel
+from aiinvite.kernel.errors import E_KN_BAD_PROPOSAL, E_KN_BAD_TARGET, KernelError
+from aiinvite.kernel.kernel import STYLE_MAX_PER_TARGET, Policy
+from aiinvite.kernel.proposer import record_proposal
 
 NOW = "2026-10-29T10:00:00+08:00"
 STAMP = "2026-10-29T02:00:00Z"
@@ -26,7 +26,7 @@ STAMP = "2026-10-29T02:00:00Z"
 
 class TestGateFive(unittest.TestCase):
     def setUp(self) -> None:
-        self.root = pathlib.Path(tempfile.mkdtemp(prefix="jian_g5_"))
+        self.root = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_g5_"))
         self.addCleanup(shutil.rmtree, self.root, True)
         kn_fixtures.write_store(self.root, [
             ("2026-01-01T09:00:00Z", "今天天气不错", "turn", None),

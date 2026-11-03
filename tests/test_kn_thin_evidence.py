@@ -12,8 +12,8 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 import kn_fixtures
 
-from jian_kernel.errors import E_KN_THIN_EVIDENCE, KernelError
-from jian_kernel.proposer import record_proposal
+from aiinvite.kernel.errors import E_KN_THIN_EVIDENCE, KernelError
+from aiinvite.kernel.proposer import record_proposal
 
 STAMP = "2026-10-29T02:00:00Z"
 TEXT = "回答前先停半秒"
@@ -21,7 +21,7 @@ TEXT = "回答前先停半秒"
 
 class TestThinEvidence(unittest.TestCase):
     def setUp(self) -> None:
-        self.root = pathlib.Path(tempfile.mkdtemp(prefix="jian_q3_"))
+        self.root = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_q3_"))
         self.addCleanup(shutil.rmtree, self.root, True)
 
     def _count(self) -> int:

@@ -28,9 +28,9 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from jian_pcs.judge import UNKNOWN, judge_reply
-from jian_pcs.probes import Probe, load_hard_probes, load_probes, load_rules_v2
-from jian_pcs.score import load_replies
+from aiinvite.pcs.judge import UNKNOWN, judge_reply
+from aiinvite.pcs.probes import Probe, load_hard_probes, load_probes, load_rules_v2
+from aiinvite.pcs.score import load_replies
 
 SEED = 20261030
 HOLDOUT_ROWS = 60

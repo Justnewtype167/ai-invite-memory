@@ -7,8 +7,8 @@
 ## 1. 新增数据（已由规格方写好，实现方不要改内容）
 
 ```
-jian_pcs/data/probes_more.jsonl    30 条（R1–R6 各 5 条），已自检 120/120 断言通过
-jian_pcs/data/probes.jsonl         保持 30 条不动
+aiinvite.pcs/data/probes_more.jsonl    30 条（R1–R6 各 5 条），已自检 120/120 断言通过
+aiinvite.pcs/data/probes.jsonl         保持 30 条不动
 合计                               60 条
 ```
 
@@ -56,7 +56,7 @@ PROBE_COUNT         改为从文件推导（不再硬编码 30）
 
 ```
 python -m unittest discover -s tests -v      # 全绿
-python -m jian_pcs.cli pcs --a … --b …       # 用 60 条重算
+python -m aiinvite.pcs.cli pcs --a … --b …       # 用 60 条重算
 ```
 
 并回填到 `docs/RESULTS-cross-model-v2.md`：

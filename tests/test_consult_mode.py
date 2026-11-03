@@ -13,9 +13,9 @@ import unittest
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from jian_pcs.errors import ALL_CODES, E_PCS_MODE_MIX, PcsError
-from jian_pcs.judge import FAIL, PASS, judge_reply
-from jian_pcs.probes import (
+from aiinvite.pcs.errors import ALL_CODES, E_PCS_MODE_MIX, PcsError
+from aiinvite.pcs.judge import FAIL, PASS, judge_reply
+from aiinvite.pcs.probes import (
     CONSULT_OPERATORS,
     CONSULT_PROBE_COUNT,
     CONSULT_RULE_IDS,
@@ -29,7 +29,7 @@ from jian_pcs.probes import (
     load_hard_probes,
     load_rules_v2,
 )
-from jian_pcs.score import Reply, compute_pcs, load_replies
+from aiinvite.pcs.score import Reply, compute_pcs, load_replies
 
 QWEN_CONSULT = ROOT / "pcs_out" / "replies_qwen3.5_9b_consult.jsonl"
 GLM_CONSULT = ROOT / "pcs_out" / "replies_glm4_9b_consult.jsonl"

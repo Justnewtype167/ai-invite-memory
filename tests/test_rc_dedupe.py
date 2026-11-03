@@ -12,8 +12,8 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 import rc_fixtures
 
-from jian_recall.assemble import assemble
-from jian_recall.index import build_index
+from aiinvite.recall.assemble import assemble
+from aiinvite.recall.index import build_index
 
 NOW = "2026-10-29T10:00:00+08:00"
 RANK = {"trigger": 0, "retrieved": 1, "recent": 2}
@@ -35,7 +35,7 @@ def _events() -> list[tuple[str, str]]:
 class TestDedupe(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.root = pathlib.Path(tempfile.mkdtemp(prefix="jian_rc_dedupe_"))
+        cls.root = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_rc_dedupe_"))
         rc_fixtures.write_store(cls.root, _events())
         build_index(cls.root)
 
@@ -69,7 +69,7 @@ class TestDedupe(unittest.TestCase):
 
     def test_recent_duplicates_collapse_once(self) -> None:
         """S3: three identical recent texts become one item with two merged ids."""
-        root = pathlib.Path(tempfile.mkdtemp(prefix="jian_rc_recent_"))
+        root = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_rc_recent_"))
         self.addCleanup(shutil.rmtree, root, True)
         rows: list[tuple[str, str]] = [
             (f"2025-06-01T08:0{index}:00Z", "一样的日常") for index in range(3)

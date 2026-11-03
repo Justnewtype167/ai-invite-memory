@@ -12,10 +12,10 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 import kn_fixtures
 
-from jian_kernel.errors import E_KN_IO, E_KN_UNSOURCED, KernelError
-from jian_kernel.compiler import compile_kernel
-from jian_kernel.kernel import Policy
-from jian_kernel.proposer import NullProposer, Proposal, ReplayProposer
+from aiinvite.kernel.errors import E_KN_IO, E_KN_UNSOURCED, KernelError
+from aiinvite.kernel.compiler import compile_kernel
+from aiinvite.kernel.kernel import Policy
+from aiinvite.kernel.proposer import NullProposer, Proposal, ReplayProposer
 
 NOW = "2026-10-29T10:00:00+08:00"
 
@@ -33,7 +33,7 @@ class FixedProposer:
 
 class TestSources(unittest.TestCase):
     def setUp(self) -> None:
-        self.root = pathlib.Path(tempfile.mkdtemp(prefix="jian_kn_src_"))
+        self.root = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_kn_src_"))
         self.addCleanup(shutil.rmtree, self.root, True)
         kn_fixtures.write_store(self.root, [
             ("2026-01-01T09:00:00Z", "今天天气不错", "turn", None),
@@ -90,7 +90,7 @@ class TestSources(unittest.TestCase):
 
     def test_unknown_event_type_is_io(self) -> None:
         """K5: evidence with an unsupported type raises E_KN_IO."""
-        bad = pathlib.Path(tempfile.mkdtemp(prefix="jian_kn_bad_"))
+        bad = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_kn_bad_"))
         self.addCleanup(shutil.rmtree, bad, True)
         kn_fixtures.write_store(bad, [
             ("2026-01-01T09:00:00Z", "测试", "unknown", None),

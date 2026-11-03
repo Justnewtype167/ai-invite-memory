@@ -21,9 +21,9 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 import rc_fixtures
 
-from jian_recall.assemble import assemble
-from jian_recall.errors import RecallError
-from jian_recall.index import build_index, index_status
+from aiinvite.recall.assemble import assemble
+from aiinvite.recall.errors import RecallError
+from aiinvite.recall.index import build_index, index_status
 
 NOW = "2026-10-29T10:00:00+08:00"
 SAMPLES = 50
@@ -48,7 +48,7 @@ class TestPerf(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.big = rc_fixtures.bulk_store()
         _ensure_index(cls.big)
-        cls.small = pathlib.Path(tempfile.mkdtemp(prefix="jian_rc_10k_"))
+        cls.small = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_rc_10k_"))
         cls.addClassCleanup(shutil.rmtree, cls.small, True)
         rc_fixtures.write_bulk_store(cls.small, 10000)
         _ensure_index(cls.small)

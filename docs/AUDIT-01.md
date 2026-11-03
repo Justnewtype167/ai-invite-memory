@@ -23,11 +23,11 @@
 
 ```
 jian             -> ∅
-jian_cn          -> ∅
-jian_recall      -> jian, jian_cn
-jian_kernel      -> jian, jian_cn, jian_recall
-jian_pcs         -> ∅
-jian_projection  -> jian
+aiinvite.cn          -> ∅
+aiinvite.recall      -> jian, aiinvite.cn
+aiinvite.kernel      -> jian, aiinvite.cn, aiinvite.recall
+aiinvite.pcs         -> ∅
+aiinvite.projection  -> jian
 ```
 
 **无层级倒置，无循环依赖。** 投影层只依赖证据层（用其 canonical 序列化），不依赖内核实现——
@@ -69,7 +69,7 @@ jian_projection  -> jian
 
 ```
 后果：谁改了 evidence/seg-*.jsonl，compile 会安静地产出另一个 kid，不报错。
-检测依赖：显式跑 jian verify / jian-kernel reconcile，或与已知 kid 比对。
+检测依赖：显式跑 jian verify / aiinvite kernel reconcile，或与已知 kid 比对。
 ```
 
 **这意味着论文里「改 1 字节即被发现」应改为「改 1 字节即**可**被发现（由 verify 命令）」**——
@@ -82,7 +82,7 @@ PCS 的输入：回复文本文件（pcs_out/*.jsonl）
 PCS 不读：store 里的证据
 ```
 
-`jian_pcs -> ∅`（零依赖）在工程上是优点，但它意味着：
+`aiinvite.pcs -> ∅`（零依赖）在工程上是优点，但它意味着：
 **「这个人的行为符合度」无法仅凭证据复算。**
 传给别人一个胶囊，他能验证人格（kid），但无法独立验证行为（PCS）——
 因为 PCS 需要那份回复集，而回复集不在胶囊里。
@@ -114,7 +114,7 @@ PCS 不读：store 里的证据
 实际：  当前阶段 M12，已封版到 v0.15-m12，共 270 个测试
 ```
 
-而且其中「不可改」表列着 `jian/`、`jian_kernel/` 全部——M10/M11/M12 已经改过它们。
+而且其中「不可改」表列着 `jian/`、`aiinvite.kernel/` 全部——M10/M11/M12 已经改过它们。
 **新贡献者照着这份文档工作，会立刻违规。**
 
 ### P2-B2 README 里有三个不同的测试数
@@ -181,7 +181,7 @@ v2 加了 `blobs/`，「4 个文件」不再成立。需要标注版本。
 | P1-A2 | 行为身份与证据脱钩 | README 与论文 §7.4 新增：**PCS 是评测结果，不随胶囊携带**；`FOUNDATION-INVARIANCE.md` 新增 §3.5 |
 | P1-A3 | 动作不入证据 | `FOUNDATION-INVARIANCE.md` §3 标注「当前未实现（M13）」；论文 §7.4 新增第 7 条 |
 | P2-A4 | 棘轮边界 | 本条不修代码，作为已知边界保留：棘轮防「偷偷改」，不防「公开改」 |
-| P2-B1 | `AGENTS.md` 停在 M7 | §1 重写为 M12 已封、M13 未开始；冻结政策按 M10–M12 更新；目录结构补 `jian_projection/`；DoD 改为 270 测试基线 |
+| P2-B1 | `AGENTS.md` 停在 M7 | §1 重写为 M12 已封、M13 未开始；冻结政策按 M10–M12 更新；目录结构补 `aiinvite.projection/`；DoD 改为 270 测试基线 |
 | P2-B2 | README 三个测试数 | 统一为 **270**；状态行改为 `v0.15-m12` / 17 个 tag |
 | P3-B3 | 胶囊「4 个文件」 | `docs/demo/README.md` 与 `PAPER-OUTLINE.md` 标注「仅适用于 v1 格式」 |
 | P3-B4 | 论文数字缺时间标注 | 复现性一节加「**截至本稿**；最新数字见 README」 |
@@ -234,8 +234,8 @@ AGENTS.md     M12 / 17 tag / 270 测试；无 193、M7、v0.8-m6 残留
 
 ```
 compile_kernel(..., verify: bool = False)   库：纯派生，信任调用者
-jian-kernel compile                          默认 verify=True，篡改即 E_KN_TAMPER
-jian-kernel compile --no-verify              显式快路径
+aiinvite kernel compile                          默认 verify=True，篡改即 E_KN_TAMPER
+aiinvite kernel compile --no-verify              显式快路径
 把一条被禁的快路径写出来，比藏着不给要好
 ```
 
@@ -244,9 +244,9 @@ jian-kernel compile --no-verify              显式快路径
 | 场景 | 结果 |
 |---|---|
 | 干净 store 编译 | 正常，kid 稳定 |
-| **篡改 1 字节后 `jian-kernel compile`** | **`E_KN_TAMPER: 证据未通过校验：E_TAMPER…`** |
+| **篡改 1 字节后 `aiinvite kernel compile`** | **`E_KN_TAMPER: 证据未通过校验：E_TAMPER…`** |
 | `--no-verify` | 编译成功（显式选择） |
-| `verify=True` 的底层异常 | 保留 `__cause__`，可追到 `JianError` |
+| `verify=True` 的底层异常 | 保留 `__cause__`，可追到 `AiInviteError` |
 
 新增测试 4 个（`tests/test_compile_verify.py`），全量 **274 全绿**。
 

@@ -53,118 +53,76 @@ MODULES = (
 )
 FROZEN_COUNT = 178
 
-# sha256 of every source file in the six packages before M10; an
-# edit must be declared in ALLOWED_CHANGES below, otherwise the ratchet fails.
+# sha256 of every source file, re-baselined at M18 (the rename moved every
+# file, so the baseline was regenerated once; from here on any byte change fails).
 FROZEN_DIGESTS = {
-    "jian/__init__.py": "bde7ba3f7b2d7cecac8b284a0f4b4958ef7c463d86be8bd9dfe51bbfb30874bf",
-    "jian/canonical.py": "a271683dd6bc9d5edaedce274249ff594122123b7eb120d2317517158445b757",
-    "jian/capsule.py": "8e746448130e72be9b99a7c8f78b5be73c8a6631f0e3433e2d860e95bdf1aa76",
-    "jian/chain.py": "d107f3c00482c385b1d027ac774c106fb2ed2dbb448f8745896650ddeef7e4a7",
-    "jian/cli.py": "69a1d8d6aa82d6f4c4bf287b1fe9b14400aa4cd36c1b743179123c6a875d5323",
-    "jian/errors.py": "d1a54fd42da5528225cfde1742b9c37131fbabe5234b98a27e0a9234598b2fec",
-    "jian/event.py": "6f24b2affa4728f05df63053935e19ce48a882cc0963d22470d886566633a14a",
-    "jian_kernel/__init__.py": "0e6abd2f4d27d87a94453ee36aab70ac093d1b002ed9f453365146146f258f80",
-    "jian_kernel/cli.py": "9c45b7aa55f42e4af4350ab9bcbcbbe5ce07513f8be78d3f0b6db54ceec63902",
-    "jian_kernel/compiler.py": "a4be2a88409429589dd4084b1b60a316fb51a1550aeeb47b3c6ed9d8f43c2e46",
-    "jian_kernel/errors.py": "9a33269b938c633672b2e22f22df1023c4eaed5e378559d04d4a4575cd581ca5",
-    "jian_kernel/gate.py": "960fb8b655a16515c43c478f5ee8bac5762a1f8a059588670a75e806c26a872a",
-    "jian_kernel/history.py": "d08c85ded030a0a4c5c301b25d96ed24df8011a3140782f932789443c34c3ace",
-    "jian_kernel/kernel.py": "faac0333bdd0892edecae94b550a7b49da6e478898ccceeb62410ada5ba4749c",
-    "jian_kernel/proposer.py": "8c7ffaba5432c08b326d8bfb8894405bd3eb85ef3bddd65b55f7d2b037e4d508",
-    "jian_cn/__init__.py": "4da6b5679be5c8112b1a8aff17dbcc860cee86473333a761aab1614e28795c77",
-    "jian_cn/cli.py": "1752a9843e20f1cea94aa4f968abe37b3124ce857afea649c543ddc7385db7fb",
-    "jian_cn/errors.py": "dd420a844a9d83c4938e212607822e5c8e7dd408c9eaf361759f11b8c130a6a4",
-    "jian_cn/kinship.py": "77b623ee3bcfa15f87ac44e32925f071b3575eccdc4fb1f6c5585f8da31e5dcb",
-    "jian_cn/normalize.py": "eb324c8ee8e47a3c78bbcdd5e48b746987b03a2f8b0f45fb82c2905d1d120525",
-    "jian_cn/slang.py": "42df9313d2b66162ee8f24307d129b34c38d0b2be89e591192a79946be382b42",
-    "jian_cn/timex.py": "f9602049ef99c4b155ba8c726b51e952a53797fbc99abb8a209a4c4f89d7574d",
-    "jian_recall/__init__.py": "f2e8f89eee35011563c2111656ea0a3abf76740da5fc57f276967d4b4413e4cf",
-    "jian_recall/assemble.py": "ccb5ad2eddfe50151439c1ef4df83f1e477dff7f7f630bda6dc95e10455f8570",
-    "jian_recall/cli.py": "33ecd64bdc8c9f42547c82cdd688fedfe44c5a04ab32c5d6541334c9b5a180ac",
-    "jian_recall/errors.py": "37000fa2d668cc8ea8ce314f12f7331f945be6f79854a84f7001d23bdbffad4f",
-    "jian_recall/index.py": "a532fa489a87a259c32d4335f061e9657429961fbf45c967a6847106d93ad329",
-    "jian_recall/retrieve.py": "f551191730355077f40fc7cd80cba89b6190cb3975dc3e2a1a38c1799566082b",
-    "jian_recall/tokenizer.py": "c815698f2e448734111fbbda6ce6613fcf68f162276dde91a30dfdc9e30ccfe4",
-    "jian_recall/trigger.py": "4f198c620461a3ab204eb9b21a2f9438a2d0ff75af1bfb6b78fc8945c81fca92",
-    "jian_pcs/__init__.py": "250a01df396288b8752489db1dd0ec7c90a493a9c9a7c171f82612f6aefab6f9",
-    "jian_pcs/cli.py": "9f2f4d9ad39875d90365c3616f5d512013a4eb0f54ab0010943436141fe68c99",
-    "jian_pcs/errors.py": "6efdc1fca8edad3078bfbd5fbaaf5277ad8d077434bf9ccc7741d92ee5ac0928",
-    "jian_pcs/judge.py": "45b1cfb63c21d5b867e4638c2d6e6674e3eefb13f7445a45a0d72d127816a412",
-    "jian_pcs/probes.py": "4de3b690641c236cc94ce37507e310b421731d5df2941eef3add13c7f1de047e",
-    "jian_pcs/report.py": "26633cb51d822e729158da133b68ac336b934232b4a12b30135913b373700bdc",
-    "jian_pcs/score.py": "28fe4f226ce8e7d052d80ee8409763c062f114ed7921adad964a8b1a7b08d88b",
-    "jian_projection/__init__.py": (
-        "2918c12193c4a9327ea12b49dc10e0fc3fe137650d918a3705b175747467d11f"
-    ),
-    "jian_projection/action.py": (
-        "2bb135820646c05e3362bb96f851395efd3802a6b7eebce27f8247833d38fae7"
-    ),
-    "jian_projection/errors.py": (
-        "d87cb2b0f0150dbc78d90ec92ca692bf34da7d5ba340a934decbb021fd3ac9b9"
-    ),
-    "jian_projection/text.py": (
-        "3b79d162e686f364bc7c19eab9ad53e7311bedb75f1a1b09c60675601ef878fb"
-    ),
-    "jian_projection/trace.py": (
-        "b91e9d343c863a4db73a6234d40d55a681b21e4828f5638c5474528b855921e9"
-    ),
+    "aiinvite/__init__.py": "156c2a8a88ba3c398efeb037f7cb57c36cffb23e145f0555fd774048aa8636ad",
+    "aiinvite/canonical.py": "702327a3e39911c66cbd4ce4dc68475d0a508ab8e28d9888ab78a13cdb8ecf03",
+    "aiinvite/capsule.py": "5a03e5841c99c85aaa8fc592ca4bd8c8b7d257a2eeda79379b9b9b8365c84960",
+    "aiinvite/chain.py": "461e9a7f61627349cd2e14002a6882132e855e81f28554ff63d6856ae31de105",
+    "aiinvite/cli.py": "d0e5b2bb25813ced51967dd7995f0ba59b85e22d39911bce89281b5e0bfeadba",
+    "aiinvite/cn/__init__.py": "fac7793cd32e5fdbbadaad311de0c9fddf55754bcbcd68a45883c17f3df229df",
+    "aiinvite/cn/cli.py": "899c424af5122e91026af1ea2e64ffe1e1b584bbf5e78c800d54f683df4fe642",
+    "aiinvite/cn/errors.py": "dd420a844a9d83c4938e212607822e5c8e7dd408c9eaf361759f11b8c130a6a4",
+    "aiinvite/cn/kinship.py": "08a84b598fe54c80bb82382b0dcc1ec4db5cf3e013a0c844089f3d789b39f2fa",
+    "aiinvite/cn/normalize.py": "074bf3e86485825154c0adac95a53e7e47c1955939723ce5aa8752bb8c110f7f",
+    "aiinvite/cn/slang.py": "141107855ecf33339dcd5ba00d38ac5ed3e8a76483738a75958671b747b7418c",
+    "aiinvite/cn/timex.py": "4ffcd7a8590957685cb736bf6c759552d93dfcdb4fa65d8d6bcc213301627742",
+    "aiinvite/errors.py": "aae9ff149b0614554497c01ad65105a8f4b9783e9aecdceb4f9897e3b00579cc",
+    "aiinvite/event.py": "4a3b0602fc98ac7d8468102d4cb9b14e254c0b97132a782ea6d10b41c46f4e95",
+    "aiinvite/kernel/__init__.py": "ead1a2cfd56a9f6eedd245b78501d1f288f69129c8c974bf77cdaedd6446ef08",
+    "aiinvite/kernel/cli.py": "03467453b9d7109fe1c6b5aaef9293a434dd10fd4b1aa4037e47ed7e39654fcc",
+    "aiinvite/kernel/compiler.py": "10dc8072e2b710c94eeaa6d7d1de2fa12e663d766c27bf03066e41248fe7c03c",
+    "aiinvite/kernel/errors.py": "de6ffacb29752d23d4eae28931f80ca8fd1eacde11dc47ddef3f1a6ee0f4274c",
+    "aiinvite/kernel/gate.py": "99dbda8d4119705140046b2563cee113ceb0b1c466db6ed2ff338bd6bec1b2a7",
+    "aiinvite/kernel/history.py": "f44cbd54f1926d1229f1da9a0fd005049be45c12489c47ecc804311481d0faa8",
+    "aiinvite/kernel/incremental.py": "82983f66cec62d82f039e8d24b8afe526f46f7dec50ddea4ec7e4f29fec513d2",
+    "aiinvite/kernel/kernel.py": "4d8694a86c70dfc35a9a379b117358e7456152727de106e0d01269fc6b20c393",
+    "aiinvite/kernel/proposer.py": "998f7c4015d6fe2a8a987a80d93f214ab20e0ecf53d25efc138509065e9247ff",
+    "aiinvite/kernel/snapshot.py": "4006adda2873324897dfda85958abd3edfe613562f82f71f9a23ffb6e3e87d8a",
+    "aiinvite/pcs/__init__.py": "a1ca0aaf61d5f3c252490f410c4f0a1ed86ecf3e2c88c161355ae3612f88a008",
+    "aiinvite/pcs/cli.py": "8c804bdabaed68db1d624308cf21dd3f10fdd9e02ff2e35d0e2f6948569301b2",
+    "aiinvite/pcs/errors.py": "6efdc1fca8edad3078bfbd5fbaaf5277ad8d077434bf9ccc7741d92ee5ac0928",
+    "aiinvite/pcs/judge.py": "4be709cd849de52f5dfded20842d44fd652d9c88f1470fd8a26ddd39a3c30183",
+    "aiinvite/pcs/probes.py": "f17cfc27e9d2817ee92172120945a940fc215905da751c60df274ae9da6548dc",
+    "aiinvite/pcs/report.py": "db2e6795b886759b935578b72273d22aeb9ec3687b5e4125923f2c693ea05493",
+    "aiinvite/pcs/score.py": "047019d3030f34025b5a089fa9f9669b49469e13394db886e62527c215ac82be",
+    "aiinvite/persona/__init__.py": "6d4b8f9324e16f9a9b659b993cc38246e4d98b90d3b0c1e00a74c90e49f97171",
+    "aiinvite/persona/errors.py": "c565b4d206ad2e79d87500f4f6293a36105d553722b8c2ba3896c91b73d9d170",
+    "aiinvite/persona/model.py": "d7c03b142b79346289b24f706d64b68a6ee63652ed7510f4b4e0f6566dbc33ff",
+    "aiinvite/persona/style_card.py": "53274ba0a6fe7969cf0056ce21978245e054f678a2949fefc17dfd096e08e855",
+    "aiinvite/persona/traits.py": "ed51ef206bf4b4708c44ceb357112d2e855d41f8f8239638a52106a823a4a48e",
+    "aiinvite/persona/user_card.py": "6bdd0e211c2e33d2f2bd4dcddd699e9b09418ae4d1f908d041d6218bdd8ee5d6",
+    "aiinvite/persona/view.py": "27968d4f85877a9f78c8f8b77109aa02cd0901af07ac069324cf730c4c18803e",
+    "aiinvite/projection/__init__.py": "eba314cb345e362076f9bd927c892916326c22564b8d2fc90bdb8787c5025b7e",
+    "aiinvite/projection/action.py": "c028eced6cbe1db3175c4a363bc7e46057ffe8316fbcbe3a524ec6cf8bcc7dee",
+    "aiinvite/projection/emit.py": "a9b4ada55f20cf6bd95825a12e19a7781e2889d57ff2055b898194ed4bda29ad",
+    "aiinvite/projection/errors.py": "8583d64c34087bdaf6d3cee5f241b7a7e5320823971be3dda9cb2623cf7b6e63",
+    "aiinvite/projection/gate.py": "5348c215c529c507646f8b7d4f379f9963f540978cf7604bc026a6bdfdc5f476",
+    "aiinvite/projection/text.py": "75f2bbce5ab98b07af7bff4d3213a5bbcc7ece878a37a0b49039344c1eaa35af",
+    "aiinvite/projection/trace.py": "006c1ea1eb98c57372dac3dea8ac11aed84a75b9a3ca5f825ad2461d4a100cad",
+    "aiinvite/recall/__init__.py": "09b76826eea26433cc2084f862a381e25f01522858205379d5bcba79d82775b3",
+    "aiinvite/recall/assemble.py": "afca1b8e986939c927ebd08fb5881732bc6ed4a123d81f39c16d20973889f52d",
+    "aiinvite/recall/cli.py": "2d391e5aaaeab5b695385f13f25272ae605c9b1931619f1997544d34a8b4267f",
+    "aiinvite/recall/errors.py": "a70c36dd64a63d9309f28689e9ff2779b598ec207e00f32bd16d481eeed7517f",
+    "aiinvite/recall/index.py": "dbd1959ec30a93a0d6b6cfb7a5597891364e896a277d0133534ca62e7b05f2f2",
+    "aiinvite/recall/retrieve.py": "19c820ed9faa082a4ea6a148326b03c8c92d858f17bfc1ef9cf2e503dab6b345",
+    "aiinvite/recall/stream.py": "287f9ba247944155afe47ca60709d3f791eebed1bf92db41e535cfec19141366",
+    "aiinvite/recall/tokenizer.py": "c815698f2e448734111fbbda6ce6613fcf68f162276dde91a30dfdc9e30ccfe4",
+    "aiinvite/recall/trigger.py": "49e704e2a37e5e81e29bfcbf9d57ffa8d6c8b0bfd8cc6a3d3b727a707eae2542",
+    "aiinvite/succession/__init__.py": "7871d81ee8eb9de0348d415971db22a803f8da4f8d9fb238212ebc7c0b64ade1",
+    "aiinvite/succession/archive.py": "6cd7056b2eb1bff8e2654a75b62b80b7da568e658f602664abbb31937016fb2c",
+    "aiinvite/succession/errors.py": "8bc02ae2f1e64759acf9e9374dc3aca934cdfa4db60ecc417a9aff397d258528",
+    "aiinvite/succession/legacy.py": "212d3ade2a9db8bb22aadee09a0181b252f24b87105d3aeb79f48206bde2f11a",
+    "aiinvite/succession/model.py": "4cdf33a3eb9f84fed2610fb88740e6426103e7b5b6cc297f0dfdd43e29486d43",
 }
 
 # New source files are not covered by the baseline; each one must be declared
 # here with a reason so that nothing appears in a package unnoticed.
-ALLOWED_ADDITIONS = {
-    "jian_kernel/incremental.py": "M12: incremental compile and reconcile",
-    "jian_kernel/snapshot.py": "M12: throwaway snapshot payload and digest",
-    "jian_projection/emit.py": "M13: the only emit path, gate before sink",
-    "jian_projection/gate.py": "M13: pure actuation gate over trace and kernel",
-    "jian_recall/stream.py": "M14: stream session, chunks and entry-count statistics",
-    "jian_succession/__init__.py": "M15: export the legacy capsule API",
-    "jian_succession/errors.py": "M15: fixed E_SUCC_* codes",
-    "jian_succession/model.py": "M15: capsule constants, letters and kid recomputation",
-    "jian_succession/archive.py": "M15: zip, evidence and blob primitives",
-    "jian_succession/legacy.py": "M15: export, verify and import a legacy capsule",
-    "jian_persona/__init__.py": "M16: export the persona derivation API",
-    "jian_persona/errors.py": "M16: fixed E_PERSONA_* codes",
-    "jian_persona/model.py": "M16: trait definitions, activations and conflicts",
-    "jian_persona/traits.py": "M16: vocabulary validation and deterministic resolution",
-    "jian_persona/style_card.py": "M16: style card validation, recording and echo guard",
-    "jian_persona/user_card.py": "M16: mechanical user card with pinned assembly",
-    "jian_persona/view.py": "M16: shared persona view and four prompt groups",
-}
+ALLOWED_ADDITIONS = {}
 
 # Every deviation from the baseline must be declared here with a reason.
-ALLOWED_CHANGES = {
-    "jian/event.py": (
-        "M10: envelope v2 fields and event_text; M13: refusal type and trace; "
-        "M16: trait / trait_off directive kinds and optional approval target"
-    ),
-    "jian/chain.py": "M10: optional chain blobs, blob store, fast scan, revival v2; M13: segment slot helpers",
-    "jian/capsule.py": (
-        "M10: payload API, v2 seal/export/import, event_full_text; M13: append_refusal; "
-        "M16: provenance keywords on both append paths"
-    ),
-    "jian/errors.py": "M10: E_BLOB_MISSING and E_BLOB_MISMATCH",
-    "jian_recall/index.py": "M10: retrieval reads summary through event_text",
-    "jian_recall/errors.py": "M14: E_RC_STREAM for chunk boundary violations",
-    "jian_recall/__init__.py": "M14: export the stream session API",
-    "jian_recall/trigger.py": "M14.1: split triggers into per-predicate parts for caching",
-    "jian_recall/assemble.py": "M14.1: share the pool-to-context step with the stream session",
-    "jian_kernel/compiler.py": (
-        "M10: full text via event_full_text; M12.1: verify_evidence and --no-verify; "
-        "M16: refusal type and the persona skip list"
-    ),
-    "jian_kernel/proposer.py": "M10: proposal text goes through event_text",
-    "jian_kernel/errors.py": "M12: E_KN_SNAPSHOT, E_KN_DRIFT; M12.1: E_KN_TAMPER",
-    "jian_kernel/__init__.py": "M12: export the incremental and reconcile API",
-    "jian_kernel/cli.py": "M12: compile --incremental and reconcile; M12.1: --no-verify",
-    "jian_kernel/gate.py": "M16: accept persona targets for direct callers of check_proposals",
-    "jian_kernel/kernel.py": "M16: persona target and directive-kind constants",
-    "jian_projection/__init__.py": "M13: export gate and emit",
-    "jian_projection/action.py": "M13: carry the segment role through projection",
-    "jian_projection/errors.py": "M13: E_PR_GATE_RULES and E_PR_GATE_SCOPE",
-    "jian_projection/text.py": "M13: mark narrative as description and canon as constraint",
-    "jian_projection/trace.py": "M13: Segment.role (speech / description / constraint)",
-}
+ALLOWED_CHANGES = {}
 
 
 def _load(name: str):
@@ -202,14 +160,14 @@ class TestAllRegression(unittest.TestCase):
                 path.read_bytes()
             ).hexdigest()
             for package in (
-                "jian",
-                "jian_cn",
-                "jian_recall",
-                "jian_kernel",
-                "jian_pcs",
-                "jian_projection",
-                "jian_succession",
-                "jian_persona",
+                "aiinvite",
+                "aiinvite/cn",
+                "aiinvite/recall",
+                "aiinvite/kernel",
+                "aiinvite/pcs",
+                "aiinvite/projection",
+                "aiinvite/succession",
+                "aiinvite/persona",
             )
             for path in sorted((ROOT / package).rglob("*.py"))
         }

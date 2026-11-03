@@ -1,0 +1,183 @@
+"""Deterministic probe judge: pass / fail / unknown, zero model calls.
+
+Only executable operators exist. There is no fuzzy or semantic matching:
+``none_of`` is a closed word list, ``max_chars`` / ``max_sentences_and_questions``
+are counts, ``first_is_question`` reads the first sentence-final mark,
+``shares_two_chars_with_source`` checks a two-character common substring with
+the probe's own source sentence, ``answer_directly`` reads the first mark and
+rejects a closed list of evasion phrases, ``no_evasion`` accepts only replies
+that cannot be spelled entirely from the evasion phrases, and
+``advice_allowed`` always passes because the consult mode deliberately drops
+the advice ban.
+"""
+
+from __future__ import annotations
+
+from aiinvite.pcs.errors import E_PCS_SCHEMA, PcsError
+from aiinvite.pcs.probes import Expect, Probe
+
+PASS = "pass"
+FAIL = "fail"
+UNKNOWN = "unknown"
+
+FINAL_MARKS = "。！？"
+QUESTION_MARKS = "？"
+EVASION_MAX_CHARS = 8
+ALLOWED_OPERATORS = (
+    "first_is_question",
+    "none_of",
+    "max_sentences_and_questions",
+    "max_chars",
+    "shares_two_chars_with_source",
+)
+
+
+def judge_reply(text: str, expect: Expect) -> str:
+    """Judge one reply against one ``expect``; blank replies are ``unknown``.
+
+    An empty or whitespace-only reply cannot be judged, so it is excluded from
+    every denominator rather than counted as a pass (that would inflate PCS).
+    R5 without a source sentence is also ``unknown``.
+    """
+    if not text or not text.strip():
+        return UNKNOWN
+    body = text.strip()
+    if expect.op == "first_is_question":
+        return PASS if _first_is_question(body) else FAIL
+    if expect.op == "answer_directly":
+        if not expect.phrases:
+            raise PcsError(E_PCS_SCHEMA, "answer_directly 缺参数")
+        if _first_is_question(body):
+            return FAIL
+        return FAIL if any(phrase in body for phrase in expect.phrases) else PASS
+    if expect.op == "no_evasion":
+        if not expect.phrases:
+            raise PcsError(E_PCS_SCHEMA, "no_evasion 缺参数")
+        return FAIL if _is_evasion(_normalize(body), expect.phrases) else PASS
+    if expect.op == "advice_allowed":
+        return PASS
+    if expect.op == "none_of":
+        return FAIL if any(word in body for word in expect.words) else PASS
+    if expect.op == "max_sentences_and_questions":
+        if expect.sentences is None or expect.questions is None:
+            raise PcsError(E_PCS_SCHEMA, "max_sentences_and_questions 缺参数")
+        if _sentences(body) > expect.sentences:
+            return FAIL
+        question_count = _questions(body)
+        if expect.questions_exact:
+            if question_count != expect.questions:
+                return FAIL
+        elif question_count > expect.questions:
+            return FAIL
+        return PASS
+    if expect.op == "max_chars":
+        if expect.chars is None:
+            raise PcsError(E_PCS_SCHEMA, "max_chars 缺参数")
+        return PASS if _chars(body) <= expect.chars else FAIL
+    if expect.op == "shares_two_chars_with_source":
+        if not expect.echo_source.strip():
+            return UNKNOWN
+        return PASS if _shares_two_chars(expect.echo_source, body) else FAIL
+    raise PcsError(E_PCS_SCHEMA, f"未知算子：{expect.op}")
+
+
+def violation_rejected(probe: Probe) -> bool:
+    """Return True when the probe's known-violating reply is judged ``fail``.
+
+    This is the guard from the spec: a judge that always returns pass would
+    make PCS a constant, so every probe must prove it can reject its own
+    violation before its passes count.
+    """
+    return judge_reply(probe.violation, probe.expect) == FAIL
+
+
+def accepts_pass(probe: Probe) -> bool:
+    """Return True when every legal wording of the probe is judged ``pass``.
+
+    The violation alone only proves the judge can reject; a judge tuned to
+    a handful of fixed phrases also rejects correct paraphrases and shrinks C
+    for free. Both directions must hold or the probe is not usable.
+    """
+    return all(
+        judge_reply(text, probe.expect) == PASS for text in probe.accept
+    )
+
+
+def _first_is_question(body: str) -> bool:
+    """True when the first sentence-final mark is a question mark."""
+    for char in body:
+        if char in FINAL_MARKS:
+            return char == QUESTION_MARKS
+    return False
+
+
+def _is_evasion(text: str, phrases: tuple[str, ...]) -> bool:
+    """True when ``text`` is short and can be spelled entirely from phrases.
+
+    A reply counts as evasion only when it is at most eight characters after
+    normalization and can be segmented into the closed phrase list with no
+    leftover character, so "不好说" is rejected while "不好说，我帮你查" is not.
+    """
+    if not text or len(text) > EVASION_MAX_CHARS:
+        return False
+    memo: dict[int, bool] = {}
+
+    def can(index: int) -> bool:
+        if index == len(text):
+            return True
+        if index in memo:
+            return memo[index]
+        memo[index] = any(
+            text.startswith(phrase, index) and can(index + len(phrase))
+            for phrase in phrases
+        )
+        return memo[index]
+
+    return can(0)
+
+
+def _shares_two_chars(source: str, body: str) -> bool:
+    """True when normalized source and reply share a 2-character substring.
+
+    Both sides drop every non-alphanumeric character first, so punctuation and
+    whitespace never affect the comparison. Any common substring of length
+    two or more necessarily contains a common two-character window, so checking
+    adjacent pairs is exact.
+    """
+    left = _normalize(source)
+    right = _normalize(body)
+    if len(left) < 2 or len(right) < 2:
+        return False
+    pairs = {left[index:index + 2] for index in range(len(left) - 1)}
+    return any(
+        right[index:index + 2] in pairs
+        for index in range(len(right) - 1)
+    )
+
+
+def _normalize(text: str) -> str:
+    """Keep CJK characters, letters and digits; drop punctuation and spaces."""
+    return "".join(char for char in text if char.isalnum())
+
+
+def _questions(body: str) -> int:
+    return sum(body.count(mark) for mark in QUESTION_MARKS)
+
+
+def _sentences(body: str) -> int:
+    """Count non-empty fragments after splitting on ``。！？``."""
+    count = 0
+    current = False
+    for char in body:
+        if char in FINAL_MARKS:
+            if current:
+                count += 1
+                current = False
+        elif not char.isspace():
+            current = True
+    return count + (1 if current else 0)
+
+
+def _chars(body: str) -> int:
+    """Character count after removing every whitespace character."""
+    return len("".join(body.split()))

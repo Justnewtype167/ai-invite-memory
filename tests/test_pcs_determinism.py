@@ -15,14 +15,14 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 import pcs_fixtures
 
-from jian_pcs.probes import load_all_probes, load_hard_probes
+from aiinvite.pcs.probes import load_all_probes, load_hard_probes
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 
 
 class TestDeterminism(unittest.TestCase):
     def setUp(self) -> None:
-        self.root = pathlib.Path(tempfile.mkdtemp(prefix="jian_pcs_t5_"))
+        self.root = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite.pcs_t5_"))
         self.addCleanup(shutil.rmtree, self.root, True)
         probes = load_all_probes() + load_hard_probes()
         self.a = self._write("a.jsonl", probes, 35)
@@ -51,7 +51,7 @@ class TestDeterminism(unittest.TestCase):
 
     def _run(self) -> str:
         completed = subprocess.run(
-            [sys.executable, "-m", "jian_pcs.cli", "pcs",
+            [sys.executable, "-m", "aiinvite.pcs.cli", "pcs",
              "--a", str(self.a), "--b", str(self.b)],
             cwd=str(ROOT), capture_output=True, text=True,
             encoding="utf-8", errors="replace",

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """端到端演示：一次真实对话 → 存证 → 编译人格 → 换设备验算。
 
-四个已封版包：jian(v0.1) / jian_cn(v0.2) / jian_recall(v0.3) / jian_kernel(v0.4)
+四个已封版包：jian(v0.1) / aiinvite.cn(v0.2) / aiinvite.recall(v0.3) / aiinvite.kernel(v0.4)
 零第三方依赖、零模型调用。
 
 运行：python tools/demo_e2e.py
@@ -10,17 +10,17 @@ import sys, shutil, pathlib, datetime
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from jian.capsule import init_store, append_event, seal_store, export_capsule, import_capsule, verify_path
-from jian.errors import JianError
-from jian_cn.kinship import parse_kinship
-from jian_cn.timex import parse_time
-from jian_cn.slang import usable
-from jian_recall.index import build_index
-from jian_recall.assemble import assemble
-from jian_kernel.compiler import compile_kernel
-from jian_kernel.history import record_kernel, history
-from jian_kernel.kernel import Policy
-from jian_kernel.errors import KernelError
+from aiinvite.capsule import init_store, append_event, seal_store, export_capsule, import_capsule, verify_path
+from aiinvite.errors import AiInviteError
+from aiinvite.cn.kinship import parse_kinship
+from aiinvite.cn.timex import parse_time
+from aiinvite.cn.slang import usable
+from aiinvite.recall.index import build_index
+from aiinvite.recall.assemble import assemble
+from aiinvite.kernel.compiler import compile_kernel
+from aiinvite.kernel.history import record_kernel, history
+from aiinvite.kernel.kernel import Policy
+from aiinvite.kernel.errors import KernelError
 
 DEMO = ROOT / "docs" / "demo" / "e2e"
 BUDGET = 512
@@ -53,7 +53,7 @@ def main():
 
     hr("0. 环境")
     print("演示目录：docs/demo/e2e")
-    print("四个包：jian / jian_cn / jian_recall / jian_kernel ｜ 0 依赖 ｜ 0 模型调用")
+    print("四个包：jian / aiinvite.cn / aiinvite.recall / aiinvite.kernel ｜ 0 依赖 ｜ 0 模型调用")
 
     # ---------- 1. 对话 ----------
     hr("1. 设备 A：三天的对话（8 条关键 + 52 条日常，共 60 条）")
@@ -92,7 +92,7 @@ def main():
     seg.write_bytes(raw.replace("手术很顺利".encode(), "手术很糟糕".encode(), 1))
     try:
         verify_path(A); print("  篡改后 → 没发现（不该发生）")
-    except JianError as e:
+    except AiInviteError as e:
         print(f"  篡改后 → FAIL {e.code}")
     seg.write_bytes(raw)
     print(f"  还原后 → OK head={verify_path(A).head[:8]}")

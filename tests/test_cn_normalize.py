@@ -6,9 +6,9 @@ import json
 import pathlib
 import unittest
 
-from jian_cn.normalize import normalize
+from aiinvite.cn.normalize import normalize
 
-DATA = pathlib.Path(__file__).resolve().parents[1] / "jian_cn" / "data"
+DATA = pathlib.Path(__file__).resolve().parents[1] / "aiinvite/cn" / "data"
 
 
 def _pairs() -> list[list[str]]:

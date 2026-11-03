@@ -1,4 +1,4 @@
-"""Reference host adapter: wire a chat front-end to the Jian kernel (M17).
+"""Reference host adapter: wire a chat front-end to the AI Invite kernel (M17).
 
 A host keeps five calls: on_user, on_assistant, prompt_for, reply and stats.
 Everything else -- identity, persona, memory and the actuation gate -- lives
@@ -20,20 +20,20 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from jian.capsule import append_event, init_store, utc_now, verify_path
-from jian.errors import JianError
-from jian_kernel.compiler import compile_kernel
-from jian_kernel.incremental import compile_kernel_incremental
-from jian_kernel.errors import KernelError
-from jian_kernel.kernel import Policy
-from jian_persona import build_persona_view
-from jian_pcs.probes import load_rules_v2
-from jian_projection import emit as gate_emit
-from jian_projection.trace import Segment, Trace
-from jian_recall.errors import RecallError
-from jian_recall.index import build_index, index_status
-from jian_recall.stream import StreamSession
-from jian_recall.tokenizer import estimate_tokens
+from aiinvite.capsule import append_event, init_store, utc_now, verify_path
+from aiinvite.errors import AiInviteError
+from aiinvite.kernel.compiler import compile_kernel
+from aiinvite.kernel.incremental import compile_kernel_incremental
+from aiinvite.kernel.errors import KernelError
+from aiinvite.kernel.kernel import Policy
+from aiinvite.persona import build_persona_view
+from aiinvite.pcs.probes import load_rules_v2
+from aiinvite.projection import emit as gate_emit
+from aiinvite.projection.trace import Segment, Trace
+from aiinvite.recall.errors import RecallError
+from aiinvite.recall.index import build_index, index_status
+from aiinvite.recall.stream import StreamSession
+from aiinvite.recall.tokenizer import estimate_tokens
 
 NEWLINE = chr(10)
 RULE_HEADER = "## behavior rules"
@@ -106,7 +106,7 @@ class HostSession:
                     self.store, kernel=kernel, policy=self._policy
                 )
                 self._view_cache = (kernel.head, view)
-        except (KernelError, JianError):
+        except (KernelError, AiInviteError):
             return "", "", None
         card = ""
         if view.user_card is not None:
@@ -152,7 +152,7 @@ class HostSession:
                 lines = [item.text for item in assembled.items if getattr(item, "text", "")]
                 if lines:
                     context = CONTEXT_HEADER + NEWLINE + NEWLINE.join(lines)
-            except (RecallError, KernelError, JianError):
+            except (RecallError, KernelError, AiInviteError):
                 context = ""
         pieces = [rules]
         if card:

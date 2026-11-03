@@ -10,8 +10,8 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 import pcs_fixtures
 
-from jian_pcs.judge import FAIL, PASS, accepts_pass, judge_reply, violation_rejected
-from jian_pcs.probes import load_hard_probes
+from aiinvite.pcs.judge import FAIL, PASS, accepts_pass, judge_reply, violation_rejected
+from aiinvite.pcs.probes import load_hard_probes
 
 
 class TestJudgeV2(unittest.TestCase):

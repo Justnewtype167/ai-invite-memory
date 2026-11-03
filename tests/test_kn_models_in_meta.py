@@ -13,9 +13,9 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 import kn_fixtures
 
-from jian_kernel.history import record_kernel
-from jian_kernel.kernel import Policy
-from jian_kernel.proposer import record_proposal
+from aiinvite.kernel.history import record_kernel
+from aiinvite.kernel.kernel import Policy
+from aiinvite.kernel.proposer import record_proposal
 
 NOW = "2026-10-29T10:00:00+08:00"
 STAMP = "2026-10-29T02:00:00Z"
@@ -32,7 +32,7 @@ class TestModelsInMeta(unittest.TestCase):
             shutil.rmtree(store, True)
 
     def _store(self, models: list[str]) -> pathlib.Path:
-        store = pathlib.Path(tempfile.mkdtemp(prefix="jian_q5_"))
+        store = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_q5_"))
         self.stores.append(store)
         kn_fixtures.write_store(store, kn_fixtures.chat_turns(10))
         for model in models:

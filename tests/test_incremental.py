@@ -15,13 +15,13 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 import kn_fixtures
 
-from jian_kernel.cli import main
-from jian_kernel.compiler import compile_kernel
-from jian_kernel.errors import E_KN_DRIFT, E_KN_SNAPSHOT, E_KN_STALE, KernelError
-from jian_kernel.incremental import compile_kernel_incremental, reconcile
-from jian_kernel.kernel import Policy
-from jian_kernel.proposer import record_proposal
-from jian_kernel.snapshot import SNAPSHOT_FILE, digest_of
+from aiinvite.kernel.cli import main
+from aiinvite.kernel.compiler import compile_kernel
+from aiinvite.kernel.errors import E_KN_DRIFT, E_KN_SNAPSHOT, E_KN_STALE, KernelError
+from aiinvite.kernel.incremental import compile_kernel_incremental, reconcile
+from aiinvite.kernel.kernel import Policy
+from aiinvite.kernel.proposer import record_proposal
+from aiinvite.kernel.snapshot import SNAPSHOT_FILE, digest_of
 
 NOW = "2026-10-29T10:00:00+08:00"
 GROUPS = 20
@@ -107,7 +107,7 @@ def _rewrite(path: pathlib.Path, data: dict, recalc: bool) -> None:
 
 class TestIncremental(unittest.TestCase):
     def _store(self) -> pathlib.Path:
-        root = pathlib.Path(tempfile.mkdtemp(prefix="jian_m12_"))
+        root = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_m12_"))
         self.addCleanup(shutil.rmtree, root, True)
         return root
 

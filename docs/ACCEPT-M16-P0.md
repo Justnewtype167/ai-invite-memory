@@ -1,7 +1,7 @@
 # M16 · P0 阶段验收（Task 1 + Task 2）
 
 > 范围：`refusal` 编译崩溃（P0）+ 事件层扩展 + 人格事件跳过清单。
-> **不含** `jian_persona`（Task 3–8 未开始）。
+> **不含** `aiinvite.persona`（Task 3–8 未开始）。
 > 结论：**P0 修复成立，可继续。有两项未完成需在 M16 收尾前解决。**
 
 ---
@@ -43,10 +43,10 @@
 
 **否则宪章 A2「性格改动可追溯」在版本账本这一层是断的。**
 
-### ② `jian_persona` 尚未创建
+### ② `aiinvite.persona` 尚未创建
 
 ```
-当前：jian_persona/ 不存在
+当前：aiinvite.persona/ 不存在
 已完成：Task 1（事件层）、Task 2（P0 + 跳过清单）
 待做：Task 3–8（特质、风格卡、用户卡、四组对照、验收）
 ```
@@ -55,8 +55,8 @@
 
 ## 3. 一处值得记下的实现选择
 
-`PERSONA_TARGETS` / `PERSONA_DIRECTIVE_KINDS` 定义在 **`jian_kernel/kernel.py`**，
-由 L2 的 `jian_persona` 引用——**依赖方向是向下**（L2 → L1），没有倒挂。
+`PERSONA_TARGETS` / `PERSONA_DIRECTIVE_KINDS` 定义在 **`aiinvite.kernel/kernel.py`**，
+由 L2 的 `aiinvite.persona` 引用——**依赖方向是向下**（L2 → L1），没有倒挂。
 
 这个选择是对的：跳过清单属于「什么算内核事件」的定义，本来就该在 L1。
 

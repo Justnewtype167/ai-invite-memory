@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import unittest
 
-from jian_recall.tokenizer import bigrams, estimate_tokens
+from aiinvite.recall.tokenizer import bigrams, estimate_tokens
 
 VECTORS = (
     ("", 8),

@@ -7,9 +7,9 @@ import pathlib
 import unittest
 from datetime import date
 
-from jian_cn.slang import availability, explain, lifespan, usable
+from aiinvite.cn.slang import availability, explain, lifespan, usable
 
-DATA = pathlib.Path(__file__).resolve().parents[1] / "jian_cn" / "data"
+DATA = pathlib.Path(__file__).resolve().parents[1] / "aiinvite/cn" / "data"
 
 
 def _json(name: str):

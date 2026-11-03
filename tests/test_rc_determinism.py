@@ -12,9 +12,9 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 import rc_fixtures
 
-from jian_recall.assemble import assemble
-from jian_recall.index import build_index
-from jian_recall.retrieve import search
+from aiinvite.recall.assemble import assemble
+from aiinvite.recall.index import build_index
+from aiinvite.recall.retrieve import search
 
 NOW = "2026-10-29T10:00:00+08:00"
 QUERY = "我妈下周三做手术"
@@ -23,7 +23,7 @@ QUERY = "我妈下周三做手术"
 class TestDeterminism(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.root = pathlib.Path(tempfile.mkdtemp(prefix="jian_rc_det_"))
+        cls.root = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_rc_det_"))
         rows: list[tuple[str, str]] = []
         for index in range(40):
             text = "重复的同一句话" if index % 4 == 0 else f"记忆片段{index + 1}"

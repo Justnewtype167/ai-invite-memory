@@ -14,9 +14,9 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 import rc_fixtures
 
-from jian_recall.assemble import assemble
-from jian_recall.errors import E_RC_NO_INDEX, E_RC_STALE, RecallError
-from jian_recall.index import (
+from aiinvite.recall.assemble import assemble
+from aiinvite.recall.errors import E_RC_NO_INDEX, E_RC_STALE, RecallError
+from aiinvite.recall.index import (
     INDEX_DIR,
     INDEX_FILE,
     build_index,
@@ -24,7 +24,7 @@ from jian_recall.index import (
     index_status,
     update_index,
 )
-from jian_recall.retrieve import search
+from aiinvite.recall.retrieve import search
 
 
 def _events(count: int, start_day: int = 1) -> list[tuple[str, str]]:
@@ -39,7 +39,7 @@ def _events(count: int, start_day: int = 1) -> list[tuple[str, str]]:
 
 class TestIndex(unittest.TestCase):
     def setUp(self) -> None:
-        self.root = pathlib.Path(tempfile.mkdtemp(prefix="jian_rc_idx_"))
+        self.root = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_rc_idx_"))
         self.addCleanup(shutil.rmtree, self.root, True)
 
     def test_01_build_speed_on_200k(self) -> None:

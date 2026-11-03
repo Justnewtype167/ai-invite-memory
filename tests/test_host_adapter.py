@@ -13,11 +13,11 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tools"))
 
-from jian.capsule import append_event, init_store, seal_store, verify_path
-from jian_kernel.compiler import compile_kernel
-from jian_kernel.kernel import Policy
-from jian_recall.index import evidence_files
-from jian_recall.tokenizer import estimate_tokens
+from aiinvite.capsule import append_event, init_store, seal_store, verify_path
+from aiinvite.kernel.compiler import compile_kernel
+from aiinvite.kernel.kernel import Policy
+from aiinvite.recall.index import evidence_files
+from aiinvite.recall.tokenizer import estimate_tokens
 from host_adapter import HostSession
 
 NOW = "2026-11-01T10:00:00+08:00"
@@ -28,7 +28,7 @@ class TestHostAdapter(unittest.TestCase):
     """H1-H5: the adapter is a thin, ordered, read-mostly wrapper."""
 
     def setUp(self) -> None:
-        self.root = pathlib.Path(tempfile.mkdtemp(prefix="jian_host_"))
+        self.root = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_host_"))
         self.addCleanup(shutil.rmtree, self.root, True)
         self.store = self.root / "mem"
         init_store(self.store)

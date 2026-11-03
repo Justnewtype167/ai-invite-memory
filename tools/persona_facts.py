@@ -13,9 +13,9 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tools"))
 
-from jian_kernel.kernel import Policy
-from jian_persona import build_persona_view
-from jian_persona.view import _user_section
+from aiinvite.kernel.kernel import Policy
+from aiinvite.persona import build_persona_view
+from aiinvite.persona.view import _user_section
 
 import persona_sweep as PS
 import style_experiment as SE

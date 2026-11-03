@@ -23,9 +23,9 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tools"))
 
-from jian_pcs.probes import load_probes
-from jian_pcs.report import render_report
-from jian_pcs.score import compute_pcs, load_replies
+from aiinvite.pcs.probes import load_probes
+from aiinvite.pcs.report import render_report
+from aiinvite.pcs.score import compute_pcs, load_replies
 
 
 def collect(model: str, out_dir: pathlib.Path, temp_milli: int, seed: int) -> pathlib.Path:

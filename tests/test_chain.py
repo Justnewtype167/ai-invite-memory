@@ -9,11 +9,11 @@ import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from jian.canonical import dumps
-from jian.capsule import append_event, init_store, seal_store, verify_path
-from jian.chain import chain_document, segment_number, summarize
-from jian.errors import E_CHAIN_MISSING, E_SCHEMA, JianError
-from jian.event import (
+from aiinvite.canonical import dumps
+from aiinvite.capsule import append_event, init_store, seal_store, verify_path
+from aiinvite.chain import chain_document, segment_number, summarize
+from aiinvite.errors import E_CHAIN_MISSING, E_SCHEMA, AiInviteError
+from aiinvite.event import (
     GENESIS_PREV,
     body_bytes,
     compute_hash,
@@ -93,7 +93,7 @@ class ChainUnitsTest(unittest.TestCase):
         self.assertEqual(segment_number("seg-0007"), 7)
 
     def test_segment_number_rejects_bad_name(self) -> None:
-        with self.assertRaises(JianError) as context:
+        with self.assertRaises(AiInviteError) as context:
             segment_number("seg-7")
         self.assertEqual(context.exception.code, E_CHAIN_MISSING)
 
@@ -126,7 +126,7 @@ class ChainUnitsTest(unittest.TestCase):
         )
 
     def test_normalize_time_rejects_naive_input(self) -> None:
-        with self.assertRaises(JianError) as context:
+        with self.assertRaises(AiInviteError) as context:
             normalize_time("2026-10-29T06:00:00")
         self.assertEqual(context.exception.code, E_SCHEMA)
 
@@ -139,7 +139,7 @@ class ChainUnitsTest(unittest.TestCase):
         event = new_event(1, "seg-0001", _stamp(0), "user", "x", GENESIS_PREV)
         broken = json.loads(event.to_line())
         broken["extra"] = "no"
-        with self.assertRaises(JianError) as context:
+        with self.assertRaises(AiInviteError) as context:
             parse_event(broken)
         self.assertEqual(context.exception.code, E_SCHEMA)
 

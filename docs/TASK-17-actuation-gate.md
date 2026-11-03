@@ -21,10 +21,10 @@
 ## 1. 三个新东西
 
 ```
-jian_projection/gate.py        纯函数：check(trace, kernel) -> Verdict
-jian_projection/emit.py        唯一的发出路径：先过闸门，再调用 sink
+aiinvite.projection/gate.py        纯函数：check(trace, kernel) -> Verdict
+aiinvite.projection/emit.py        唯一的发出路径：先过闸门，再调用 sink
 jian/capsule.py   新增 append_refusal(...)  把拒绝写进证据层（新事件类型 refusal）
-jian_projection/data/gate_rules.json        规则数据，不许写死在代码里
+aiinvite.projection/data/gate_rules.json        规则数据，不许写死在代码里
 ```
 
 ---
@@ -132,7 +132,7 @@ def emit(trace: Trace, kernel: object, sink: Callable[[Trace], None],
 | V4 | `test_gate_refuses_and_records` | 违规轨迹 → `allowed=False`，**`sink` 调用 0 次**，证据层多一条 `refusal`，`verify` 通过 |
 | V5 | `test_gate_rules_are_data` | 改 `gate_rules.json`（例如新增禁词）→ 行为随之改变，不用改代码 |
 | V6 | `test_gate_no_canon_no_gate` | 内核没有对应约束时，同样的轨迹**不**被拒 |
-| V7 | `test_all_regression` | 现有 **274 个测试全绿**；`jian_cn/`、`jian_recall/`、`jian_pcs/` 零 diff；`jian/event.py` 等改动必须在 `ALLOWED_CHANGES` 声明 |
+| V7 | `test_all_regression` | 现有 **274 个测试全绿**；`aiinvite.cn/`、`aiinvite.recall/`、`aiinvite.pcs/` 零 diff；`jian/event.py` 等改动必须在 `ALLOWED_CHANGES` 声明 |
 
 ---
 

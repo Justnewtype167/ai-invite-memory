@@ -52,10 +52,10 @@ class TestRegression(unittest.TestCase):
 
     def test_recall_package_is_additive(self) -> None:
         """R8: M3 keeps the frozen packages untouched."""
-        frozen = ROOT / "jian"
+        frozen = ROOT / "aiinvite"
         self.assertTrue((frozen / "event.py").is_file())
         self.assertFalse((frozen / "recall.py").exists())
-        self.assertTrue((ROOT / "jian_recall" / "tokenizer.py").is_file())
+        self.assertTrue((ROOT / "aiinvite/recall" / "tokenizer.py").is_file())
 
 
 if __name__ == "__main__":

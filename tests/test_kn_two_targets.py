@@ -12,9 +12,9 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 import kn_fixtures
 
-from jian_kernel.compiler import compile_kernel
-from jian_kernel.kernel import ORIGIN_WITH_PROPOSALS, Policy
-from jian_kernel.proposer import record_proposal
+from aiinvite.kernel.compiler import compile_kernel
+from aiinvite.kernel.kernel import ORIGIN_WITH_PROPOSALS, Policy
+from aiinvite.kernel.proposer import record_proposal
 
 NOW = "2026-10-29T10:00:00+08:00"
 STAMP = "2026-10-29T02:00:00Z"
@@ -32,7 +32,7 @@ class TestTwoTargets(unittest.TestCase):
             shutil.rmtree(store, True)
 
     def _store(self, style: bool, conduct: bool) -> pathlib.Path:
-        store = pathlib.Path(tempfile.mkdtemp(prefix="jian_q2_"))
+        store = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_q2_"))
         self.stores.append(store)
         kn_fixtures.write_store(store, kn_fixtures.chat_turns(10))
         if style:

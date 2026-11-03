@@ -8,8 +8,8 @@ import sys
 import tempfile
 import unittest
 
-from jian_kernel.errors import E_PROPOSER_FAILED, KernelError
-from jian_kernel.proposer import LiveProposal, SubprocessProposer
+from aiinvite.kernel.errors import E_PROPOSER_FAILED, KernelError
+from aiinvite.kernel.proposer import LiveProposal, SubprocessProposer
 
 SUCCESS = """
 import json
@@ -49,7 +49,7 @@ sys.stdout.write('{"ok": true}\\n')
 
 class TestSubprocessProposer(unittest.TestCase):
     def setUp(self) -> None:
-        self.root = pathlib.Path(tempfile.mkdtemp(prefix="jian_q4_"))
+        self.root = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_q4_"))
         self.addCleanup(shutil.rmtree, self.root, True)
 
     def _script(self, name: str, source: str) -> pathlib.Path:

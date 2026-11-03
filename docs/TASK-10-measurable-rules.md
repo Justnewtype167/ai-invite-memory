@@ -122,10 +122,10 @@
 ## 3. 文件改动
 
 ```
-jian_pcs/data/rules_v2.json      六条规则的判定程序（规模方提供，实现方不修改内容）
-jian_pcs/data/probes.jsonl       探针 rule 字段改为 R1..R6 的 id，expect 换成 v2 算子
-jian_pcs/data/probes_hard.jsonl  同上
-jian_pcs/judge.py                新增 first_is_question 一个算子；其余复用
+aiinvite.pcs/data/rules_v2.json      六条规则的判定程序（规模方提供，实现方不修改内容）
+aiinvite.pcs/data/probes.jsonl       探针 rule 字段改为 R1..R6 的 id，expect 换成 v2 算子
+aiinvite.pcs/data/probes_hard.jsonl  同上
+aiinvite.pcs/judge.py                新增 first_is_question 一个算子；其余复用
 ```
 
 `rules_v2.json` 结构：
@@ -177,7 +177,7 @@ jian_pcs/judge.py                新增 first_is_question 一个算子；其余�
 1. 不许为了让 κ 好看而调整规则定义
 2. 不许在判定器里留「近似 / 包含关键词即算通过」这类宽松逻辑
 3. 不许把 non-scored 规则偷偷计入 C
-4. 不许改 `jian/`、`jian_cn/`、`jian_recall/`、`jian_kernel/`
+4. 不许改 `jian/`、`aiinvite.cn/`、`aiinvite.recall/`、`aiinvite.kernel/`
 
 ---
 

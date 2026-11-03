@@ -35,11 +35,12 @@ class TestM1Regression(unittest.TestCase):
         self.assertEqual(result.errors, [])
         self.assertEqual(result.skipped, [])
 
-    def test_jian_package_is_untouched_by_m2(self) -> None:
-        """C6: M2 has no source files inside the frozen jian package."""
-        frozen = ROOT / "jian"
+    def test_base_package_is_untouched_by_m2(self) -> None:
+        """C6: M2 has no source files inside the frozen base package."""
+        frozen = ROOT / "aiinvite"
         self.assertTrue(frozen.is_dir())
         self.assertFalse((frozen / "cn.py").exists())
+        self.assertTrue((frozen / "cn").is_dir())
 
 
 if __name__ == "__main__":

@@ -12,23 +12,23 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 import kn_fixtures
 
-from jian_kernel import cli
-from jian_kernel.errors import E_KN_NO_HISTORY, KernelError
-from jian_kernel.history import (
+from aiinvite.kernel import cli
+from aiinvite.kernel.errors import E_KN_NO_HISTORY, KernelError
+from aiinvite.kernel.history import (
     diff_versions,
     history,
     record_kernel,
     restore,
     verify_kernel,
 )
-from jian_kernel.kernel import Policy
+from aiinvite.kernel.kernel import Policy
 
 NOW = "2026-10-29T10:00:00+08:00"
 
 
 class TestHistory(unittest.TestCase):
     def setUp(self) -> None:
-        self.root = pathlib.Path(tempfile.mkdtemp(prefix="jian_kn_hist_"))
+        self.root = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_kn_hist_"))
         self.addCleanup(shutil.rmtree, self.root, True)
         self.policy = Policy(now=NOW)
         events = kn_fixtures.directives(5) + [

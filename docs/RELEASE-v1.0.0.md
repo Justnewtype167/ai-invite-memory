@@ -29,7 +29,7 @@ python -m unittest discover -s tests        # 期望 Ran 240 tests, OK
 
 | 内容 | 说明 |
 |---|---|
-| 五个包 | `jian` / `jian_cn` / `jian_recall` / `jian_kernel` / `jian_pcs` |
+| 五个包 | `jian` / `aiinvite.cn` / `aiinvite.recall` / `aiinvite.kernel` / `aiinvite.pcs` |
 | 论文 | 中文 9576 字、English 2931 词，4 图 13 表，9 条核实过的参考文献 |
 | 实验产物 | `experiments/replies/` 下的回复集与矩阵结果 |
 | 文档 | 11 个里程碑的规格、验收记录、结果分析、规格自检清单 |

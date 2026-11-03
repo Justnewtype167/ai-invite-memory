@@ -6,10 +6,10 @@
 
 | 许做 | 不许做 |
 |---|---|
-| 新增顶层包 `jian_cn/` | **修改 `jian/` 里任何一行**（M1 已封版，tag v0.1-m1） |
+| 新增顶层包 `aiinvite.cn/` | **修改 `jian/` 里任何一行**（M1 已封版，tag v0.1-m1） |
 | 新增 `tests/test_cn_*.py` | 修改 `.aiem` 容器格式或事件模型 |
-| 新增 `jian_cn/data/*.json` | **调用任何 LLM、任何网络接口、任何第三方库** |
-| 在 `pyproject.toml` 的 packages 里加 `jian_cn` | 引入 float（数据文件里也不行） |
+| 新增 `aiinvite.cn/data/*.json` | **调用任何 LLM、任何网络接口、任何第三方库** |
+| 在 `pyproject.toml` 的 packages 里加 `aiinvite.cn` | 引入 float（数据文件里也不行） |
 
 **M2 全部用规则实现，模型调用次数必须为 0。** 这是本模块唯一的、也是最大的竞争优势：
 别人用模型抽关系，我们用规则；成本为零、结果可复现、可审计。
@@ -19,7 +19,7 @@
 ## 1. 目录（严格按此）
 
 ```
-jian_cn/
+aiinvite.cn/
   __init__.py
   errors.py          # E_CN_* 错误码
   normalize.py       # 繁简 / 异体 / 全半角 / 空白 / 零宽
@@ -439,10 +439,10 @@ def normalize(text: str) -> str
 ## 8. CLI（4 个命令）
 
 ```
-python -m jian_cn.cli kinship 堂哥
-python -m jian_cn.cli timex "大前天" --anchor 2026-10-29T10:00:00+08:00
-python -m jian_cn.cli slang yyds --on 2026-10-29
-python -m jian_cn.cli norm "臺灣裏面"
+python -m aiinvite.cn.cli kinship 堂哥
+python -m aiinvite.cn.cli timex "大前天" --anchor 2026-10-29T10:00:00+08:00
+python -m aiinvite.cn.cli slang yyds --on 2026-10-29
+python -m aiinvite.cn.cli norm "臺灣裏面"
 ```
 
 成功退出码 0；`E_CN_*` 退出码 2；参数错误 1。
@@ -457,7 +457,7 @@ python -m jian_cn.cli norm "臺灣裏面"
 | C2 | `test_cn_timex` | A 类 120 条区间完全一致率 **≥ 0.95**；B 类 40 条 certainty/granularity **≥ 0.90**；C 类 20 条必须抛 `E_CN_PARSE` 且含「农历」；50 条畸形 100% 不崩溃；**§4.6 留出集 12 条 ≥ 0.90** |
 | C3 | `test_cn_slang` | 留出集 usable 判定准确率 **≥ 0.90**；peak 后单调不增；`confidence<60` 不参与判定 |
 | C4 | `test_cn_normalize` | 200 字覆盖 ≥ 0.99；幂等；简/ASCII 输入零改动；**反向转换不存在** |
-| C5 | `test_cn_hygiene` | 全仓 `jian_cn/` 无网络/LLM/第三方导入；数据 JSON 无 float；两次运行输出字节一致 |
+| C5 | `test_cn_hygiene` | 全仓 `aiinvite.cn/` 无网络/LLM/第三方导入；数据 JSON 无 float；两次运行输出字节一致 |
 | C6 | `test_cn_regression` | **M1 的 31 个测试仍全绿**（跑 `unittest discover` 全量） |
 
 ---

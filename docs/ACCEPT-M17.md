@@ -44,7 +44,7 @@ public_methods=['on_assistant', 'on_user', 'prompt_for', 'reply', 'stats']
 ### 1.3 注意点（不算违反方法数，但属于接入风险）
 
 - `on_assistant` 是规格列出的五个方法之一，但宿主若直接调用它，会**绕过闸门**写助手轮。`reply` 的闸门保护只在宿主主动走 `reply` 时成立（见 D6）。
-- `tools/host_adapter.py#L21` 从 `jian_persona.view` 导入了私有函数 `_user_section`（见 D5）。
+- `tools/host_adapter.py#L21` 从 `aiinvite.persona.view` 导入了私有函数 `_user_section`（见 D5）。
 
 ---
 
@@ -95,13 +95,13 @@ assistant_turns=0
 Traceback (most recent call last):
   File "...\tools\host_adapter.py", line 76, in prompt_for
     view = build_persona_view(self.store, policy=Policy(now=self.now))
-  File "...\jian_persona\view.py", line 71, in build_persona_view
+  File "...\aiinvite.persona\view.py", line 71, in build_persona_view
     kernel = compile_kernel(store, policy)
-  File "...\jian_kernel\compiler.py", line 124, in compile_kernel
+  File "...\aiinvite.kernel\compiler.py", line 124, in compile_kernel
     return _compile(store, read_evidence(store), policy, proposer)
-  File "...\jian_kernel\compiler.py", line 203, in read_evidence
+  File "...\aiinvite.kernel\compiler.py", line 203, in read_evidence
     raise KernelError(E_KN_IO, f"证据目录为空：{folder}")
-jian_kernel.errors.KernelError: E_KN_IO: 证据目录为空：...\m\evidence
+aiinvite.kernel.errors.KernelError: E_KN_IO: 证据目录为空：...\m\evidence
 ```
 
 `reply` 同样会先 `compile_kernel`，所以空库的 `reply` 也会崩。
@@ -204,11 +204,11 @@ prompt.index("## who you both are") < prompt.index("## recent and recalled memor
 
 | # | 缺陷 | 位置 | 严重度 | 说明 / 建议方向（由你决定） |
 |---|---|---|---|---|
-| D1 | 空库调用 `prompt_for` / `reply` 直接抛 `E_KN_IO` | `tools/host_adapter.py#L69-L76`、`jian_kernel/compiler.py#L203` | 中 | 新建会话若宿主先要提示词再写首条用户事件，就会崩。可考虑在适配器层给出空库的固定提示词，或明确要求宿主先 `on_user`。 |
-| D2 | 预算只约束上下文槽位，固定开销与用户输入不计入 | `tools/host_adapter.py#L69-L89`、`jian_recall/assemble.py` 的 `cap_recent/cap_trigger/cap_retrieved` | 高 | 20 万条长文本 `4165 > 4096`；5000 字输入 `5106 > 4096`。H5 实际不成立。需要明确「budget 是上下文预算还是整条 prompt 预算」，再决定在适配器里扣减固定开销并截断输入。 |
+| D1 | 空库调用 `prompt_for` / `reply` 直接抛 `E_KN_IO` | `tools/host_adapter.py#L69-L76`、`aiinvite.kernel/compiler.py#L203` | 中 | 新建会话若宿主先要提示词再写首条用户事件，就会崩。可考虑在适配器层给出空库的固定提示词，或明确要求宿主先 `on_user`。 |
+| D2 | 预算只约束上下文槽位，固定开销与用户输入不计入 | `tools/host_adapter.py#L69-L89`、`aiinvite.recall/assemble.py` 的 `cap_recent/cap_trigger/cap_retrieved` | 高 | 20 万条长文本 `4165 > 4096`；5000 字输入 `5106 > 4096`。H5 实际不成立。需要明确「budget 是上下文预算还是整条 prompt 预算」，再决定在适配器里扣减固定开销并截断输入。 |
 | D3 | 20 万条时单次 `prompt_for` 约 96 s（全量重算） | `build_persona_view` / `compile_kernel` / `read_evidence` | 中 | `context_s=0.07`，耗时几乎全在证据全量解析。按 C14 不写成单测断言，但接入方会感知。 |
 | D4 | H5 的既有测试只在 2 条事件的 store 上断言；20 万条 fixture 无 `meta.json`/`chain.json` | `tests/test_host_adapter.py#L88-L92`、`tests/rc_fixtures.py#write_bulk_store` | 中 | 原 H5 实际测不到 20 万条；bulk fixture 建出来的 store 上下文为空（无 meta），不能代表真实场景。 |
-| D5 | 适配器依赖 `jian_persona.view` 的私有函数 `_user_section` | `tools/host_adapter.py#L21`、`jian_persona/view.py#L147-L149` | 低 | 私有 API 一旦改名/改签名，适配器会静默失效；建议以后让 `PersonaView` 提供公开的用户卡渲染入口。 |
+| D5 | 适配器依赖 `aiinvite.persona.view` 的私有函数 `_user_section` | `tools/host_adapter.py#L21`、`aiinvite.persona/view.py#L147-L149` | 低 | 私有 API 一旦改名/改签名，适配器会静默失效；建议以后让 `PersonaView` 提供公开的用户卡渲染入口。 |
 | D6 | `on_assistant` 公开可调用，绕过闸门 | `tools/host_adapter.py#L64-L67` | 中 | 规格把 `on_assistant` 列为五个方法之一，但「不许跳过闸门直接写助手回复」只能靠宿主自觉。若要保持五个方法，只能在文档里写死「助手轮只走 `reply`」。 |
 | D7 | `_ensure_index` 捕获所有 `Exception` 后盲重建 | `tools/host_adapter.py#L49-L57` | 低 | 任何内部错误（包括编程错误）都会被当成「索引缺失」触发全量重建；空库时 `build_index` 还会继续抛 `E_RC_IO`。 |
 | D8 | `prompt_for` 在干活前就把 `prompts` 计数 +1 | `tools/host_adapter.py#L71` | 低 | 调用失败（如 D1）时计数器已 +1，`stats` 与真实成功次数不一致。 |
@@ -278,7 +278,7 @@ OK
 | D2 | **budget 改为整条 prompt 的预算**：先截输入、再按余量给上下文 | 5000 字输入 → 2595 tokens ✅ |
 | D5 | 改用公开的 `user_card.text()`，去掉私有导入 | ✅ |
 | D6 | docstring 写明「助手轮只走 `reply`」，并加测试固定 | ✅ |
-| D7 | `except` 收窄到 `RecallError` / `JianError` | ✅ |
+| D7 | `except` 收窄到 `RecallError` / `AiInviteError` | ✅ |
 | D8 | 计数移到成功之后 | 空库调用失败不再 +1 ✅ |
 
 测试：344 → **357 全绿**（新增空库、超长输入、docstring 三条）。

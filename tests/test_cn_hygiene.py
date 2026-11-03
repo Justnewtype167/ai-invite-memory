@@ -8,19 +8,19 @@ import re
 import unittest
 from datetime import date
 
-import jian_cn
-from jian_cn.kinship import parse_kinship
-from jian_cn.normalize import normalize
-from jian_cn.slang import explain
-from jian_cn.timex import parse_time
+import aiinvite.cn
+from aiinvite.cn.kinship import parse_kinship
+from aiinvite.cn.normalize import normalize
+from aiinvite.cn.slang import explain
+from aiinvite.cn.timex import parse_time
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-PKG = ROOT / "jian_cn"
+PKG = ROOT / "aiinvite/cn"
 DATA = PKG / "data"
 
 ALLOWED_IMPORTS = {
     "__future__", "argparse", "calendar", "dataclasses", "datetime",
-    "json", "pathlib", "re", "sys", "unicodedata", "jian_cn",
+    "json", "pathlib", "re", "sys", "unicodedata", "aiinvite", "aiinvite.cn",
 }
 FORBIDDEN_TOKENS = (
     "requests", "urllib", "socket", "http://", "https://", "openai",
@@ -34,7 +34,7 @@ def _sources() -> list[pathlib.Path]:
 
 class TestHygiene(unittest.TestCase):
     def test_imports_are_stdlib_or_local(self) -> None:
-        """C5: only standard library and jian_cn modules may be imported."""
+        """C5: only standard library and aiinvite.cn modules may be imported."""
         pattern = re.compile(r"(?m)^\s*(?:import|from)\s+([A-Za-z_][\w.]*)")
         found: set[str] = set()
         for path in _sources():
@@ -90,7 +90,7 @@ class TestHygiene(unittest.TestCase):
     def test_public_api_is_exported(self) -> None:
         """C5: the package exposes its public functions."""
         for name in ("normalize", "parse_kinship", "parse_time", "usable"):
-            self.assertTrue(hasattr(jian_cn, name), name)
+            self.assertTrue(hasattr(aiinvite.cn, name), name)
 
 
 if __name__ == "__main__":

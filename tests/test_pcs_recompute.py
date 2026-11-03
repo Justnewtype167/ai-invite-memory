@@ -8,9 +8,9 @@ import unittest
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
-from jian_pcs.probes import load_all_probes, load_hard_probes
-from jian_pcs.report import render_report
-from jian_pcs.score import compute_pcs, load_replies
+from aiinvite.pcs.probes import load_all_probes, load_hard_probes
+from aiinvite.pcs.report import render_report
+from aiinvite.pcs.score import compute_pcs, load_replies
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 QWEN_MAIN = ROOT / "pcs_out" / "replies_qwen3.5_9b_80.jsonl"

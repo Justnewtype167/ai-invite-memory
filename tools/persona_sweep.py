@@ -14,20 +14,20 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tools"))
 
-from jian.canonical import dumps
-from jian.capsule import init_store, append_payload_event, seal_store
-from jian_kernel.kernel import Policy
-from jian_pcs.judge import judge_reply
-from jian_pcs.probes import load_all_probes
-from jian_pcs.score import Reply
-from jian_persona import build_persona_view
-from jian_persona.view import _user_section
-from jian_persona.style_card import parse_style_card, record_style_card
+from aiinvite.canonical import dumps
+from aiinvite.capsule import init_store, append_payload_event, seal_store
+from aiinvite.kernel.kernel import Policy
+from aiinvite.pcs.judge import judge_reply
+from aiinvite.pcs.probes import load_all_probes
+from aiinvite.pcs.score import Reply
+from aiinvite.persona import build_persona_view
+from aiinvite.persona.view import _user_section
+from aiinvite.persona.style_card import parse_style_card, record_style_card
 
 import style_experiment as SE
 
 CORPUS = ROOT / "corpus" / "personas.jsonl"
-TRAITS = ROOT / "jian_kernel" / "data" / "traits.json"
+TRAITS = ROOT / "aiinvite/kernel" / "data" / "traits.json"
 NOW = "2026-11-01T10:00:00+08:00"
 GROUPS = ("A", "B", "C", "D")
 

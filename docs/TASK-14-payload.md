@@ -19,7 +19,7 @@
 
 | 可改 | 不可改 |
 |---|---|
-| `jian/event.py`、`jian/capsule.py`、`jian/chain.py`、`jian/cli.py` | `jian_cn/`、`jian_recall/`、`jian_kernel/`、`jian_pcs/` |
+| `jian/event.py`、`jian/capsule.py`、`jian/chain.py`、`jian/cli.py` | `aiinvite.cn/`、`aiinvite.recall/`、`aiinvite.kernel/`、`aiinvite.pcs/` |
 | `tests/` 新增 | 已有事件的哈希算法、canonical 规则 |
 
 **本轮只动证据层。** 上层四个包一行都不许改——这是检验「地基改动是否真的对上层透明」的机会。
@@ -44,7 +44,7 @@
 | `summary` | 必填，1–200 字符，**仅供检索与预算装配**，不参与人格规则判定 |
 | `text` | **v2 禁止**（出现即 `E_SCHEMA`） |
 
-**`summary` 为什么要必填**：检索层 `jian_recall` 只读文本，
+**`summary` 为什么要必填**：检索层 `aiinvite.recall` 只读文本，
 若不给摘要，非文本事件在检索里等于不存在。
 它也是 4k 预算机制保持不变的唯一前提。
 
@@ -116,15 +116,15 @@ v2 禁止 `text` 之后它们必然取到空串。
 
 | 文件 | 改动 | 行数 |
 |---|---|---|
-| `jian_recall/index.py` | 顶层 `from jian.event import event_text` + 调用 | 2 |
-| `jian_kernel/proposer.py` | 同上 | 2 |
-| `jian_kernel/compiler.py` | 顶层 `from jian.capsule import event_full_text` + 调用（**读全文，不读 summary**） | 2 |
+| `aiinvite.recall/index.py` | 顶层 `from jian.event import event_text` + 调用 | 2 |
+| `aiinvite.kernel/proposer.py` | 同上 | 2 |
+| `aiinvite.kernel/compiler.py` | 顶层 `from jian.capsule import event_full_text` + 调用（**读全文，不读 summary**） | 2 |
 
 **合计 6 行（每文件 2 行：import + 调用）。**
 最初写的「3 行」不成立——没有 import 就无法调用，这是我第二次低估了改动面。
 
 **除此之外，四个上层包的所有其它文件必须零 diff**，
-`jian_cn/` 与 `jian_pcs/` 完全零 diff。
+`aiinvite.cn/` 与 `aiinvite.pcs/` 完全零 diff。
 
 **判断标准改成：只允许这三处一行改动，且逐行可审计。**
 用一条脚本列出这四个包的 diff，行数必须正好是 3。
@@ -158,7 +158,7 @@ v2 禁止 `text` 之后它们必然取到空串。
 | N2 | `test_blob_store` | 内容寻址写入；重复内容只写一份；篡改 blob → `E_BLOB_MISMATCH`；删 blob → `E_BLOB_MISSING` |
 | N3 | `test_env_roundtrip` | export → import → export **逐字节一致**，且 blob 随包往返 |
 | N4 | `test_env_v1_compat` | v1 胶囊仍可 verify；只有 turn 的 v1 目录仍可 seal；**M1 的 31 个测试全绿** |
-| N5 | `test_upper_layers_touch_limit` | 四个上层包的 diff **恰好 6 行**（三文件各 2 行：import + 调用）；其余文件 sha256 与基线一致；`jian_cn/`、`jian_pcs/` 完全零 diff |
+| N5 | `test_upper_layers_touch_limit` | 四个上层包的 diff **恰好 6 行**（三文件各 2 行：import + 调用）；其余文件 sha256 与基线一致；`aiinvite.cn/`、`aiinvite.pcs/` 完全零 diff |
 | N6 | `test_summary_only_retrieval` | 检索只用 `summary`：把 payload 换成等长随机字节，检索结果不变 |
 | N7 | `test_all_regression` | 现有 **246 个测试仍全绿** |
 
@@ -201,4 +201,4 @@ python -m unittest discover -s tests -v      # 全绿、0 skipped
 ```
 
 **意义**：开冻结从「改哈希字典」变成「在测试里写一行理由」。
-这一轮 `jian/capsule.py`、`jian/event.py`、`jian/chain.py`、`jian_kernel/*` 的改动全部被声明。
+这一轮 `jian/capsule.py`、`jian/event.py`、`jian/chain.py`、`aiinvite.kernel/*` 的改动全部被声明。

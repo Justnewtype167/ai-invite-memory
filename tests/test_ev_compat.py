@@ -9,7 +9,7 @@ import shutil
 import tempfile
 import unittest
 
-from jian.capsule import append_event, export_capsule, init_store, seal_store, verify_path
+from aiinvite.capsule import append_event, export_capsule, init_store, seal_store, verify_path
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 MODULES = ("test_canonical", "test_chain", "test_capsule", "test_cli")
@@ -47,7 +47,7 @@ class TestM1Compat(unittest.TestCase):
 
     def test_old_capsule_still_verifies(self) -> None:
         """S2: a capsule of M1-shaped turn events verifies unchanged."""
-        root = pathlib.Path(tempfile.mkdtemp(prefix="jian_compat_"))
+        root = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_compat_"))
         self.addCleanup(shutil.rmtree, root, True)
         store = root / "mem"
         init_store(store)

@@ -10,8 +10,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from jian.canonical import dumps
-from jian.event import GENESIS_PREV, compute_hash, format_id, normalize_time
+from aiinvite.canonical import dumps
+from aiinvite.event import GENESIS_PREV, compute_hash, format_id, normalize_time
 
 Spec = tuple[str, str, str, str | None]
 

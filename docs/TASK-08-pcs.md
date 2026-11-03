@@ -57,7 +57,7 @@ PCS 就是为这个问题存在的。
 ## 2. 探针集
 
 ```
-文件  jian_pcs/data/probes.jsonl
+文件  aiinvite.pcs/data/probes.jsonl
 规模  30 条
 字段  probe_id / rule / prompt / expect / violation
 ```
@@ -109,7 +109,7 @@ PCS 就是为这个问题存在的。
 ## 4. 架构（核心零网络）
 
 ```
-jian_pcs/                    纯计算：读探针、读回复、算分（零依赖零网络）
+aiinvite.pcs/                    纯计算：读探针、读回复、算分（零依赖零网络）
   probes.py  judge.py  score.py  report.py  cli.py
 
 tools/responder_ollama.py    外部：把探针发给模型，落成 JSONL（网络只在这里）
@@ -126,7 +126,7 @@ tools/responder_ollama.py    外部：把探针发给模型，落成 JSONL（网
 ## 5. 指标报告
 
 ```
-python -m jian_pcs.cli pcs --a a.jsonl --b b.jsonl
+python -m aiinvite.pcs.cli pcs --a a.jsonl --b b.jsonl
 
 探针        30   跳过 0
 C(a)        0.87
@@ -156,10 +156,10 @@ PCS         0.75        ← 0.90 × min(0.87, 0.83)
 
 ## 7. 禁止
 
-1. 不许让 `jian_pcs/` 导入 `urllib` / `socket` / `requests`
+1. 不许让 `aiinvite.pcs/` 导入 `urllib` / `socket` / `requests`
 2. 不许测试里调真模型
 3. 不许只报 PCS 不报 C 和 A
-4. 不许改 `jian/`、`jian_cn/`、`jian_recall/`、`jian_kernel/`
+4. 不许改 `jian/`、`aiinvite.cn/`、`aiinvite.recall/`、`aiinvite.kernel/`
 5. 不许把 `unknown` 计入通过
 
 ---
@@ -168,7 +168,7 @@ PCS         0.75        ← 0.90 × min(0.87, 0.83)
 
 ```
 python -m unittest discover -s tests -v      # 全绿、0 skipped
-python -m jian_pcs.cli pcs --a a.jsonl --b b.jsonl
+python -m aiinvite.pcs.cli pcs --a a.jsonl --b b.jsonl
 ```
 
 并附一段**真机记录**：

@@ -8,7 +8,7 @@ import unittest
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
-from jian_pcs.probes import (
+from aiinvite.pcs.probes import (
     PROBE_COUNT, V2_OPERATORS, load_probes, load_rules_v2,
 )
 

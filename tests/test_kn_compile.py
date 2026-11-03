@@ -12,8 +12,8 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 import kn_fixtures
 
-from jian_kernel.compiler import compile_kernel
-from jian_kernel.kernel import EvidenceEvent, Policy
+from aiinvite.kernel.compiler import compile_kernel
+from aiinvite.kernel.kernel import EvidenceEvent, Policy
 
 NOW = "2026-10-29T10:00:00+08:00"
 RUNS = 100
@@ -22,7 +22,7 @@ RUNS = 100
 class TestCompile(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.root = pathlib.Path(tempfile.mkdtemp(prefix="jian_kn_compile_"))
+        cls.root = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_kn_compile_"))
         cls.addClassCleanup(shutil.rmtree, cls.root, True)
         cls.events = [
             ("2026-01-01T09:00:00Z", "今天天气不错", "turn", None),
@@ -59,7 +59,7 @@ class TestCompile(unittest.TestCase):
             self.assertIn(anchor.event_id, known)
 
     def _ids(self) -> set[str]:
-        from jian_kernel.compiler import read_evidence
+        from aiinvite.kernel.compiler import read_evidence
 
         return {event.event_id for event in read_evidence(self.root)}
 
@@ -83,7 +83,7 @@ class TestCompile(unittest.TestCase):
 
     def test_promise_without_cancel_is_kept(self) -> None:
         """K1: an uncancelled promise becomes a canon entry."""
-        root = pathlib.Path(tempfile.mkdtemp(prefix="jian_kn_promise_"))
+        root = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_kn_promise_"))
         self.addCleanup(shutil.rmtree, root, True)
         kn_fixtures.write_store(root, [
             ("2026-01-01T09:00:00Z", "今天天气不错", "turn", None),
@@ -95,7 +95,7 @@ class TestCompile(unittest.TestCase):
 
     def test_typed_evidence_is_read(self) -> None:
         """K1: the reader normalizes stamps and keeps type/kind."""
-        from jian_kernel.compiler import read_evidence
+        from aiinvite.kernel.compiler import read_evidence
 
         events = read_evidence(self.root)
         self.assertIsInstance(events[0], EvidenceEvent)

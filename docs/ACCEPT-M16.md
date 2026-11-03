@@ -32,7 +32,7 @@
 | `test_refusal_compiles` | `M16 refusal kid=2c4954edd7c7 head=ev_000005 expected=2c4954edd7c7` |
 | `test_persona_events_keep_kid` | `M16 persona events=600 kid=2c4954edd7c7 head=ev_000005 stable=True`；`self_md` / `canon_md` / `state` / `graph` 逐字节相同；增量 kid 相同；`reconcile.events=5` |
 | `test_record_persona_only_keeps_version` | `M16 persona-only version=1 written=False kid_stable=True`；HISTORY 字节不变；`verify_kernel` 通过；证据链末事件仍是 `directive(kind=trait)` |
-| `test_persona_not_in_pcs` | `M16 persona view groups=[0, 38, 139, 154] rules=6`；PCS 规则原文不含人格文本；`jian_persona/*.py` 源码不含 `jian_pcs` |
+| `test_persona_not_in_pcs` | `M16 persona view groups=[0, 38, 139, 154] rules=6`；PCS 规则原文不含人格文本；`aiinvite.persona/*.py` 源码不含 `aiinvite.pcs` |
 
 ### 用户卡否定式回归（2026-11-02 补，4 条）
 
@@ -106,14 +106,14 @@ M16 address suffix call='老周' tails=7
 | 特质只能由人写入 | 未批准 `proposal(self.trait)` → `E_PERSONA_UNAPPROVED`；批准必须是 `directive(target=提案 id)` 且文本一致 | ✅ |
 | 用户卡不许模型自由发挥 | U2：9 条非空条目全部可追证据；无证据字段为空 | ✅ |
 | 用户卡不自相矛盾 | 否定式回归 4 条：`call` 与 `never` 同名即丢弃（无论先后） | ✅ |
-| 派生只向下 | `jian_persona` 内 grep 无 `jian_pcs` / `jian_kernel.history` / `jian_projection` | ✅ |
-| 无第三方依赖 / 无 skip / 无占位 | 全量 unittest；`jian_persona` 内 grep 无 `TODO` / `pass` / `NotImplementedError` | ✅ |
+| 派生只向下 | `aiinvite.persona` 内 grep 无 `aiinvite.pcs` / `aiinvite.kernel.history` / `aiinvite.projection` | ✅ |
+| 无第三方依赖 / 无 skip / 无占位 | 全量 unittest；`aiinvite.persona` 内 grep 无 `TODO` / `pass` / `NotImplementedError` | ✅ |
 
 ## 5. 棘轮与拆分
 
-- `ALLOWED_ADDITIONS`：`jian_persona` 的 7 个 `.py` 全部声明。
-- `ALLOWED_CHANGES`：`jian_kernel/gate.py`、`jian_kernel/kernel.py`、`jian/event.py`、
-  `jian_kernel/compiler.py` 等 M16 改动全部声明（`history.py` 未动）。
+- `ALLOWED_ADDITIONS`：`aiinvite.persona` 的 7 个 `.py` 全部声明。
+- `ALLOWED_CHANGES`：`aiinvite.kernel/gate.py`、`aiinvite.kernel/kernel.py`、`jian/event.py`、
+  `aiinvite.kernel/compiler.py` 等 M16 改动全部声明（`history.py` 未动）。
 - `tests/test_env_v2.py`：`gate.py` / `kernel.py` 钉值更新，`len(changed) == 12`。
 - 单文件 ≤700 行：`tests/test_persona.py` 曾到 740 行，已拆为
   `tests/test_persona.py`（351 行，跳过清单 + 特质）与

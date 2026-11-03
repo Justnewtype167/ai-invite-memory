@@ -1,7 +1,7 @@
 # M13 终验：动作闸门（第二次验收）
 
 > 结论：**真实 `text_v1` 投影不再被自己的约束拦住；真实 `action_v1` 违规轨迹发不出去，`sink=0` 并留下 `refusal` 证据。**
-> 全量 `286` 个测试全绿、`0 skipped`；`jian_cn/`、`jian_recall/`、`jian_pcs/` 零 diff。
+> 全量 `286` 个测试全绿、`0 skipped`；`aiinvite.cn/`、`aiinvite.recall/`、`aiinvite.pcs/` 零 diff。
 
 ## 0. 第一次验收为什么没签
 
@@ -82,10 +82,10 @@ project_action(kernel):
 
 | 硬点 | 落点 |
 |---|---|
-| 违规时 `sink` 次数必须为 0 | [`emit()`](file:///d:/projects/Memory/jian_projection/emit.py) 先 `check`，拒绝直接返回，`sink` 那一行不可达 |
-| 内核没有对应约束就不启用闸门 | [`_enabled()`](file:///d:/projects/Memory/jian_projection/gate.py) 要求 `canon_keywords` 出现在 canon 才评估该规则 |
-| 只判话语，不判自述/约束 | [`_first_violation()`](file:///d:/projects/Memory/jian_projection/gate.py) 跳过 `role != "speech"` |
-| 规则是数据，不许写死 | [`data/gate_rules.json`](file:///d:/projects/Memory/jian_projection/data/gate_rules.json)；`gate.py` 只解释字段 |
+| 违规时 `sink` 次数必须为 0 | [`emit()`](file:///d:/projects/Memory/aiinvite.projection/emit.py) 先 `check`，拒绝直接返回，`sink` 那一行不可达 |
+| 内核没有对应约束就不启用闸门 | [`_enabled()`](file:///d:/projects/Memory/aiinvite.projection/gate.py) 要求 `canon_keywords` 出现在 canon 才评估该规则 |
+| 只判话语，不判自述/约束 | [`_first_violation()`](file:///d:/projects/Memory/aiinvite.projection/gate.py) 跳过 `role != "speech"` |
+| 规则是数据，不许写死 | [`data/gate_rules.json`](file:///d:/projects/Memory/aiinvite.projection/data/gate_rules.json)；`gate.py` 只解释字段 |
 | `check` 是纯函数 | 签名只有 `trace, kernel`；不读 store、不读时间、不用随机 |
 | 拒绝必留痕 | [`append_refusal()`](file:///d:/projects/Memory/jian/capsule.py) 写 `refusal` 事件，进哈希链、过 `verify` |
 
@@ -115,7 +115,7 @@ scope             text / action / both
 
 ## 6. 已知边界
 
-1. `refusal` 已进证据层并通过 `verify`，但 `jian_kernel/compiler.py` 的 `read_evidence`
+1. `refusal` 已进证据层并通过 `verify`，但 `aiinvite.kernel/compiler.py` 的 `read_evidence`
    仍只接受 M4 五类事件；已写 refusal 的 store 再次 `compile_kernel` 会报 `E_KN_IO`。
    规格 §7.5 禁止改编译器语义，本轮未动。
 2. `forbid_action` 只能命中动作白名单内的原语；规格示例的
@@ -131,10 +131,10 @@ scope             text / action / both
 ```
 测试        286 全绿（M13 前 274 + 本轮 12；0 skipped）
 冻结套件     178 / 0 / 0 / 0
-六个包       jian / jian_projection 的改动全部在 ALLOWED_CHANGES 声明
-             jian_cn / jian_recall / jian_pcs 零 diff
-新增文件     jian_projection/gate.py、jian_projection/emit.py、
-            jian_projection/data/gate_rules.json、tests/test_gate.py
+六个包       jian / aiinvite.projection 的改动全部在 ALLOWED_CHANGES 声明
+             aiinvite.cn / aiinvite.recall / aiinvite.pcs 零 diff
+新增文件     aiinvite.projection/gate.py、aiinvite.projection/emit.py、
+            aiinvite.projection/data/gate_rules.json、tests/test_gate.py
 ```
 
 ## 8. 结论

@@ -158,7 +158,7 @@
 1. 不许实现自动模式识别（本轮不做）
 2. 不许把两种模式的 PCS 平均成一个数
 3. 不许改情绪模式的六条规则（R1–R6 保持不变）
-4. 不许改 `jian/`、`jian_cn/`、`jian_recall/`、`jian_kernel/`
+4. 不许改 `jian/`、`aiinvite.cn/`、`aiinvite.recall/`、`aiinvite.kernel/`
 
 ---
 

@@ -22,25 +22,25 @@ import unittest
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 
-from jian.canonical import dumps
-from jian.capsule import (
+from aiinvite.canonical import dumps
+from aiinvite.capsule import (
     append_event,
     append_payload_event,
     event_full_text,
     init_store,
 )
-from jian.event import parse_event
-from jian_kernel.compiler import compile_kernel, core_events, read_evidence
-from jian_kernel.incremental import compile_kernel_incremental
-from jian_kernel.kernel import Policy
-from jian_persona.errors import (
+from aiinvite.event import parse_event
+from aiinvite.kernel.compiler import compile_kernel, core_events, read_evidence
+from aiinvite.kernel.incremental import compile_kernel_incremental
+from aiinvite.kernel.kernel import Policy
+from aiinvite.persona.errors import (
     E_PERSONA_BUDGET,
     E_PERSONA_INPUT,
     E_PERSONA_REDACTION,
     E_PERSONA_STYLE_CARD,
     PersonaError,
 )
-from jian_persona.style_card import (
+from aiinvite.persona.style_card import (
     assert_redacted,
     echo_guard,
     load_style_card,
@@ -48,10 +48,10 @@ from jian_persona.style_card import (
     record_style_card,
     style_input,
 )
-from jian_persona.user_card import UserCard, derive_user_card, pin_user_card
-from jian_persona.view import build_persona_view
-from jian_pcs.probes import load_rules_v2
-from jian_recall.assemble import Context, ContextItem
+from aiinvite.persona.user_card import UserCard, derive_user_card, pin_user_card
+from aiinvite.persona.view import build_persona_view
+from aiinvite.pcs.probes import load_rules_v2
+from aiinvite.recall.assemble import Context, ContextItem
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 NOW = "2026-01-05T10:00:00+08:00"
@@ -60,9 +60,9 @@ MODEL = "test-model"
 SCRIPT = (
     "import sys\n"
     "from pathlib import Path\n"
-    "from jian.canonical import dumps\n"
-    "from jian_kernel.compiler import read_evidence\n"
-    "from jian_persona.user_card import derive_user_card\n"
+    "from aiinvite.canonical import dumps\n"
+    "from aiinvite.kernel.compiler import read_evidence\n"
+    "from aiinvite.persona.user_card import derive_user_card\n"
     "card = derive_user_card(read_evidence(Path(sys.argv[1])))\n"
     "sys.stdout.write(dumps(card.to_payload()).decode('utf-8'))\n"
 )
@@ -126,7 +126,7 @@ def _card_evidence(card: UserCard) -> list[str]:
 
 class TestStyleCard(unittest.TestCase):
     def setUp(self) -> None:
-        self.root = pathlib.Path(tempfile.mkdtemp(prefix="jian_style_"))
+        self.root = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_style_"))
         self.addCleanup(shutil.rmtree, self.root, True)
 
     def _store(self) -> pathlib.Path:
@@ -232,7 +232,7 @@ class TestStyleCard(unittest.TestCase):
 
 class TestUserCard(unittest.TestCase):
     def setUp(self) -> None:
-        self.root = pathlib.Path(tempfile.mkdtemp(prefix="jian_user_card_"))
+        self.root = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_user_card_"))
         self.addCleanup(shutil.rmtree, self.root, True)
 
     def _store(self, name: str = "store") -> pathlib.Path:
@@ -255,7 +255,7 @@ class TestUserCard(unittest.TestCase):
         append_event(store, None, "升职了", "2026-01-09T09:00:00Z", type="milestone")
 
     def _address_card(self, *texts: str) -> UserCard:
-        store = pathlib.Path(tempfile.mkdtemp(prefix="jian_address_"))
+        store = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_address_"))
         self.addCleanup(shutil.rmtree, store, True)
         init_store(store)
         for index, text in enumerate(texts):
@@ -500,7 +500,7 @@ class TestUserCard(unittest.TestCase):
 
 class TestPersonaView(unittest.TestCase):
     def setUp(self) -> None:
-        self.root = pathlib.Path(tempfile.mkdtemp(prefix="jian_view_"))
+        self.root = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_view_"))
         self.addCleanup(shutil.rmtree, self.root, True)
 
     def _store(self) -> pathlib.Path:
@@ -550,9 +550,9 @@ class TestPersonaView(unittest.TestCase):
         for rule in rules:
             self.assertNotIn(rule.text, body_d)
 
-        for path in sorted((ROOT / "jian_persona").glob("*.py")):
+        for path in sorted((ROOT / "aiinvite/persona").glob("*.py")):
             source = path.read_text(encoding="utf-8")
-            self.assertNotIn("jian_pcs", source, f"{path.name} imports jian_pcs")
+            self.assertNotIn("aiinvite.pcs", source, f"{path.name} imports aiinvite.pcs")
         print(
             f"M16 persona view groups="
             f"{[len(body) for body in (body_a, body_b, body_c, body_d)]} "

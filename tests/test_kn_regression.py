@@ -28,7 +28,7 @@ MODULES = (
     "test_rc_regression",
 )
 FROZEN_COUNT = 104
-FROZEN_PACKAGES = ("jian", "jian_cn", "jian_recall")
+FROZEN_PACKAGES = ("jian", "aiinvite.cn", "aiinvite.recall")
 
 
 def _load(name: str):
@@ -64,12 +64,12 @@ class TestRegression(unittest.TestCase):
         offenders: list[str] = []
         for name in FROZEN_PACKAGES:
             for path in sorted((ROOT / name).rglob("*.py")):
-                if "jian_kernel" in path.read_text(encoding="utf-8"):
+                if "aiinvite.kernel" in path.read_text(encoding="utf-8"):
                     offenders.append(str(path))
         self.assertEqual(offenders, [])
         for name in FROZEN_PACKAGES:
             self.assertFalse((ROOT / name / "kernel.py").exists())
-        self.assertTrue((ROOT / "jian_kernel" / "compiler.py").is_file())
+        self.assertTrue((ROOT / "aiinvite/kernel" / "compiler.py").is_file())
 
 
 if __name__ == "__main__":

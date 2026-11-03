@@ -52,7 +52,7 @@ kid = hash(self_md, canon_md, state, graph, origin, models)
 
 ## 2. 特质表
 
-`jian_kernel/data/traits.json`：
+`aiinvite.kernel/data/traits.json`：
 
 ```json
 {
@@ -132,8 +132,8 @@ kid = hash(self_md, canon_md, state, graph, origin, models)
 
 | 字段 | 来源（**必须可机械派生**） |
 |---|---|
-| `address` | `jian_cn` 称谓解析 + 用户显式 directive |
-| `people` | `jian_cn` 亲属/称谓表 + 证据中出现的关系词 |
+| `address` | `aiinvite.cn` 称谓解析 + 用户显式 directive |
+| `people` | `aiinvite.cn` 亲属/称谓表 + 证据中出现的关系词 |
 | `taboos` | `directive/lock` 事件（用户说「别提…」） |
 | `promises` | `is_promise` 的未完成承诺 |
 | `ongoing` | 近期 `milestone` / 高频话题（规则统计，不用模型） |

@@ -10,10 +10,10 @@ import tempfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from jian.event import GENESIS_PREV, new_event
+from aiinvite.event import GENESIS_PREV, new_event
 
 ROOT = Path(__file__).resolve().parents[1]
-LABELS_PATH = ROOT / "jian_recall" / "data" / "qa_labels.json"
+LABELS_PATH = ROOT / "aiinvite" / "recall" / "data" / "qa_labels.json"
 
 POOL = (
     "今天天气不错", "中午吃了碗面", "地铁上人很多", "晚上加班到九点",
@@ -196,7 +196,7 @@ def bulk_store() -> Path:
     """Return a cached 200k-event store, created on first use."""
     global _BULK
     if _BULK is None:
-        root = Path(tempfile.mkdtemp(prefix="jian_rc_bulk_"))
+        root = Path(tempfile.mkdtemp(prefix="aiinvite_rc_bulk_"))
         atexit.register(shutil.rmtree, root, True)
         write_bulk_store(root)
         _BULK = root

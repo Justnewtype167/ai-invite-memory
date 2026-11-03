@@ -13,16 +13,16 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 import kn_fixtures
 
-from jian.errors import E_SCHEMA, JianError
-from jian.event import new_event, parse_event
-from jian_kernel.proposer import record_proposal
+from aiinvite.errors import E_SCHEMA, AiInviteError
+from aiinvite.event import new_event, parse_event
+from aiinvite.kernel.proposer import record_proposal
 
 STAMP = "2026-10-29T02:00:00Z"
 
 
 class TestProposalEvent(unittest.TestCase):
     def setUp(self) -> None:
-        self.root = pathlib.Path(tempfile.mkdtemp(prefix="jian_prop_ev_"))
+        self.root = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_prop_ev_"))
         self.addCleanup(shutil.rmtree, self.root, True)
         kn_fixtures.write_store(self.root, [
             ("2026-01-01T09:00:00Z", "今天天气不错", "turn", None),
@@ -69,7 +69,7 @@ class TestProposalEvent(unittest.TestCase):
         with_role["role"] = "user"
         cases.append(("role present", with_role))
         for label, body in cases:
-            with self.assertRaises(JianError) as caught:
+            with self.assertRaises(AiInviteError) as caught:
                 parse_event(body)
             print(f"P1 {label} -> {caught.exception.code}")
             self.assertEqual(caught.exception.code, E_SCHEMA)
@@ -77,7 +77,7 @@ class TestProposalEvent(unittest.TestCase):
     def test_new_event_rejects_role_and_kind(self) -> None:
         """P1: new_event rejects role/kind on a proposal before hashing."""
         for role, kind in (("user", None), (None, "note")):
-            with self.assertRaises(JianError) as caught:
+            with self.assertRaises(AiInviteError) as caught:
                 new_event(
                     2, "seg-0001", STAMP, role, "x", "0" * 64,
                     type="proposal", kind=kind, target="self.style", model="m",

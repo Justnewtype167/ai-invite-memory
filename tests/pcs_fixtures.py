@@ -7,7 +7,7 @@ import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
-from jian_pcs.probes import Expect, Probe, load_rules_v2
+from aiinvite.pcs.probes import Expect, Probe, load_rules_v2
 
 
 def reply_for(probe: Probe, obey: bool) -> str:

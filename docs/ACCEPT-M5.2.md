@@ -1,6 +1,6 @@
 # M5 第二步验收（核心通过；一处必须降级）
 
-> 对象：`jian/event.py` + `jian_kernel/*` + `tools/proposer_ollama.py` + 5 个新测试
+> 对象：`jian/event.py` + `aiinvite.kernel/*` + `tools/proposer_ollama.py` + 5 个新测试
 > 结论：**真机三行证明成立。但 8GB 显卡上的间歇 OOM 会让整次编译失败，必须降级。**
 
 ---

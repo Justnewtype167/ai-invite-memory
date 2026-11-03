@@ -13,15 +13,15 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 import kn_fixtures
 
-from jian_kernel.compiler import compile_kernel
-from jian_kernel.history import history, record_kernel, restore, verify_kernel
-from jian_kernel.kernel import (
+from aiinvite.kernel.compiler import compile_kernel
+from aiinvite.kernel.history import history, record_kernel, restore, verify_kernel
+from aiinvite.kernel.kernel import (
     ORIGIN_RULE_FALLBACK,
     ORIGIN_RULE_ONLY,
     ORIGIN_WITH_PROPOSALS,
     Policy,
 )
-from jian_kernel.proposer import record_proposal
+from aiinvite.kernel.proposer import record_proposal
 
 NOW = "2026-10-29T10:00:00+08:00"
 STAMP = "2026-10-29T02:00:00Z"
@@ -42,7 +42,7 @@ class TestFallback(unittest.TestCase):
             shutil.rmtree(store, True)
 
     def _store(self, with_proposal: bool) -> pathlib.Path:
-        store = pathlib.Path(tempfile.mkdtemp(prefix="jian_prop_fb_"))
+        store = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_prop_fb_"))
         self.stores.append(store)
         kn_fixtures.write_store(store, EVENTS)
         if with_proposal:

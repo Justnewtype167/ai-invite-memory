@@ -14,8 +14,8 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 import rc_fixtures
 
-from jian_recall.assemble import assemble
-from jian_recall.index import build_index
+from aiinvite.recall.assemble import assemble
+from aiinvite.recall.index import build_index
 
 NOW = "2026-10-29T10:00:00+08:00"
 
@@ -23,7 +23,7 @@ NOW = "2026-10-29T10:00:00+08:00"
 class TestQuality(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.root = pathlib.Path(tempfile.mkdtemp(prefix="jian_rc_qa_"))
+        cls.root = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_rc_qa_"))
         cls.counts = rc_fixtures.quality_store(cls.root)
         build_index(cls.root)
 
@@ -63,7 +63,7 @@ class TestQuality(unittest.TestCase):
 
     def test_budget_pressure(self) -> None:
         """R7: one gold survives 500 same-term distractors within 4k tokens."""
-        root = pathlib.Path(tempfile.mkdtemp(prefix="jian_rc_pressure_"))
+        root = pathlib.Path(tempfile.mkdtemp(prefix="aiinvite_rc_pressure_"))
         self.addCleanup(shutil.rmtree, root, True)
         gold = "我妈下周三做手术"
         distractors = (

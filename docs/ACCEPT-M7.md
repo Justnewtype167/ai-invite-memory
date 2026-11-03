@@ -1,6 +1,6 @@
 # M7 验收（探针与前两处都成立；`D` 的定义有缺陷，必须先改）
 
-> 对象：`jian_pcs/` 扩展 + `tools/responder_ollama.py --multi` + 5 个新测试
+> 对象：`aiinvite.pcs/` 扩展 + `tools/responder_ollama.py --multi` + 5 个新测试
 > 结论：**204 测试全绿，标定可复现。但 `D` 这个指标现在测的不是「稳定性」。**
 
 ---

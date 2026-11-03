@@ -86,8 +86,8 @@ R3 恰好一问：30 条时 glm 的 R3 是 1.00（≤1 读法下零问也算过�
 
 # M9：咨询模式（20 条探针，Q1-Q4）
 
-> 规格：`docs/TASK-13-mode-rules.md`。规则集：`jian_pcs/data/rules_consult.json`。
-> 探针：`jian_pcs/data/probes_consult.jsonl`（Q1-Q4 各 5 条，`mode="consult"`）。
+> 规格：`docs/TASK-13-mode-rules.md`。规则集：`aiinvite.pcs/data/rules_consult.json`。
+> 探针：`aiinvite.pcs/data/probes_consult.jsonl`（Q1-Q4 各 5 条，`mode="consult"`）。
 > 归档回复：`pcs_out/replies_qwen3.5_9b_consult.jsonl`、`pcs_out/replies_glm4_9b_consult.jsonl`。
 > 口径：temp 0、seed 42、单轮、20 条全部有回复（跳过 0）。
 > **Q1 v2**（规格 `50fdf49`）：不以问句开头 且 不含回避短语（无法/不知/不清楚/

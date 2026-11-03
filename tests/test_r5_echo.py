@@ -8,7 +8,7 @@ import unittest
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
-from jian_pcs.probes import load_all_probes, load_rules_v2
+from aiinvite.pcs.probes import load_all_probes, load_rules_v2
 
 
 class TestR5Echo(unittest.TestCase):

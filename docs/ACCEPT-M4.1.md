@@ -9,9 +9,9 @@
 
 ```
 改：jian/capsule.py  jian/cli.py  jian/event.py
-    jian_recall/assemble.py  jian_recall/retrieve.py
+    aiinvite.recall/assemble.py  aiinvite.recall/retrieve.py
     测试 + tools/demo_e2e.py + docs/demo/E2E.txt
-未改：jian_cn/ 全部、jian_kernel/ 全部
+未改：aiinvite.cn/ 全部、aiinvite.kernel/ 全部
 ```
 
 ## 2. 我独立复现的 8 项
@@ -72,14 +72,14 @@
 
 ## 1. 冻结例外：完全守住
 
-按正确基线逐个核对（上一次我用错了基线，把 M4 新建的 `jian_kernel/` 误判为被改）：
+按正确基线逐个核对（上一次我用错了基线，把 M4 新建的 `aiinvite.kernel/` 误判为被改）：
 
 | 对比 | 结果 |
 |---|---|
-| `jian_cn/` vs `v0.2-m2` | **零 diff** |
-| `jian_kernel/` vs `v0.4-m4` | **零 diff** |
+| `aiinvite.cn/` vs `v0.2-m2` | **零 diff** |
+| `aiinvite.kernel/` vs `v0.4-m4` | **零 diff** |
 | `jian/` vs `v0.1-m1` | 仅 `event.py` / `capsule.py` / `cli.py` |
-| `jian_recall/` vs `v0.3-m3` | 仅 `assemble.py` / `retrieve.py` |
+| `aiinvite.recall/` vs `v0.3-m3` | 仅 `assemble.py` / `retrieve.py` |
 
 **恰好五个文件，一个不多。**
 
@@ -98,15 +98,15 @@ tests       Ran 148 tests, OK
 | tag | 包 | 测试 | 一句话 |
 |---|---|---|---|
 | v0.1-m1 | `jian/` | 31 | 改 1 字节会被发现 |
-| v0.2-m2 | `jian_cn/` | 44 | 中文靠规则，不靠模型 |
-| v0.3-m3 | `jian_recall/` | 27 | 4k 预算不损保真 |
-| v0.4-m4 | `jian_kernel/` | 29 | 人格可重算，kid 不变 |
+| v0.2-m2 | `aiinvite.cn/` | 44 | 中文靠规则，不靠模型 |
+| v0.3-m3 | `aiinvite.recall/` | 27 | 4k 预算不损保真 |
+| v0.4-m4 | `aiinvite.kernel/` | 29 | 人格可重算，kid 不变 |
 | v0.5-m41 | 五文件 | 17 | 五类事件可校验、上下文不重复、金句进前五 |
 | 合计 | 4 包 | **148** | 0 依赖 · 0 模型 · 可克隆复现 |
 
 ## 4. 这一轮的方法学收获
 
-我自己犯了一个错并当场上报：**用 `v0.3-m3` 作基线去检查 `jian_kernel/`**，
+我自己犯了一个错并当场上报：**用 `v0.3-m3` 作基线去检查 `aiinvite.kernel/`**，
 而那个包在 v0.3-m3 时还不存在，于是整包被显示为「新增」——看起来像违规。
 
 换成正确基线后零 diff。

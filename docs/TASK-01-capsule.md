@@ -35,7 +35,7 @@ REVIVAL.md
 8. 顶层必须是对象（v1 限制）
 9. 输出为 `bytes`，UTF-8，末尾**无换行**
 
-反例必须抛 `JianError(code="E_NOT_CANONICAL")`。
+反例必须抛 `AiInviteError(code="E_NOT_CANONICAL")`。
 
 ## 3. 事件模型（每行一个 JSON，行尾 `\n`）
 
@@ -148,13 +148,13 @@ created := chain.json["sealed_at"]      // 直接复制，不做任何转换
 ## 8. CLI（7 个命令）
 
 ```
-python -m jian.cli init    <dir>
-python -m jian.cli append  <dir> --role user|assistant --text "..." [--t ISO8601]
-python -m jian.cli seal    <dir>
-python -m jian.cli verify  <dir|file.aiem>
-python -m jian.cli export  <dir> <out.aiem>
-python -m jian.cli import  <in.aiem> <dir>
-python -m jian.cli inspect <file.aiem>
+python -m aiinvite.cli init    <dir>
+python -m aiinvite.cli append  <dir> --role user|assistant --text "..." [--t ISO8601]
+python -m aiinvite.cli seal    <dir>
+python -m aiinvite.cli verify  <dir|file.aiem>
+python -m aiinvite.cli export  <dir> <out.aiem>
+python -m aiinvite.cli import  <in.aiem> <dir>
+python -m aiinvite.cli inspect <file.aiem>
 ```
 
 - `verify` 成功打印 `OK events=N segments=M head=<hex8> state=sealed|unsealed`，退出码 0

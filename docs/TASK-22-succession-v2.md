@@ -68,7 +68,7 @@ Policy(now=..., horizon: str | None = None)   # horizon = 继承时刻的 head e
 
 ```
 ① 槽位化   只允许 恐惧/仪式/禁忌/遗憾/依恋 五类
-② 去实体   人名、地名、机构名、金额剥离（复用 jian_cn）
+② 去实体   人名、地名、机构名、金额剥离（复用 aiinvite.cn）
 ③ 子串检查  与 evidence 任意连续 >= 12 字符重合 → 该条不进入包
 ④ 记录     redaction.json 记 {slot, reason: contains_raw_span}
 ⑤ 熔断     合格条目 < 20 → 整体失败 E_SUCC_THIN

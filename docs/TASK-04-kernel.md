@@ -17,7 +17,7 @@ ReplayProposer        ← 读录制好的提案重放（M5 用，M4 先留桩）
 
 | 许做 | 不许做 |
 |---|---|
-| 新增 `jian_kernel/` | 改 `jian/`、`jian_cn/`、`jian_recall/`（三者已封版） |
+| 新增 `aiinvite.kernel/` | 改 `jian/`、`aiinvite.cn/`、`aiinvite.recall/`（三者已封版） |
 | 读 M1 证据、调用 M2 的称谓/时间 | 调用任何模型、网络、三方库 |
 | 写 `store/kernel/`（派生物，可删可重建） | 写 `store/evidence/`（证据层只读） |
 
@@ -26,7 +26,7 @@ ReplayProposer        ← 读录制好的提案重放（M5 用，M4 先留桩）
 ## 1. 目录
 
 ```
-jian_kernel/
+aiinvite.kernel/
   __init__.py  errors.py  compiler.py  kernel.py  gate.py
   proposer.py  history.py  cli.py
 tests/test_kn_compile.py · test_kn_determinism.py · test_kn_gate.py
@@ -67,7 +67,7 @@ def compile_kernel(store: Path, policy: Policy | None = None, proposer=None) -> 
 | `canon.md` | ①每个 `type=directive, kind=lock` 事件 → 一条；②`is_promise(text)` 命中且此后无「已完成/已办/做到了」抵消 → 一条承诺 |
 | `self.md` | 固定模板 + 统计填空：相识天数、事件总数、活跃月份数、最高频称谓、最近 1 条 milestone |
 | `state.json` | `trust / intimacy / stability` 三个整数：`feedback(correction)` −50 trust；`feedback(praise)` +20 trust；每自然日首次对话 +5 intimacy；每连续 30 天无事件 ×0.9；全部截断到 0–1000，按事件序累加 |
-| `graph.json` | 用 `jian_cn.kinship` 匹配文本中的称谓词建边；用 `jian_cn.timex` 把相对时间落成绝对日期（锚点取该事件时间） |
+| `graph.json` | 用 `aiinvite.cn.kinship` 匹配文本中的称谓词建边；用 `aiinvite.cn.timex` 把相对时间落成绝对日期（锚点取该事件时间） |
 
 **每一条**都必须带 `evidence: [event_id, ...]`，且 id 必须在证据中存在。
 
@@ -166,11 +166,11 @@ def restore(store, version: int) -> Kernel            # 只重建对象，不写
 ## 6. CLI
 
 ```
-python -m jian_kernel.cli compile <store> --now ISO8601
-python -m jian_kernel.cli record  <store> --now ISO8601 [--force]
-python -m jian_kernel.cli history <store>
-python -m jian_kernel.cli diff    <store> --a 1 --b 2
-python -m jian_kernel.cli verify  <store>
+python -m aiinvite.kernel.cli compile <store> --now ISO8601
+python -m aiinvite.kernel.cli record  <store> --now ISO8601 [--force]
+python -m aiinvite.kernel.cli history <store>
+python -m aiinvite.kernel.cli diff    <store> --a 1 --b 2
+python -m aiinvite.kernel.cli verify  <store>
 ```
 
 `verify`：重新编译并与当前 `kernel/` 比对，输出 `OK kid=... version=... head=...`；不一致 `E_KN_STALE`。
@@ -186,7 +186,7 @@ python -m jian_kernel.cli verify  <store>
 | K3 | `test_kn_gate` | ①手改 canon 后 record → `E_KN_STALE`（篡改检测），证据新增承诺但无新指令 → `E_KN_GATE_CANON`（canon 门控），`--force` 重写并追加 `tamper_healed`；②注入一次大变更 → `E_KN_GATE_DELTA`；③state 跳变 500 → `E_KN_GATE_STATE`；④各失败后 `kernel/` 目录**字节未变** |
 | K4 | `test_kn_history` | HISTORY 只追加；`diff` 逐条正确；`restore` 不写盘 |
 | K5 | `test_kn_sources` | 构造一条无 evidence 的条目 → `E_KN_UNSOURCED`；evidence 指向不存在事件 → 同样报错 |
-| K6 | `test_kn_regression` | M1+M2+M3 的 **104 个测试仍全绿**；`jian/`、`jian_cn/`、`jian_recall/` 零 diff |
+| K6 | `test_kn_regression` | M1+M2+M3 的 **104 个测试仍全绿**；`jian/`、`aiinvite.cn/`、`aiinvite.recall/` 零 diff |
 
 ---
 
@@ -197,7 +197,7 @@ python -m jian_kernel.cli verify  <store>
 3. 不许在门控失败后留下任何半成品文件
 4. 不许让 `version` 参与 `kid` 计算
 5. 不许为了让 K3 通过而把门控阈值调宽
-6. 不许改已封版的两个包（`jian/`、`jian_cn/`、`jian_recall/`）
+6. 不许改已封版的两个包（`jian/`、`aiinvite.cn/`、`aiinvite.recall/`）
 
 ---
 

@@ -1,4 +1,4 @@
-# Jian / 竹简
+# AI Invite · Memory
 
 **A local, verifiable memory kernel and persona layer for long-lived AI companions.**
 
@@ -12,7 +12,7 @@
 
 | Question | Mechanism | Measured |
 |---|---|---|
-| Has this memory been tampered with? | append-only chain + hash chain | one changed byte is caught; `jian-kernel compile` verifies the chain by default (`E_KN_TAMPER`) |
+| Has this memory been tampered with? | append-only chain + hash chain | one changed byte is caught; `aiinvite kernel compile` verifies the chain by default (`E_KN_TAMPER`) |
 | Can it move to another device? | one capsule file, persona recomputed on arrival | identical `kid` on device B |
 | Is it still the same person after a model swap? | content identity `kid` + behavioral identity PCS | PCS = 0.649 (95% CI [0.522, 0.754]); PCS is an **evaluation result**, not carried in the capsule |
 | Does context get expensive? | budgeted assembly (4k cap) | 200k memories, p50 13 ms |
@@ -30,11 +30,11 @@ Zero third-party dependencies, Python 3.11+. The core libraries never touch the 
 
 ```
 jian/             evidence layer: store, hash chain, byte reproducibility, payload blobs
-jian_cn/          Chinese rule layer: kinship, relative time, slang decay, script folding
-jian_recall/      retrieval and budgeted assembly: FTS5 + bigrams + 4k cap
-jian_kernel/      persona kernel: deterministic compile, gates, history, proposals
-jian_pcs/         behavioral identity: PCS, executable rules, collapse depth
-jian_projection/  projection layer: trace contract and per-form projectors (M11+)
+aiinvite.cn/          Chinese rule layer: kinship, relative time, slang decay, script folding
+aiinvite.recall/      retrieval and budgeted assembly: FTS5 + bigrams + 4k cap
+aiinvite.kernel/      persona kernel: deterministic compile, gates, history, proposals
+aiinvite.pcs/         behavioral identity: PCS, executable rules, collapse depth
+aiinvite.projection/  projection layer: trace contract and per-form projectors (M11+)
 tools/            external adapters (the only place with network): proposer, reply capture, matrix runs
 experiments/      reply sets and matrix results
 docs/             specs, acceptance records, results, papers

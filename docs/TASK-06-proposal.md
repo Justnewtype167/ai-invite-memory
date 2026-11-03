@@ -20,7 +20,7 @@
 | 可改 | 不可改 |
 |---|---|
 | `jian/event.py`（加第 6 种事件类型） | `jian/capsule.py`、`jian/cli.py` |
-| `jian_kernel/*`（新增 proposal 支持） | `jian_cn/`、`jian_recall/` 全部 |
+| `aiinvite.kernel/*`（新增 proposal 支持） | `aiinvite.cn/`、`aiinvite.recall/` 全部 |
 | `tests/` 新增 | 事件哈希算法、canonical 规则 |
 
 ---
@@ -122,8 +122,8 @@ def record_kernel(store, policy=None, force=False, allow_fallback=False) -> Reco
 CLI：
 
 ```
-python -m jian_kernel.cli propose <store> --text "…" --model m --prompt-sha abc123
-python -m jian_kernel.cli compile <store> --allow-fallback
+python -m aiinvite.kernel.cli propose <store> --text "…" --model m --prompt-sha abc123
+python -m aiinvite.kernel.cli compile <store> --allow-fallback
 ```
 
 ---
@@ -148,7 +148,7 @@ python -m jian_kernel.cli compile <store> --allow-fallback
 | P4 | `test_kn_fallback` | 同上 + `allow_fallback` → 成功，`origin=rule_fallback`，**kid 与 P2 两种都不同** |
 | P5 | `test_kn_gate5` | `target=canon` → `E_KN_BAD_TARGET`；12 条同 target → 接受 8 条、`rejected=4` |
 | P6 | `test_kn_proposal_determinism` | 有提案时，跨进程（不同 PYTHONHASHSEED）kid 一致 |
-| P7 | `test_all_regression` | 现有 **148 个测试仍全绿**；`jian_cn/`、`jian_recall/` 零 diff |
+| P7 | `test_all_regression` | 现有 **148 个测试仍全绿**；`aiinvite.cn/`、`aiinvite.recall/` 零 diff |
 
 ---
 
@@ -158,7 +158,7 @@ python -m jian_kernel.cli compile <store> --allow-fallback
 2. 不许在缺提案时静默用规则兜底（必须报错，或显式 fallback 且改 kid）
 3. 不许把 `origin` 放在 kid 之外
 4. 不许接真模型（本步只用 `ReplayProposer`）
-5. 不许改 `jian_cn/`、`jian_recall/`
+5. 不许改 `aiinvite.cn/`、`aiinvite.recall/`
 
 ---
 

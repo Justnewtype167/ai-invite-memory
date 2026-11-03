@@ -182,7 +182,7 @@ kid = sha256(canonical(canon, state, graph, self, origin, models))
 第三、六项最重要：前者证明没有隐藏状态，后者证明身份与证据一一对应。
 
 > **一点必须说清**：库函数 `compile_kernel` 只做纯派生，信任传入的字节；
-> **信任闸门在 CLI 边界**——`jian-kernel compile` 默认先验链，篡改即以 `E_KN_TAMPER` 拒绝，`--no-verify` 才是显式快路径。
+> **信任闸门在 CLI 边界**——`aiinvite kernel compile` 默认先验链，篡改即以 `E_KN_TAMPER` 拒绝，`--no-verify` 才是显式快路径。
 > 实测校验开销约为编译的 **5%**（2000 条事件），因此没有理由为速度关掉它。
 
 > **一点必须说清**：篡改是「**可**被发现」而非「编译时自动报警」。

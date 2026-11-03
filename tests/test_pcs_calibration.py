@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import unittest
 
-from jian_pcs.probes import (
+from aiinvite.pcs.probes import (
     CALIBRATION_HIGH,
     CALIBRATION_LOW,
     CALIBRATION_PATH,

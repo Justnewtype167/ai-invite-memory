@@ -10,7 +10,7 @@ import unittest
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from jian_pcs.probes import load_hard_probes
+from aiinvite.pcs.probes import load_hard_probes
 
 
 def _builder():
