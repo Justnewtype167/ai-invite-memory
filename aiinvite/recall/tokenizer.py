@@ -52,6 +52,29 @@ def estimate_tokens(text: str) -> int:
     return int(math.ceil(cost))
 
 
+def unigrams(text: str) -> str:
+    """Return single Han characters joined by spaces.
+
+    The index stores these next to the bigrams so a one-character synonym
+    (a group term such as "dog") can reach text where it only appears inside a
+    bigram ("my dog is called").
+    """
+    if not isinstance(text, str):
+        raise TypeError("text must be a str")
+    return " ".join(char for char in text if _is_han(char))
+
+
+def index_terms(text: str) -> str:
+    """Return the tokens the FTS index stores: bigrams plus unigrams."""
+    bigram_text = bigrams(text)
+    unigram_text = unigrams(text)
+    if not unigram_text:
+        return bigram_text
+    if not bigram_text:
+        return unigram_text
+    return bigram_text + " " + unigram_text
+
+
 def bigrams(text: str) -> str:
     """Return overlapping Han bigrams joined by single spaces.
 

@@ -60,10 +60,11 @@ BASELINE = {
     "aiinvite/recall/assemble.py": "dffd2beeea19aeb343b0e5cda4a99b8a4a61fe38cbdb75fa57f22539ba072ac2",
     "aiinvite/recall/cli.py": "4738dd82a464e44a259d69cb86e00a5cf5956c3cf3db0cd73e195fbd32265b64",
     "aiinvite/recall/errors.py": "a70c36dd64a63d9309f28689e9ff2779b598ec207e00f32bd16d481eeed7517f",
-    "aiinvite/recall/index.py": "617f9d62992a4628f13b81bc13f9e71e0cfa4df2758fe7122b4edb513d620ee0",
-    "aiinvite/recall/retrieve.py": "c3f80c7a124574992b8836260769ea92ae263bb69b7d0efe2d35f96cf648136c",
+    "aiinvite/recall/index.py": "6bc41a774dcfd14dd4bc74725007f49d85ad2c4337f423a01870c8eee98ab5c6",
+    "aiinvite/recall/retrieve.py": "7641c434bd712f2bf14defbf19588040510832f6997078ef12db5d3d01173f2f",
     "aiinvite/recall/stream.py": "a7ef3844eef9c3668086f062d34648147acc6a04449ded8f2cef51c2a851cfb0",
-    "aiinvite/recall/tokenizer.py": "c815698f2e448734111fbbda6ce6613fcf68f162276dde91a30dfdc9e30ccfe4",
+    "aiinvite/recall/synonyms.py": "0b7c5b1a9db602a87b629bb7c42e7878d5065fc40ddf6098e09dcb3b2742f07e",
+    "aiinvite/recall/tokenizer.py": "3d922ac3763058b0fa798e05c431561546e8c6ff649d33bc936b134f54c17c92",
     "aiinvite/recall/trigger.py": "35dcfde0c924d2b54ebea87a89dbaa87e778ce45fb15b53effd2409cbe43c6ad",
 }
 EDITS = {}

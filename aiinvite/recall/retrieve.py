@@ -10,6 +10,7 @@ from pathlib import Path
 
 from aiinvite.recall.errors import E_RC_IO, E_RC_STALE, RecallError
 from aiinvite.recall.index import connect_index, index_status, parse_now, parse_stamp
+from aiinvite.recall.synonyms import expand
 from aiinvite.recall.tokenizer import bigrams
 
 DECAY_WINDOW_DAYS = 365.0
@@ -58,7 +59,11 @@ def _search(store: Path, query: str, k: int, moment: datetime) -> list[Hit]:
     terms = list(dict.fromkeys(bigrams(query).split()))
     if not terms or k <= 0:
         return []
-    match = " OR ".join('"' + term + '"' for term in terms)
+    # Synonym terms only widen the candidate set; coverage below still counts
+    # the literal query terms, so a synonym match cannot outrank a literal one.
+    extra = [term for term in expand(query) if term not in terms]
+    match_terms = terms + extra
+    match = " OR ".join('"' + term + '"' for term in match_terms)
     connection = connect_index(store)
     try:
         rows = connection.execute(

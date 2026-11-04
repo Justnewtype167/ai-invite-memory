@@ -18,11 +18,11 @@ from typing import Iterator
 
 from aiinvite.event import event_text
 from aiinvite.recall.errors import E_RC_IO, E_RC_NO_INDEX, E_RC_STALE, RecallError
-from aiinvite.recall.tokenizer import bigrams, estimate_tokens
+from aiinvite.recall.tokenizer import bigrams, estimate_tokens, index_terms
 
 INDEX_DIR = ".index"
 INDEX_FILE = "idx.sqlite"
-INDEX_VERSION = "1"
+INDEX_VERSION = "2"
 EVIDENCE_DIR = "evidence"
 PROMISE_WORDS = ("答应", "保证", "说好", "下次一定")
 PROMISE_DONE = ("已", "完成了")
@@ -156,7 +156,7 @@ def build_index(store: Path) -> IndexStatus:
             rows_time: list[tuple[str, str, str, str, int]] = []
             for event in _iter_stored(path):
                 rows_ev.append(
-                    (event.event_id, event.seg, event.ts, bigrams(event.text))
+                    (event.event_id, event.seg, event.ts, index_terms(event.text))
                 )
                 rows_data.append(
                     (
@@ -230,7 +230,7 @@ def update_index(store: Path) -> IndexStatus:
                     continue
                 connection.execute(
                     "INSERT INTO fts_ev(event_id, seg, ts, bg) VALUES(?, ?, ?, ?)",
-                    (event.event_id, event.seg, event.ts, bigrams(event.text)),
+                    (event.event_id, event.seg, event.ts, index_terms(event.text)),
                 )
                 connection.execute(
                     "INSERT INTO ev_data(event_id, text, tokens, is_promise) "

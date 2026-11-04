@@ -23,6 +23,28 @@ class EngineError(RuntimeError):
     """A demo-level failure with a message the window can show."""
 
 
+def explain_failure(code, body):
+    """Turn an Ollama HTTP failure into an instruction the user can follow."""
+    text = (body or "").lower()
+    if "out of memory" in text or "failed to allocate" in text:
+        return (
+            "内存不足，模型加载失败：关掉一些占内存的程序（浏览器、微信、编辑器），"
+            "或者换一个更小的模型（如 qwen2.5:3b）。"
+        )
+    if "not found" in text or "no such model" in text:
+        return "这个模型还没下载：先在终端运行 ollama pull <模型名>。"
+    if code == 500:
+        return "模型服务报错了（500）：看一眼 Ollama 的日志，通常是加载失败。"
+    return "模型服务返回 " + str(code) + "：" + (body or "")[:120]
+
+
+def explain_unreachable(url, error):
+    """Explain a connection failure: the service, not the model, is missing."""
+    return (
+        "本地模型服务没有打开（" + url + "）：先启动 Ollama，再试一次。"
+        "（原始错误：" + str(error)[:80] + "）"
+    )
+
 def ollama_caller(prompt: str, model: str, timeout: int = 120) -> str:
     """Ask a local Ollama model; raise EngineError when it is unreachable."""
     payload = json.dumps({
@@ -38,10 +60,13 @@ def ollama_caller(prompt: str, model: str, timeout: int = 120) -> str:
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:
             body = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", "ignore") if hasattr(exc, "read") else ""
+        raise EngineError(explain_failure(exc.code, detail)) from exc
     except (urllib.error.URLError, OSError) as exc:
-        raise EngineError(f"cannot reach Ollama at {OLLAMA_URL}: {exc}") from exc
+        raise EngineError(explain_unreachable(OLLAMA_URL, exc)) from exc
     except json.JSONDecodeError as exc:
-        raise EngineError(f"Ollama returned non-JSON: {exc}") from exc
+        raise EngineError("模型服务返回了无法解析的内容：" + str(exc)[:80]) from exc
     text = str(body.get("response", "")).strip()
     if not text:
         raise EngineError(f"{model} returned an empty reply")
