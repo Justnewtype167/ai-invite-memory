@@ -93,7 +93,9 @@ def load_rules(path: Path | None = None) -> dict[str, object]:
 
 
 def derive_user_card(
-    events: list[EvidenceEvent], rules: dict[str, object] | None = None
+    events: list[EvidenceEvent],
+    rules: dict[str, object] | None = None,
+    cache: dict | None = None,
 ) -> UserCard:
     """Derive the user card from the kernel events only.
 
@@ -104,7 +106,7 @@ def derive_user_card(
     # The model's own words must never shape the user card: a reply such as
     # "why do you not want me to call you baby?" would otherwise add a taboo.
     core = [event for event in core_events(events) if event.role != "assistant"]
-    address = _derive_address(core, table)
+    address = _derive_address(core, table, cache)
     people = _derive_people(core)
     taboos = tuple(
         {"text": event.text, "evidence": event.event_id}
@@ -116,12 +118,14 @@ def derive_user_card(
         {"text": event.text, "evidence": event.event_id}
         for event in core if event.type == "milestone"
     )[-ONGOING_LIMIT:]
-    prefs = _derive_prefs(core, table)
+    prefs = _derive_prefs(core, table, cache)
     return UserCard(address, people, taboos, promises, ongoing, prefs)
 
 
 def _derive_address(
-    core: list[EvidenceEvent], table: dict[str, object]
+    core: list[EvidenceEvent],
+    table: dict[str, object],
+    cache: dict | None = None,
 ) -> dict[str, object]:
     address = table.get("address")
     assert isinstance(address, dict)
@@ -143,7 +147,7 @@ def _derive_address(
             and str(item[0]) and str(item[1])
         )
     call, call_evidence, never = _derive_call(
-        core, str(address.get("call", "")), negations, suffixes, aliases
+        core, str(address.get("call", "")), negations, suffixes, aliases, cache
     )
     self_name = _last_match(core, str(address.get("self", "")))
     payload: dict[str, object] = {
@@ -164,6 +168,7 @@ def _derive_call(
     negations: tuple[str, ...],
     suffixes: tuple[str, ...],
     aliases: tuple[tuple[str, str], ...],
+    cache: dict | None = None,
 ) -> tuple[str, str, list[dict[str, str]]]:
     """Split address directives into call and taboo; a taboo always wins.
 
@@ -183,39 +188,72 @@ def _derive_call(
     seen: set[str] = set()
     if not pattern:
         return call, evidence, never
+    rule_key = "|".join((pattern, ",".join(negations), ",".join(suffixes),
+                          ";".join(a + ">" + b for a, b in aliases)))
     for event in core:
-        for clause in CLAUSE_SPLIT.split(event.text):
-            if not clause:
-                continue
-            normalized = _normalize_clause(clause, aliases)
-            negative = any(
-                word and word in clause for word in negations
-            )
-            for match in re.finditer(pattern, normalized):
-                pronoun = (match.group(1) or "").strip()
-                name = _trim_suffixes(match.group(2).strip(), suffixes)
-                name = _trim_quantifiers(name)
-                if not name or _is_interrogative(name) or _is_question(clause):
-                    # "我叫什么名字？" / "你能叫我宝贝吗" are questions, not names.
-                    continue
-                if negative:
-                    if name not in seen:
-                        seen.add(name)
-                        never.append({"text": name, "evidence": event.event_id})
-                elif (
-                    pronoun
-                    and name not in seen
-                    and not _has_kinship_prefix(normalized[: match.start()])
-                ):
-                    # A later match equal to a taboo must not wipe an earlier
-                    # good name ("叫我一声宝贝" after "叫我老周").
-                    call = name
-                    evidence = event.event_id
+        for name, negative in _scan_address(
+            event, pattern, negations, suffixes, aliases, cache, rule_key
+        ):
+            if negative:
+                if name not in seen:
+                    seen.add(name)
+                    never.append({"text": name, "evidence": event.event_id})
+            elif name not in seen:
+                # A later match equal to a taboo must not wipe an earlier
+                # good name ("叫我一声宝贝" after "叫我老周").
+                call = name
+                evidence = event.event_id
     if call and call in seen:
         call = ""
         evidence = ""
     return call, evidence, never
 
+
+def _scan_address(
+    event: EvidenceEvent,
+    pattern: str,
+    negations: tuple[str, ...],
+    suffixes: tuple[str, ...],
+    aliases: tuple[tuple[str, str], ...],
+    cache: dict | None = None,
+    rule_key: str | None = None,
+) -> list[tuple[str, bool]]:
+    """Return (name, is_taboo) for one event, memoised when a cache is given.
+
+    The scan is pure: same text and rules always give the same pairs, so the
+    card can be rebuilt from memory without touching the regexes again.
+    """
+    ready = cache is not None and rule_key is not None
+    if ready:
+        if cache.get(MEMO_RULE) != rule_key:
+            cache.clear()
+            cache[MEMO_RULE] = rule_key
+        # Key on the text, not the id: findings are a pure function of text, and
+        # different stores reuse the same event ids.
+        hit = cache.get(event.text)
+        if hit is not None:
+            return hit
+    found: list[tuple[str, bool]] = []
+    for clause in CLAUSE_SPLIT.split(event.text):
+        if not clause:
+            continue
+        normalized = _normalize_clause(clause, aliases)
+        negative = any(word and word in clause for word in negations)
+        if _is_question(clause):
+            continue
+        for match in re.finditer(pattern, normalized):
+            pronoun = (match.group(1) or "").strip()
+            name = _trim_quantifiers(_trim_suffixes(match.group(2).strip(), suffixes))
+            if not name or _is_interrogative(name):
+                continue
+            if not negative and (
+                not pronoun or _has_kinship_prefix(normalized[: match.start()])
+            ):
+                continue
+            found.append((name, negative))
+    if ready:
+        cache[event.text] = found
+    return found
 
 def _normalize_clause(
     clause: str, aliases: tuple[tuple[str, str], ...]
@@ -231,6 +269,8 @@ def _has_kinship_prefix(prefix: str) -> bool:
     """Return whether a kinship term precedes "叫我", e.g. 我妈叫我回家."""
     return any(term in prefix for term in lexicon_terms())
 
+
+MEMO_RULE = "__rule__"
 
 INTERROGATIVES = ("\u4ec0\u4e48", "\u8c01", "\u5565", "\u54ea", "\u600e\u4e48")  # 什么 谁 啥 哪 怎么
 QUESTION_TAILS = ("\u5417", "\u5462", "\u4e48")  # 吗 呢 么
@@ -333,8 +373,36 @@ def _promise_done(event: EvidenceEvent, core: list[EvidenceEvent]) -> bool:
     )
 
 
+def _scan_prefs(
+    event: EvidenceEvent,
+    patterns: list,
+    cache: dict | None = None,
+    rule_key: str | None = None,
+) -> list[str]:
+    """Return the preference values in one event, memoised like the address scan."""
+    ready = cache is not None and rule_key is not None
+    if ready:
+        bucket = cache.setdefault("prefs", {})
+        if bucket.get(MEMO_RULE) != rule_key:
+            bucket.clear()
+            bucket[MEMO_RULE] = rule_key
+        hit = bucket.get(event.text)
+        if hit is not None:
+            return hit
+    found: list[str] = []
+    for pattern in patterns:
+        for match in re.finditer(str(pattern), event.text):
+            value = match.group(1).strip()[:TEXT_LIMIT]
+            if value:
+                found.append(value)
+    if ready:
+        bucket[event.text] = found
+    return found
+
 def _derive_prefs(
-    core: list[EvidenceEvent], table: dict[str, object]
+    core: list[EvidenceEvent],
+    table: dict[str, object],
+    cache: dict | None = None,
 ) -> dict[str, tuple[dict[str, str], ...]]:
     prefs = table.get("prefs")
     assert isinstance(prefs, dict)
@@ -345,14 +413,13 @@ def _derive_prefs(
             raise PersonaError(E_PERSONA_INPUT, f"用户卡规则 prefs.{key} 非法")
         found: list[dict[str, str]] = []
         seen: set[str] = set()
+        rule_key = key + "|" + "|".join(str(pattern) for pattern in patterns)
         for event in core:
-            for pattern in patterns:
-                for match in re.finditer(str(pattern), event.text):
-                    value = match.group(1).strip()[:TEXT_LIMIT]
-                    if not value or value in seen:
-                        continue
-                    seen.add(value)
-                    found.append({"text": value, "evidence": event.event_id})
+            for value in _scan_prefs(event, patterns, cache, rule_key):
+                if not value or value in seen:
+                    continue
+                seen.add(value)
+                found.append({"text": value, "evidence": event.event_id})
         output[key] = tuple(found)
     return output
 

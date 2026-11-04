@@ -62,6 +62,7 @@ def build_persona_view(
     exclude: Mapping[str, str] | None = None,
     style_card: StyleCard | None = None,
     user_card: UserCard | None = None,
+    card_cache: dict | None = None,
     policy: Policy | None = None,
 ) -> PersonaView:
     """Build the persona view from evidence, with optional overrides.
@@ -85,7 +86,7 @@ def build_persona_view(
     if style_card is None:
         style_card = load_style_card(store, exclude, events=events)
     if user_card is None:
-        user_card = derive_user_card(events)
+        user_card = derive_user_card(events, cache=card_cache)
     self_md = _self_md(traits, resolution.conflicts, resolution.reasons)
     return PersonaView(
         kid=kernel.kid,

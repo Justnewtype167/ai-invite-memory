@@ -62,6 +62,7 @@ class HostSession:
         self._view_cache = None
         # One user per process: parsed evidence can stay in memory between turns.
         self._evidence = EvidenceCache()
+        self._card_cache: dict = {}
 
     # -- writes --------------------------------------------------------
     def on_user(self, text, t):
@@ -112,7 +113,11 @@ class HostSession:
                 view = cached[1]
             else:
                 view = build_persona_view(
-                    self.store, kernel=kernel, events=self._events(), policy=self._policy
+                    self.store,
+                    kernel=kernel,
+                    events=self._events(),
+                    policy=self._policy,
+                    card_cache=self._card_cache,
                 )
                 self._view_cache = (kernel.head, view)
         except (KernelError, AiInviteError):
