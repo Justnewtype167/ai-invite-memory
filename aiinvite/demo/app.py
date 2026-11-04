@@ -107,7 +107,9 @@ def build(engine, labels=None):
                 prefix = labels["refused"] if turn.refused else labels["ai"]
                 append(prefix + ": " + turn.text)
             except Exception as error:  # noqa: BLE001 - the window must stay alive
+                # The user line is already evidence; say so instead of leaving a gap.
                 append("[error] " + str(error))
+                append("[note] 你这句已记入证据，但这一轮没有回复。")
             finally:
                 root.after(0, refresh)
 

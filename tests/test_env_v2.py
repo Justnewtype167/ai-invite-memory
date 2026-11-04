@@ -40,7 +40,7 @@ BASELINE = {
     "aiinvite/cn/timex.py": "16ab3bbe4f7416b507f4754a8a752ad5a9ada015a21d5e60c6088a274efbddfa",
     "aiinvite/kernel/__init__.py": "a49ca0ebd1a2b4c5ef33af6451038f426da470f2f9e661f082c7f84aa436d82b",
     "aiinvite/kernel/cli.py": "d6b0a88a5cc97ac34ddd046fbb055722d31bd1b84390c75a219bd8916f0ede78",
-    "aiinvite/kernel/compiler.py": "119c50c443073f2ca877ef035b37a8f37c769af6d5e6322d55b0e3339417f244",
+    "aiinvite/kernel/compiler.py": "72e442a095aadd6eaa6752cca569b4eba5f32578b99f9230c98fbbe10b63756c",
     "aiinvite/kernel/errors.py": "de6ffacb29752d23d4eae28931f80ca8fd1eacde11dc47ddef3f1a6ee0f4274c",
     "aiinvite/kernel/gate.py": "053abb4b893db971f20ae2f85eaad1ab19a0b9e2ddbbb41607b44293ba204818",
     "aiinvite/kernel/history.py": "d79dbbfd2f8cee6d9911e6749f7ed575a8f03dceb95a1a9d71796540d69e4660",

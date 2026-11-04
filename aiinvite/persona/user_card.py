@@ -194,16 +194,21 @@ def _derive_call(
             for match in re.finditer(pattern, normalized):
                 pronoun = (match.group(1) or "").strip()
                 name = _trim_suffixes(match.group(2).strip(), suffixes)
-                if not name or _is_interrogative(name):
-                    # "我叫什么名字？" is a question, not an introduction.
+                name = _trim_quantifiers(name)
+                if not name or _is_interrogative(name) or _is_question(clause):
+                    # "我叫什么名字？" / "你能叫我宝贝吗" are questions, not names.
                     continue
                 if negative:
                     if name not in seen:
                         seen.add(name)
                         never.append({"text": name, "evidence": event.event_id})
-                elif pronoun and not _has_kinship_prefix(
-                    normalized[: match.start()]
+                elif (
+                    pronoun
+                    and name not in seen
+                    and not _has_kinship_prefix(normalized[: match.start()])
                 ):
+                    # A later match equal to a taboo must not wipe an earlier
+                    # good name ("叫我一声宝贝" after "叫我老周").
                     call = name
                     evidence = event.event_id
     if call and call in seen:
@@ -228,6 +233,23 @@ def _has_kinship_prefix(prefix: str) -> bool:
 
 
 INTERROGATIVES = ("\u4ec0\u4e48", "\u8c01", "\u5565", "\u54ea", "\u600e\u4e48")  # 什么 谁 啥 哪 怎么
+QUESTION_TAILS = ("\u5417", "\u5462", "\u4e48")  # 吗 呢 么
+QUANTIFIER_PREFIXES = ("\u4e00\u58f0", "\u4e00\u53e5", "\u4e00\u4e2a", "\u4e00\u4e0b",
+                       "\u4e00\u56de", "\u4e00\u904d", "\u51e0\u58f0")  # 一声 一句 一个 一下 一回 一遍 几声
+
+
+def _trim_quantifiers(name: str) -> str:
+    """Drop a leading measure word: "一声宝贝" is "宝贝" said once."""
+    for prefix in QUANTIFIER_PREFIXES:
+        if name.startswith(prefix) and len(name) > len(prefix):
+            return name[len(prefix):].strip()
+    return name
+
+
+def _is_question(clause: str) -> bool:
+    """Return whether the clause asks something rather than states an address."""
+    stripped = clause.strip().rstrip("\u3002\uff01\uff1f")
+    return stripped.endswith(QUESTION_TAILS) or "\u5417" in stripped  # 吗
 
 
 def _is_interrogative(name: str) -> bool:

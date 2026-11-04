@@ -62,6 +62,9 @@ GAP_NUMERATOR = 9
 GAP_DENOMINATOR = 10
 
 _TERMS = tuple(sorted(lexicon_terms(), key=lambda term: (-len(term), term)))
+# One compiled alternation instead of a hand-written scan: the manual loop was
+# O(text length x term count) and dominated compile time at 20k events.
+_TERM_PATTERN = re.compile("|".join(re.escape(term) for term in _TERMS))
 _CUE = re.compile(
     r"(?:大前|大后|上上|下下|今|明|去|前|昨|后|上|下|这)"
     r"(?:年|个月|月|个季度|季度|个季|季|星期|礼拜|周|天|日|晚|早)"
@@ -439,17 +442,12 @@ def _build_graph(
 
 
 def _terms_in(text: str) -> list[str]:
-    found: list[str] = []
-    index = 0
-    while index < len(text):
-        for term in _TERMS:
-            if text.startswith(term, index):
-                found.append(term)
-                index += len(term)
-                break
-        else:
-            index += 1
-    return found
+    """Return kinship terms in text; longest first, left to right.
+
+    ``_TERMS`` is sorted longest-first, so the alternation picks the same term
+    the old character-by-character scan picked, at C speed.
+    """
+    return [match.group(0) for match in _TERM_PATTERN.finditer(text)]
 
 
 def _cues_in(text: str) -> list[str]:
