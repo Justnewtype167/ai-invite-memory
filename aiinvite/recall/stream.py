@@ -168,7 +168,7 @@ class StreamSession:
         self._identity: tuple[int, int] | None = None
         self._stats = StreamStats(0, 0, 0, 0)
 
-    def context(self, query: str) -> Context:
+    def context(self, query: str, rewriter=None) -> Context:
         """Return the same bytes as the batch assembler, with work counts.
 
         A stale derived index is brought up to date first; the evidence chain
@@ -189,7 +189,7 @@ class StreamSession:
         )
         trigger_pool = _combine(same_day, promises)
         context = _assemble_pools(
-            self.store, query, self.budget, moment, trigger_pool
+            self.store, query, self.budget, moment, trigger_pool, rewriter
         )
         self._stats = StreamStats(
             scanned,

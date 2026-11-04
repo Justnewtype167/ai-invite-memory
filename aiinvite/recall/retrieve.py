@@ -10,8 +10,11 @@ from pathlib import Path
 
 from aiinvite.recall.errors import E_RC_IO, E_RC_STALE, RecallError
 from aiinvite.recall.index import connect_index, index_status, parse_now, parse_stamp
+from aiinvite.recall.rewrite import rewrite_query
 from aiinvite.recall.synonyms import expand
 from aiinvite.recall.tokenizer import bigrams
+
+WEAK_SCORE = 0.25
 
 DECAY_WINDOW_DAYS = 365.0
 COVERAGE_FLOOR = 400
@@ -35,6 +38,7 @@ def search(
     query: str,
     k: int = 50,
     now: str | None = None,
+    rewriter=None,
 ) -> list[Hit]:
     """Return up to ``k`` lexical hits, most relevant first.
 
@@ -52,7 +56,7 @@ def search(
     status = index_status(store)
     if status.stale:
         raise RecallError(E_RC_STALE, "索引落后于证据，请先 update")
-    return _search(store, query, k, parse_now(now))
+    return search_at(store, query, k, parse_now(now), rewriter)
 
 
 def _search(store: Path, query: str, k: int, moment: datetime) -> list[Hit]:
@@ -100,6 +104,36 @@ def _search(store: Path, query: str, k: int, moment: datetime) -> list[Hit]:
     hits.sort(key=lambda hit: (-hit.score, hit.event_id))
     return hits
 
+
+def search_at(store: Path, query: str, k: int, moment: datetime, rewriter=None):
+    """Lexical search with a failure-triggered rewrite, at a fixed moment."""
+    hits = _search(store, query, k, moment)
+    if rewriter is None or not _weak(hits):
+        return hits
+    # Only the failure path pays for inference.
+    terms = rewrite_query(query, rewriter)
+    if not terms:
+        return hits
+    widened = _search(store, " ".join(terms), k, moment)
+    return _merge(hits, widened, k)
+
+
+def _weak(hits: list[Hit]) -> bool:
+    """Return whether lexical recall looks empty or unsure."""
+    if not hits:
+        return True
+    return hits[0].score < WEAK_SCORE
+
+
+def _merge(first: list[Hit], second: list[Hit], k: int) -> list[Hit]:
+    """Union two hit lists by event id, keeping the better score."""
+    best: dict[str, Hit] = {}
+    for hit in list(first) + list(second):
+        known = best.get(hit.event_id)
+        if known is None or hit.score > known.score:
+            best[hit.event_id] = hit
+    merged = sorted(best.values(), key=lambda hit: (-hit.score, hit.event_id))
+    return merged[:k]
 
 def _texts_for(connection: sqlite3.Connection, event_ids: list[str]) -> dict[str, str]:
     if not event_ids:

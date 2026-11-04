@@ -24,7 +24,7 @@ from aiinvite.recall.index import (
     parse_now,
     read_tail_events,
 )
-from aiinvite.recall.retrieve import Hit, _search
+from aiinvite.recall.retrieve import Hit, _search, search_at
 from aiinvite.recall.tokenizer import estimate_tokens
 from aiinvite.recall.trigger import _triggers
 
@@ -82,6 +82,7 @@ def assemble(
     query: str,
     budget: int = 4096,
     now: str | None = None,
+    rewriter=None,
 ) -> Context:
     """Assemble a context within ``budget`` tokens.
 
@@ -105,7 +106,7 @@ def assemble(
     if status.stale:
         raise RecallError(E_RC_STALE, "索引落后于证据，请先 update")
     trigger_pool = _triggers(store, moment)
-    return _assemble_pools(store, query, budget, moment, trigger_pool)
+    return _assemble_pools(store, query, budget, moment, trigger_pool, rewriter)
 
 
 def _assemble_pools(
@@ -114,6 +115,7 @@ def _assemble_pools(
     budget: int,
     moment: datetime,
     trigger_pool: list[Hit],
+    rewriter=None,
 ) -> Context:
     """Assemble from a caller-provided trigger pool.
 
@@ -129,7 +131,7 @@ def _assemble_pools(
     recent_pool = list(
         reversed(read_tail_events(store, RECENT_LIMIT, meta.get("last_seg")))
     )
-    retrieved_pool = _search(store, query, RETRIEVE_K, moment)
+    retrieved_pool = search_at(store, query, RETRIEVE_K, moment, rewriter)
 
     rows = _candidates(recent_pool, trigger_pool, retrieved_pool)
     groups: dict[str, list[_Candidate]] = {}

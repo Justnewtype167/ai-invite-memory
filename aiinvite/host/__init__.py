@@ -52,7 +52,7 @@ INPUT_RESERVE = 64
 class HostSession:
     """One conversation over one store, with a fixed reference time."""
 
-    def __init__(self, store, model, budget=4096, now=None):
+    def __init__(self, store, model, budget=4096, now=None, rewriter=None):
         self.store = pathlib.Path(store)
         self.model = model
         self.budget = budget
@@ -61,6 +61,7 @@ class HostSession:
             init_store(self.store)
         self._counter = {"turns": 0, "refused": 0, "prompts": 0}
         self._policy = Policy(now=self.now)
+        self._rewriter = rewriter
         self._view_cache = None
         # One user per process: parsed evidence can stay in memory between turns.
         self._evidence = EvidenceCache()
@@ -204,7 +205,7 @@ class HostSession:
             try:
                 self._ensure_index()
                 session = StreamSession(self.store, room, now=self.now)
-                assembled = session.context(user_text)
+                assembled = session.context(user_text, rewriter=self._rewriter)
                 lines = [item.text for item in assembled.items if getattr(item, "text", "")]
                 if lines:
                     context = CONTEXT_HEADER + NEWLINE + NEWLINE.join(lines)

@@ -19,6 +19,14 @@ DEFAULT_MODELS = ("glm4:9b", "qwen3.5:9b")
 DEFAULT_MODEL = DEFAULT_MODELS[0]
 
 
+def make_rewriter(model, timeout=20):
+    """Return a rewriter backed by the local model, or None when it is down."""
+
+    def call(prompt):
+        return ollama_caller(prompt, model, timeout=timeout)
+
+    return call
+
 class EngineError(RuntimeError):
     """A demo-level failure with a message the window can show."""
 
@@ -85,7 +93,7 @@ class Turn:
 class DemoEngine:
     """A conversation plus the four things the demo must make visible."""
 
-    def __init__(self, store, model=None, caller=ollama_caller, now=None):
+    def __init__(self, store, model=None, caller=ollama_caller, now=None, rewriter=None):
         self.store = pathlib.Path(store)
         self.model = model or DEFAULT_MODELS[0]
         self._caller = caller
@@ -96,6 +104,7 @@ class DemoEngine:
         self._session = None
         self.turns = []
         self.last_user_event = ""
+        self._rewriter = rewriter if rewriter is not None else make_rewriter(self.model)
 
     def remember(self, text):
         """Write the line as a standing rule (directive/lock), not a chat turn.
@@ -129,7 +138,9 @@ class DemoEngine:
 
     def _session_object(self):
         if self._session is None:
-            self._session = HostSession(self.store, self.model, now=self._now)
+            self._session = HostSession(
+                self.store, self.model, now=self._now, rewriter=self._rewriter
+            )
         self._session.model = self.model
         return self._session
 
