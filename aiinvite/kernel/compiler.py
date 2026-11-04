@@ -111,6 +111,7 @@ def compile_kernel(
     store: Path,
     policy: Policy | None = None,
     proposer: Proposer | None = None,
+    events: list[EvidenceEvent] | None = None,
     verify: bool = False,
 ) -> Kernel:
     """Compile a kernel from all evidence, policy and proposer proposals.
@@ -125,7 +126,8 @@ def compile_kernel(
     """
     if verify:
         verify_evidence(store)
-    return _compile(store, read_evidence(store), policy, proposer)
+    chosen = events if events is not None else read_evidence(store)
+    return _compile(store, chosen, policy, proposer)
 
 
 def _compile_prefix(

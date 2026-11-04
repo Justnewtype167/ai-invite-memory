@@ -228,10 +228,18 @@ def record_style_card(
 
 
 def load_style_card(
-    store: Path, exclude: Mapping[str, str] | None = None
+    store: Path,
+    exclude: Mapping[str, str] | None = None,
+    events: list | None = None,
 ) -> StyleCard | None:
-    """Return the last recorded style card, or None when there is none."""
-    events = read_evidence(store)
+    """Return the last recorded style card, or None when there is none.
+
+    ``events`` lets a caller that already parsed the evidence pass it in; without
+    it this function reads and parses the whole store, which at 20k events cost
+    more than the entire rest of the persona view.
+    """
+    if events is None:
+        events = read_evidence(store)
     found: EvidenceEvent | None = None
     for event in events:
         if event.type == "proposal" and event.target == STYLE_CARD_TARGET:

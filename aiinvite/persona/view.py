@@ -57,6 +57,7 @@ def build_persona_view(
     store: Path,
     *,
     kernel: Kernel | None = None,
+    events: list | None = None,
     mode: str = "support",
     exclude: Mapping[str, str] | None = None,
     style_card: StyleCard | None = None,
@@ -75,13 +76,14 @@ def build_persona_view(
     tests that compare cards without rewriting evidence. Card changes cannot
     move identity.
     """
+    if events is None:
+        events = read_evidence(store)
     if kernel is None:
-        kernel = compile_kernel(store, policy)
-    events = read_evidence(store)
+        kernel = compile_kernel(store, policy, events=events)
     resolution = resolve_traits(events, load_vocabulary(), mode)
     traits = tuple(sorted(resolution.active, key=lambda item: item.event_id))
     if style_card is None:
-        style_card = load_style_card(store, exclude)
+        style_card = load_style_card(store, exclude, events=events)
     if user_card is None:
         user_card = derive_user_card(events)
     self_md = _self_md(traits, resolution.conflicts, resolution.reasons)

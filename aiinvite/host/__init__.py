@@ -22,6 +22,7 @@ if str(ROOT) not in sys.path:
 
 from aiinvite.capsule import append_event, init_store, utc_now, verify_path
 from aiinvite.errors import AiInviteError
+from aiinvite.kernel.cache import EvidenceCache
 from aiinvite.kernel.compiler import compile_kernel
 from aiinvite.kernel.incremental import compile_kernel_incremental
 from aiinvite.kernel.errors import KernelError
@@ -59,6 +60,8 @@ class HostSession:
         self._counter = {"turns": 0, "refused": 0, "prompts": 0}
         self._policy = Policy(now=self.now)
         self._view_cache = None
+        # One user per process: parsed evidence can stay in memory between turns.
+        self._evidence = EvidenceCache()
 
     # -- writes --------------------------------------------------------
     def on_user(self, text, t):
@@ -90,9 +93,15 @@ class HostSession:
         rules = load_rules_v2()
         return RULE_HEADER + NEWLINE + NEWLINE.join("- " + r.text for r in rules)
 
+    def _events(self):
+        """Return every event, re-parsing only the bytes that changed."""
+        return self._evidence.read(self.store)
+
     def _kernel(self):
         """Return the kernel, reusing the incremental snapshot when possible."""
-        return compile_kernel_incremental(self.store, self._policy)
+        return compile_kernel_incremental(
+            self.store, self._policy, events=self._events()
+        )
 
     def _card_and_persona(self):
         """Return (card_block, persona_block); both empty when nothing is known."""
@@ -103,7 +112,7 @@ class HostSession:
                 view = cached[1]
             else:
                 view = build_persona_view(
-                    self.store, kernel=kernel, policy=self._policy
+                    self.store, kernel=kernel, events=self._events(), policy=self._policy
                 )
                 self._view_cache = (kernel.head, view)
         except (KernelError, AiInviteError):

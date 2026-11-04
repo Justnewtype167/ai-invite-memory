@@ -100,6 +100,7 @@ def compile_kernel_incremental(
     store: Path,
     policy: Policy | None = None,
     counter: list[int] | None = None,
+    events: list[EvidenceEvent] | None = None,
 ) -> Kernel:
     """Compile from a snapshot when possible, otherwise from all evidence.
 
@@ -114,7 +115,8 @@ def compile_kernel_incremental(
     measured in events, never in wall-clock time (C14).
     """
     chosen = policy if policy is not None else Policy()
-    events = read_evidence(store)
+    if events is None:
+        events = read_evidence(store)
     core = core_events(events)
     if not core:
         raise KernelError(E_KN_IO, "没有可编译的内核证据（只有人格事件）")
