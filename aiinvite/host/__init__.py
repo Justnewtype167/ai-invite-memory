@@ -28,6 +28,7 @@ from aiinvite.kernel.incremental import compile_kernel_incremental
 from aiinvite.kernel.errors import KernelError
 from aiinvite.kernel.kernel import Policy
 from aiinvite.persona import build_persona_view
+from aiinvite.persona.pins import derive_pins, render_pins
 from aiinvite.pcs.probes import load_rules_v2
 from aiinvite.projection import emit as gate_emit
 from aiinvite.projection.trace import Segment, Trace
@@ -39,6 +40,7 @@ from aiinvite.recall.tokenizer import estimate_tokens
 NEWLINE = chr(10)
 RULE_HEADER = "## behavior rules"
 CARD_HEADER = "## who you both are"
+PIN_HEADER = "## never forget"
 CONTEXT_HEADER = "## recent and recalled memory"
 PERSONA_HEADER = "## persona"
 INPUT_HEADER = "## this turn"
@@ -66,9 +68,10 @@ class HostSession:
 
     # -- writes --------------------------------------------------------
     def on_user(self, text, t):
-        """Append the user turn to evidence."""
-        append_event(self.store, "user", text, t)
+        """Append the user turn to evidence and return it."""
+        event = append_event(self.store, "user", text, t)
         self._counter["turns"] += 1
+        return event
 
     def on_assistant(self, text, t):
         """Append an assistant turn directly. Never use this for gated output.
@@ -103,6 +106,41 @@ class HostSession:
         return compile_kernel_incremental(
             self.store, self._policy, events=self._events()
         )
+
+    def pin(self, event_id):
+        """Record a pin so this memory reaches every later prompt."""
+        return self._write_pin(event_id, "pin")
+
+    def unpin(self, event_id):
+        """Record an unpin; the memory stops being forced into the prompt."""
+        return self._write_pin(event_id, "unpin")
+
+    def _write_pin(self, event_id, kind):
+        """Accept an event id or an Event object; write the directive."""
+        target = getattr(event_id, "id", event_id)
+        target = getattr(target, "event_id", target)
+        target = (target or "").strip()
+        if not target:
+            raise AiInviteError("pin 需要一个事件 id")
+        append_event(
+            self.store,
+            text=target,
+            t=utc_now(),
+            type="directive",
+            kind=kind,
+            target=target,
+        )
+        self._view_cache = None
+        return target
+
+    def _pinned(self):
+        """Return the unforgettable block for this turn, or an empty string."""
+        try:
+            pins = derive_pins(self._events())
+        except Exception:  # noqa: BLE001 - a broken pin must not kill the turn
+            return ""
+        body = render_pins(pins)
+        return PIN_HEADER + NEWLINE + body if body else ""
 
     def _card_and_persona(self):
         """Return (card_block, persona_block); both empty when nothing is known."""
@@ -149,9 +187,13 @@ class HostSession:
             user_text = self._fit_input(user_text, self.budget - INPUT_RESERVE)
         rules = self._rules()
         card, persona, view = self._card_and_persona()
+        pinned = self._pinned()
         fixed = [rules]
         if card:
             fixed.append(card)
+        if pinned:
+            # Pinned memories take their seat before retrieval competes.
+            fixed.append(pinned)
         if persona:
             fixed.append(persona)
         input_block = INPUT_HEADER + NEWLINE + user_text
@@ -171,6 +213,8 @@ class HostSession:
         pieces = [rules]
         if card:
             pieces.append(card)
+        if pinned:
+            pieces.append(pinned)
         if context:
             pieces.append(context)
         elif view is not None:
@@ -185,11 +229,23 @@ class HostSession:
         return prompt
 
     def _shrink(self, prompt, user_text):
-        """Last resort: drop the context block and re-fit the input."""
+        """Last resort: drop the context block and the card, keep the pins.
+
+        The pins are the point of the layer: under pressure everything else
+        shrinks first.
+        """
         rules = self._rules()
-        room = self.budget - estimate_tokens(rules) - INPUT_RESERVE
+        pinned = self._pinned()
+        room = (
+            self.budget - estimate_tokens(rules) - estimate_tokens(pinned)
+            - INPUT_RESERVE
+        )
         text = self._fit_input(user_text, max(1, room))
-        return (NEWLINE * 2).join([rules, INPUT_HEADER + NEWLINE + text])
+        pieces = [rules]
+        if pinned:
+            pieces.append(pinned)
+        pieces.append(INPUT_HEADER + NEWLINE + text)
+        return (NEWLINE * 2).join(pieces)
 
     def stats(self):
         """Return the counters this session has accumulated."""

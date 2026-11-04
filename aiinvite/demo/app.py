@@ -20,6 +20,8 @@ LABELS = {
     "traits": "特质",
     "canon": "长期规则",
     "rule": "记成规则",
+    "pin": "钉住这条",
+    "pinned": "[钉住] ",
     "ruled": "[规则] ",
     "you": "你",
     "ai": "它",
@@ -84,6 +86,9 @@ def build(engine, labels=None):
             "",
             labels["canon"] + ":",
             chr(10).join("- " + line for line in snap["canon"]) if snap["canon"] else "-",
+            "",
+            "永不遗忘:",
+            chr(10).join("- " + line for line in snap.get("pinned", [])) if snap.get("pinned") else "-",
             "",
             labels["where"] + ":",
             snap["store"],
@@ -166,6 +171,16 @@ def build(engine, labels=None):
 
     tk.Button(bottom, text=labels["send"], command=work).pack(side="left", padx=4)
     tk.Button(bottom, text=labels["rule"], command=do_remember).pack(side="left", padx=4)
+
+    def do_pin():
+        try:
+            engine.pin_last()
+            append(labels["pinned"] + "这条永不遗忘")
+            refresh()
+        except Exception as error:  # noqa: BLE001
+            append("[error] " + str(error))
+
+    tk.Button(bottom, text=labels["pin"], command=do_pin).pack(side="left", padx=4)
     tk.Button(top, text=labels["switch"], command=do_switch).pack(side="left", padx=8)
     tk.Button(side, text=labels["export"], command=do_export).pack(fill="x", pady=2)
     tk.Button(side, text=labels["import"], command=do_import).pack(fill="x", pady=2)

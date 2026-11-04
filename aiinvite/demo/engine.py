@@ -12,6 +12,7 @@ from dataclasses import dataclass
 
 from aiinvite.capsule import append_event, init_store, utc_now, verify_path
 from aiinvite.host import HostSession
+from aiinvite.persona.pins import derive_pins
 
 OLLAMA_URL = "http://127.0.0.1:11434/api/generate"
 DEFAULT_MODELS = ("glm4:9b", "qwen3.5:9b")
@@ -69,6 +70,7 @@ class DemoEngine:
             init_store(self.store)
         self._session = None
         self.turns = []
+        self.last_user_event = ""
 
     def remember(self, text):
         """Write the line as a standing rule (directive/lock), not a chat turn.
@@ -81,6 +83,13 @@ class DemoEngine:
             raise EngineError("empty rule")
         append_event(self.store, text=text, t=utc_now(), type="directive", kind="lock")
         self._session = None
+        return self.snapshot()
+
+    def pin_last(self):
+        """Pin the newest user turn so it reaches every later prompt."""
+        if not self.last_user_event:
+            raise EngineError("还没有可钉住的一轮")
+        self._session_object().pin(self.last_user_event)
         return self.snapshot()
 
     def switch_model(self, model):
@@ -105,7 +114,8 @@ class DemoEngine:
         if not text:
             raise EngineError("empty input")
         session = self._session_object()
-        session.on_user(text, utc_now())
+        event = session.on_user(text, utc_now())
+        self.last_user_event = event.id
         self.turns.append(Turn(role="user", text=text))
         prompt = session.prompt_for(text)
         raw = self._caller(prompt, self.model)
@@ -124,6 +134,10 @@ class DemoEngine:
     def snapshot(self):
         """Return the numbers and cards the window renders."""
         session = self._session_object()
+        try:
+            events_for_pins = session._events()
+        except Exception:  # noqa: BLE001
+            events_for_pins = []
         kid = ""
         card = ""
         traits = []
@@ -149,6 +163,7 @@ class DemoEngine:
             "card": card,
             "traits": traits,
             "canon": canon,
+            "pinned": [pin.text for pin in derive_pins(events_for_pins)],
             "model": self.model,
             "store": str(self.store),
         }

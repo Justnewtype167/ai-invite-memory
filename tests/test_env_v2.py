@@ -46,7 +46,7 @@ BASELINE = {
     "aiinvite/kernel/gate.py": "053abb4b893db971f20ae2f85eaad1ab19a0b9e2ddbbb41607b44293ba204818",
     "aiinvite/kernel/history.py": "d79dbbfd2f8cee6d9911e6749f7ed575a8f03dceb95a1a9d71796540d69e4660",
     "aiinvite/kernel/incremental.py": "7913771d72e8626ce8f474958b0b460827cc553f6c87fd0690e5fc2c1cee30c4",
-    "aiinvite/kernel/kernel.py": "8062d32fee27554914631e6ebde2321284557fa0a9e58d9cf7d1461740d35654",
+    "aiinvite/kernel/kernel.py": "36d09e3e3642eef765892dbd5028eee6b37bf3579e0a13049ca4cbfe92e35bbe",
     "aiinvite/kernel/proposer.py": "ff35a370ed0b8baaaa1684ff25c74417b515107ec25d1f8cb96eb7b9caa564be",
     "aiinvite/kernel/snapshot.py": "be76d3145fe9cff62383f78fc8d5015fc0e9d9821985605bc91077a6e1f703d3",
     "aiinvite/pcs/__init__.py": "d1b501fe48aad8456eaf9e04920abf275be7fa187a0a4d5d77d80e4f7f08890c",

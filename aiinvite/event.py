@@ -70,7 +70,7 @@ _TYPE_FIELDS: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
 }
 KIND_VALUES: dict[str, tuple[str, ...]] = {
     "feedback": ("praise", "correction"),
-    "directive": ("lock", "unlock", "rule", "trait", "trait_off"),
+    "directive": ("lock", "unlock", "rule", "trait", "trait_off", "pin", "unpin"),
     "refusal": ("gate",),
 }
 

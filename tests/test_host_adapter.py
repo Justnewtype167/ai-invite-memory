@@ -112,15 +112,22 @@ class TestHostAdapter(unittest.TestCase):
         prompt = session.prompt_for("你好")
         self.assertLessEqual(estimate_tokens(prompt), 4096)
 
-    def test_exactly_five_public_methods(self) -> None:
-        """H1: the adapter exposes exactly the five calls the spec names."""
+    def test_exactly_seven_public_methods(self) -> None:
+        """H1: the adapter exposes exactly the calls the spec names.
+
+        ``pin`` and ``unpin`` were added with the unforgettable layer: pinning is
+        an explicit user decision, so it cannot hide inside message parsing.
+        """
         public = {
             name for name, value in inspect.getmembers(HostSession, inspect.isfunction)
             if not name.startswith("_")
         }
         self.assertEqual(
             public,
-            {"on_user", "on_assistant", "prompt_for", "reply", "stats"},
+            {
+                "on_user", "on_assistant", "prompt_for", "reply", "stats",
+                "pin", "unpin",
+            },
         )
 
     def test_prompt_does_not_touch_evidence(self) -> None:

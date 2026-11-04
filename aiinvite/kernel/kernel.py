@@ -42,7 +42,7 @@ TRAIT_TARGET = "self.trait"
 STYLE_CARD_TARGET = "self.style_card"
 USER_CARD_TARGET = "self.user_card"
 PERSONA_TARGETS = (TRAIT_TARGET, STYLE_CARD_TARGET, USER_CARD_TARGET)
-PERSONA_DIRECTIVE_KINDS = ("trait", "trait_off")
+PERSONA_DIRECTIVE_KINDS = ("trait", "trait_off", "pin", "unpin")
 
 ORIGIN_RULE_ONLY = "rule_only"
 ORIGIN_WITH_PROPOSALS = "with_proposals"
