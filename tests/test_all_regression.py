@@ -111,7 +111,7 @@ FROZEN_DIGESTS = {
     "aiinvite/recall/assemble.py": "a961a6802d1828fd113de8f222e7abd3ae5b3fed0405b379e35ef4788443b39d",
     "aiinvite/recall/cli.py": "4738dd82a464e44a259d69cb86e00a5cf5956c3cf3db0cd73e195fbd32265b64",
     "aiinvite/recall/clue_store.py": "93269c02b1e3d8d20702461519866b8561860a1f3c041769daa88065b45696bd",
-    "aiinvite/recall/clues.py": "07b3749a154a2a5ca52f5d044b84f68b2b0dde3644479eef8d5765f59ee283a5",
+    "aiinvite/recall/clues.py": "11afc1c10168686e8e0fb2d44bbbb95c0fc7f1ff81455d485aa60e6e7be21ce7",
     "aiinvite/recall/errors.py": "a70c36dd64a63d9309f28689e9ff2779b598ec207e00f32bd16d481eeed7517f",
     "aiinvite/recall/index.py": "6bc41a774dcfd14dd4bc74725007f49d85ad2c4337f423a01870c8eee98ab5c6",
     "aiinvite/recall/retrieve.py": "bcc55909978bf824acd067ea37d6d89506e3884373da332ad4f3fd486eee5962",

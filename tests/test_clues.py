@@ -46,10 +46,14 @@ class TestClueGate(unittest.TestCase):
         self.assertEqual(entities, ())
 
     def test_c5_prompt_carries_the_memory(self) -> None:
-        """C5: the model always sees the text it is making clues for."""
+        """C5: the model always sees the text, and may only pick from labels."""
         prompt = build_prompt(MEMORY)
         self.assertIn(MEMORY, prompt)
-        self.assertIn("线索", prompt)
+        self.assertIn("情绪", prompt)
+        self.assertIn("类别", prompt)
+        # The choices are closed: the model classifies, it does not generate.
+        self.assertIn("悲伤", prompt)
+        self.assertIn("宠物", prompt)
 
     def test_c6_dead_caller_yields_no_clues(self) -> None:
         """C6: a dead model must not break the caller."""
