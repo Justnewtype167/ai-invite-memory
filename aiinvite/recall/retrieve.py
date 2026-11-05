@@ -15,6 +15,7 @@ from aiinvite.recall.synonyms import expand
 from aiinvite.recall.tokenizer import bigrams
 
 WEAK_SCORE = 0.25
+CLUE_SCORE = 0.2
 
 DECAY_WINDOW_DAYS = 365.0
 COVERAGE_FLOOR = 400
@@ -39,6 +40,7 @@ def search(
     k: int = 50,
     now: str | None = None,
     rewriter=None,
+    clues=None,
 ) -> list[Hit]:
     """Return up to ``k`` lexical hits, most relevant first.
 
@@ -56,7 +58,7 @@ def search(
     status = index_status(store)
     if status.stale:
         raise RecallError(E_RC_STALE, "索引落后于证据，请先 update")
-    return search_at(store, query, k, parse_now(now), rewriter)
+    return search_at(store, query, k, parse_now(now), rewriter, clues)
 
 
 def _search(store: Path, query: str, k: int, moment: datetime) -> list[Hit]:
@@ -105,9 +107,13 @@ def _search(store: Path, query: str, k: int, moment: datetime) -> list[Hit]:
     return hits
 
 
-def search_at(store: Path, query: str, k: int, moment: datetime, rewriter=None):
-    """Lexical search with a failure-triggered rewrite, at a fixed moment."""
+def search_at(store, query, k, moment, rewriter=None, clues=None):
+    """Lexical search, plus stored clues, at a fixed moment."""
     hits = _search(store, query, k, moment)
+    if clues:
+        extra = _clue_hits(store, query, clues, k, moment)
+        if extra:
+            hits = _merge(hits, extra, k)
     if rewriter is None or not _weak(hits):
         return hits
     # Only the failure path pays for inference.
@@ -118,7 +124,25 @@ def search_at(store: Path, query: str, k: int, moment: datetime, rewriter=None):
     return _merge(hits, widened, k)
 
 
-def _weak(hits: list[Hit]) -> bool:
+def _clue_hits(store, query, clues, k, moment):
+    """Return memories whose stored clues match the question.
+
+    Clues only widen the candidate set: they enter at a fixed, modest score, so
+    a literal text hit still outranks a clue hit.
+    """
+    terms = list(dict.fromkeys(bigrams(query).split())) + list(expand(query))
+    if not terms:
+        return []
+    found = []
+    for event_id, clue_text in clues:
+        if not any(term in clue_text for term in terms):
+            continue
+        found.append(Hit(event_id, "", "", CLUE_SCORE, clue_text))
+    found.sort(key=lambda hit: (-hit.score, hit.event_id))
+    return found[:k]
+
+
+def _weak(hits):
     """Return whether lexical recall looks empty or unsure."""
     if not hits:
         return True

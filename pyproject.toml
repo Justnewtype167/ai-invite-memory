@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ai-invite-memory"
-version = "0.33.0"
+version = "0.34.0"
 description = "AI Invite · Memory — a verifiable, portable memory and persona kernel for AI companions"
 readme = "README.md"
 requires-python = ">=3.11"
