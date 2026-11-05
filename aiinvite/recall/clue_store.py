@@ -57,8 +57,21 @@ class ClueStore:
         return " ".join(str(part) for part in parts)
 
     def pairs(self):
-        """Return (event_id, clue_text) for every cached memory."""
-        return [(key, self.clue_text(key)) for key in self._entries if self.clue_text(key)]
+        """Return (event_id, entities, bridges) for every cached memory.
+
+        Entities and bridges stay separate: retrieval treats a grounded entity
+        differently from a vocabulary bridge, because only one of them is
+        verifiable against the source text.
+        """
+        result = []
+        for key, entry in self._entries.items():
+            if not isinstance(entry, dict):
+                continue
+            entities = " ".join(str(part) for part in entry.get("entities", []))
+            bridges = " ".join(str(part) for part in entry.get("bridges", []))
+            if entities or bridges:
+                result.append((key, entities, bridges))
+        return result
 
     def ensure(self, event_id, text):
         """Generate clues for one memory when missing or stale."""

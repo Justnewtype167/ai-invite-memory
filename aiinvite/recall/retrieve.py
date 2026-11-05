@@ -16,6 +16,7 @@ from aiinvite.recall.tokenizer import bigrams
 
 WEAK_SCORE = 0.25
 CLUE_SCORE = 0.2
+BRIDGE_MAX_SHARE = 2
 
 DECAY_WINDOW_DAYS = 365.0
 COVERAGE_FLOOR = 400
@@ -127,17 +128,31 @@ def search_at(store, query, k, moment, rewriter=None, clues=None):
 def _clue_hits(store, query, clues, k, moment):
     """Return memories whose stored clues match the question.
 
-    Clues only widen the candidate set: they enter at a fixed, modest score, so
-    a literal text hit still outranks a clue hit.
+    Two guards keep a wrong clue from polluting recall:
+
+    * an **entity** match is grounded in the memory text, so it always counts;
+    * a **bridge** match is an unverified label, so it only counts while few
+      memories share it. A bridge that half the store carries says nothing,
+      and is dropped exactly like a stopword.
     """
     terms = list(dict.fromkeys(bigrams(query).split())) + list(expand(query))
     if not terms:
         return []
-    found = []
-    for event_id, clue_text in clues:
-        if not any(term in clue_text for term in terms):
+    grounded = []
+    bridged = []
+    for entry in clues:
+        if len(entry) >= 3:
+            event_id, entity_text, bridge_text = entry[0], entry[1], entry[2]
+        else:
+            event_id, entity_text, bridge_text = entry[0], entry[1], ""
+        if any(term in entity_text for term in terms):
+            grounded.append(Hit(event_id, "", "", CLUE_SCORE, entity_text))
             continue
-        found.append(Hit(event_id, "", "", CLUE_SCORE, clue_text))
+        if any(term in bridge_text for term in terms):
+            bridged.append(Hit(event_id, "", "", CLUE_SCORE / 2, bridge_text))
+    if len(bridged) > BRIDGE_MAX_SHARE:
+        bridged = []
+    found = grounded + bridged
     found.sort(key=lambda hit: (-hit.score, hit.event_id))
     return found[:k]
 

@@ -93,6 +93,33 @@ class TestClueRetrieval(unittest.TestCase):
         """C9: an empty clue set changes nothing."""
         self.assertEqual(self._ids("我的狗叫什么名字"), self._ids("我的狗叫什么名字", clues=[]))
 
+    def test_c10_a_common_bridge_is_dropped(self) -> None:
+        """C10: a label half the store carries says nothing, so it is ignored."""
+        shared = [(event_id, "", "悲伤") for event_id in self._all_ids()[:3]]
+        self.assertEqual(self._ids(HARD, clues=shared), [])
+
+    def test_c11_a_rare_bridge_still_counts(self) -> None:
+        """C11: one or two memories sharing a bridge is information, not noise."""
+        rare = [(self.fact.id, "", "悲伤")]
+        self.assertEqual(self._ids(HARD, clues=rare), [self.fact.id])
+
+    def test_c12_a_grounded_entity_always_counts(self) -> None:
+        """C12: an entity match is verified against the text, so no cap applies."""
+        many = [(self.fact.id, "阿黄", "")]
+        many += [(event_id, "阿黄", "") for event_id in self._all_ids()[:3]]
+        ids = [hit.event_id for hit in search(self.store, "阿黄是谁", k=5, now=NOW, clues=many)]
+        self.assertIn(self.fact.id, ids)
+
+    def test_c13_wrong_bridge_pollution_is_bounded(self) -> None:
+        """C13: wrong labels for many memories cannot flood the result."""
+        wrong = [(event_id, "", "悲伤") for event_id in self._all_ids()[:4]]
+        self.assertEqual(self._ids(HARD, clues=wrong), [])
+
+    def _all_ids(self):
+        """Return every event id in append order."""
+        from aiinvite.kernel.compiler import read_evidence
+        return [event.event_id for event in read_evidence(self.store)]
+
 
 if __name__ == "__main__":
     unittest.main()
