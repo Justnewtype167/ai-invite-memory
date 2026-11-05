@@ -9,6 +9,7 @@ from pathlib import Path
 from .capsule import (
     append_event,
     export_capsule,
+    snapshot_capsule,
     import_capsule,
     init_store,
     inspect_capsule,
@@ -56,6 +57,13 @@ def build_parser() -> argparse.ArgumentParser:
     p_export.add_argument("dir")
     p_export.add_argument("out")
     p_export.set_defaults(handler=_cmd_export)
+
+    p_snapshot = sub.add_parser(
+        "snapshot", help="export a live store without sealing it"
+    )
+    p_snapshot.add_argument("dir")
+    p_snapshot.add_argument("out")
+    p_snapshot.set_defaults(handler=_cmd_snapshot)
 
     p_import = sub.add_parser("import", help="import a capsule into a directory")
     p_import.add_argument("capsule")
@@ -122,6 +130,12 @@ def _cmd_verify(args: argparse.Namespace) -> int:
 def _cmd_export(args: argparse.Namespace) -> int:
     result = export_capsule(Path(args.dir), Path(args.out))
     print(_summary("export", result))
+    return 0
+
+
+def _cmd_snapshot(args: argparse.Namespace) -> int:
+    result = snapshot_capsule(Path(args.dir), Path(args.out))
+    print(_summary("snapshot", result))
     return 0
 
 

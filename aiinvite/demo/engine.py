@@ -12,6 +12,7 @@ import urllib.request
 from dataclasses import dataclass
 
 from aiinvite.capsule import append_event, init_store, utc_now, verify_path
+from aiinvite.capsule import snapshot_capsule
 from aiinvite.host import HostSession
 from aiinvite.persona.pins import derive_pins
 
@@ -132,6 +133,14 @@ class DemoEngine:
         append_event(self.store, text=text, t=utc_now(), type="directive", kind="lock")
         self._session = None
         return self.snapshot()
+
+    def backup(self, out):
+        """Write a portable capsule of the live store; returns its path."""
+        target = pathlib.Path(out)
+        if target.suffix != ".aiem":
+            target = target.with_suffix(".aiem")
+        snapshot_capsule(self.store, target)
+        return target
 
     def pin_last(self):
         """Pin the newest user turn so it reaches every later prompt."""

@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
+import tempfile
 import zipfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -317,6 +319,32 @@ def export_capsule(store: Path, out: Path) -> Verification:
     entries[MANIFEST_PATH] = dumps(manifest)
     _write_zip(entries, out)
     return Verification(count, len(segments), head, "sealed")
+
+
+def snapshot_capsule(store: Path, out: Path) -> Verification:
+    """Export a live store without freezing it.
+
+    Export alone requires a sealed directory, but sealing is final: a user
+    could back up only by stopping the companion. This copies the evidence to a
+    scratch directory, seals the copy, and exports that; the live store is not
+    touched and keeps accepting events.
+    """
+    source = Path(store)
+    if not (source / EVIDENCE_DIR).is_dir():
+        raise AiInviteError(E_IO, f"缺少证据目录：{source}")
+    scratch = Path(tempfile.mkdtemp(prefix="aiinvite-snapshot-"))
+    try:
+        copy = scratch / "store"
+        copy.mkdir()
+        shutil.copytree(source / EVIDENCE_DIR, copy / EVIDENCE_DIR)
+        for extra in ("blobs",):
+            origin = source / extra
+            if origin.is_dir():
+                shutil.copytree(origin, copy / extra)
+        seal_store(copy)
+        return export_capsule(copy, out)
+    finally:
+        shutil.rmtree(scratch, ignore_errors=True)
 
 
 def import_capsule(src: Path, store: Path) -> Verification:
