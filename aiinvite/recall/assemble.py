@@ -116,6 +116,7 @@ def _assemble_pools(
     moment: datetime,
     trigger_pool: list[Hit],
     rewriter=None,
+    clues=None,
 ) -> Context:
     """Assemble from a caller-provided trigger pool.
 
@@ -131,7 +132,7 @@ def _assemble_pools(
     recent_pool = list(
         reversed(read_tail_events(store, RECENT_LIMIT, meta.get("last_seg")))
     )
-    retrieved_pool = search_at(store, query, RETRIEVE_K, moment, rewriter)
+    retrieved_pool = search_at(store, query, RETRIEVE_K, moment, rewriter, clues)
 
     rows = _candidates(recent_pool, trigger_pool, retrieved_pool)
     groups: dict[str, list[_Candidate]] = {}

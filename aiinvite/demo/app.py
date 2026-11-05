@@ -223,10 +223,10 @@ def parse_args(argv):
 
 def main(argv=None):
     """Open the demo window."""
-    from aiinvite.demo.engine import DemoEngine
+    from aiinvite.demo.engine import DemoEngine, make_rewriter
 
     store, model = parse_args(sys.argv[1:] if argv is None else argv)
-    engine = DemoEngine(store, model=model)
+    engine = DemoEngine(store, model=model, clue_caller=make_rewriter(model))
     build(engine).mainloop()
     return 0
 

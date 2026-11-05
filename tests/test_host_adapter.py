@@ -112,11 +112,12 @@ class TestHostAdapter(unittest.TestCase):
         prompt = session.prompt_for("你好")
         self.assertLessEqual(estimate_tokens(prompt), 4096)
 
-    def test_exactly_seven_public_methods(self) -> None:
+    def test_exactly_eight_public_methods(self) -> None:
         """H1: the adapter exposes exactly the calls the spec names.
 
-        ``pin`` and ``unpin`` were added with the unforgettable layer: pinning is
-        an explicit user decision, so it cannot hide inside message parsing.
+        ``pin`` and ``unpin`` came with the unforgettable layer, ``learn_clues``
+        with the clue cache: generating a clue costs about 12 s, so it is an
+        explicit call the host schedules, never a hidden step inside a prompt.
         """
         public = {
             name for name, value in inspect.getmembers(HostSession, inspect.isfunction)
@@ -126,7 +127,7 @@ class TestHostAdapter(unittest.TestCase):
             public,
             {
                 "on_user", "on_assistant", "prompt_for", "reply", "stats",
-                "pin", "unpin",
+                "pin", "unpin", "learn_clues",
             },
         )
 

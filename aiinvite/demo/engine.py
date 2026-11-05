@@ -6,6 +6,7 @@ import os
 import pathlib
 import shutil
 import tempfile
+import threading
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
@@ -104,7 +105,8 @@ class Turn:
 class DemoEngine:
     """A conversation plus the four things the demo must make visible."""
 
-    def __init__(self, store, model=None, caller=ollama_caller, now=None, rewriter=None):
+    def __init__(self, store, model=None, caller=ollama_caller, now=None, rewriter=None,
+                 clue_caller=None):
         self.store = pathlib.Path(store)
         self.model = model or DEFAULT_MODELS[0]
         self._caller = caller
@@ -116,6 +118,7 @@ class DemoEngine:
         self.turns = []
         self.last_user_event = ""
         self._rewriter = rewriter if rewriter is not None else make_rewriter(self.model)
+        self._clue_caller = clue_caller
 
     def remember(self, text):
         """Write the line as a standing rule (directive/lock), not a chat turn.
@@ -150,7 +153,11 @@ class DemoEngine:
     def _session_object(self):
         if self._session is None:
             self._session = HostSession(
-                self.store, self.model, now=self._now, rewriter=self._rewriter
+                self.store,
+                self.model,
+                now=self._now,
+                rewriter=self._rewriter,
+                clue_caller=self._clue_caller,
             )
         self._session.model = self.model
         return self._session
@@ -169,7 +176,21 @@ class DemoEngine:
         verdict = session.reply(raw, utc_now())
         turn = Turn(role="assistant", text=raw, refused=not verdict.allowed)
         self.turns.append(turn)
+        self._learn_in_background()
         return turn
+
+    def _learn_in_background(self):
+        """Generate one clue set off the reply path; never block the window."""
+        if self._clue_caller is None:
+            return
+
+        def run():
+            try:
+                self._session_object().learn_clues(1)
+            except Exception:
+                pass
+
+        threading.Thread(target=run, daemon=True).start()
 
     def current_kid(self):
         """Return the kid of the evidence as it stands now (no write)."""

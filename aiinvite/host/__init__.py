@@ -29,6 +29,7 @@ from aiinvite.kernel.errors import KernelError
 from aiinvite.kernel.kernel import Policy
 from aiinvite.persona import build_persona_view
 from aiinvite.persona.pins import derive_pins, render_pins
+from aiinvite.recall.clue_store import ClueStore
 from aiinvite.pcs.probes import load_rules_v2
 from aiinvite.projection import emit as gate_emit
 from aiinvite.projection.trace import Segment, Trace
@@ -52,7 +53,8 @@ INPUT_RESERVE = 64
 class HostSession:
     """One conversation over one store, with a fixed reference time."""
 
-    def __init__(self, store, model, budget=4096, now=None, rewriter=None):
+    def __init__(self, store, model, budget=4096, now=None, rewriter=None,
+                 clue_caller=None):
         self.store = pathlib.Path(store)
         self.model = model
         self.budget = budget
@@ -62,6 +64,7 @@ class HostSession:
         self._counter = {"turns": 0, "refused": 0, "prompts": 0}
         self._policy = Policy(now=self.now)
         self._rewriter = rewriter
+        self._clues = ClueStore(self.store, caller=clue_caller)
         self._view_cache = None
         # One user per process: parsed evidence can stay in memory between turns.
         self._evidence = EvidenceCache()
@@ -134,6 +137,22 @@ class HostSession:
         self._view_cache = None
         return target
 
+    def learn_clues(self, limit=1):
+        """Generate at most limit clue sets: pinned memories first, then newest."""
+        try:
+            events = self._events()
+        except Exception:
+            return 0
+        pinned = derive_pins(events)
+        by_id = {event.event_id: event for event in events}
+        ordered = [by_id[pin.event_id] for pin in pinned if pin.event_id in by_id]
+        seen = {event.event_id for event in ordered}
+        ordered.extend(
+            event for event in sorted(events, key=lambda item: item.event_id, reverse=True)
+            if event.event_id not in seen
+        )
+        return self._clues.learn(ordered, limit=limit)
+
     def _pinned(self):
         """Return the unforgettable block for this turn, or an empty string."""
         try:
@@ -205,7 +224,11 @@ class HostSession:
             try:
                 self._ensure_index()
                 session = StreamSession(self.store, room, now=self.now)
-                assembled = session.context(user_text, rewriter=self._rewriter)
+                assembled = session.context(
+                    user_text,
+                    rewriter=self._rewriter,
+                    clues=self._clues.pairs(),
+                )
                 lines = [item.text for item in assembled.items if getattr(item, "text", "")]
                 if lines:
                     context = CONTEXT_HEADER + NEWLINE + NEWLINE.join(lines)
