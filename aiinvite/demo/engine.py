@@ -20,10 +20,16 @@ DEFAULT_MODEL = DEFAULT_MODELS[0]
 
 
 def make_rewriter(model, timeout=20):
-    """Return a rewriter backed by the local model, or None when it is down."""
+    """Return a rewriter backed by the local model.
+
+    Temperature 0 and a fixed seed are not optional: a rewriter that answers
+    differently on the same question would make recall non-reproducible.
+    """
 
     def call(prompt):
-        return ollama_caller(prompt, model, timeout=timeout)
+        return ollama_caller(
+            prompt, model, timeout=timeout, temperature=0.0, seed=42
+        )
 
     return call
 
@@ -53,14 +59,19 @@ def explain_unreachable(url, error):
         "（原始错误：" + str(error)[:80] + "）"
     )
 
-def ollama_caller(prompt: str, model: str, timeout: int = 120) -> str:
+def ollama_caller(prompt, model, timeout=120, temperature=None, seed=None):
     """Ask a local Ollama model; raise EngineError when it is unreachable."""
+    options = {"num_predict": 220}
+    if temperature is not None:
+        options["temperature"] = temperature
+    if seed is not None:
+        options["seed"] = seed
     payload = json.dumps({
         "model": model,
         "prompt": prompt,
         "stream": False,
         "think": False,
-        "options": {"num_predict": 220},
+        "options": options,
     }).encode("utf-8")
     request = urllib.request.Request(
         OLLAMA_URL, data=payload, headers={"Content-Type": "application/json"}

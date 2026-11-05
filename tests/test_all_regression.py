@@ -70,7 +70,7 @@ FROZEN_DIGESTS = {
     "aiinvite/cn/timex.py": "16ab3bbe4f7416b507f4754a8a752ad5a9ada015a21d5e60c6088a274efbddfa",
     "aiinvite/demo/__init__.py": "ff893837c6710592c7504a11bc18a4cb4e7c402a208d016104899ff98a01e299",
     "aiinvite/demo/app.py": "54431955d5b79ae2cf00f082417e9333e74fa27495c6fb69b7eed7d2ba19fd41",
-    "aiinvite/demo/engine.py": "75e14d8ac685ebe6d90249aeaabfa0dae316fa91b138e53ccbf52f20731ae64d",
+    "aiinvite/demo/engine.py": "d7f6d1cd7f1a8f29e766ca590936acae8630fa62098951b13a861c88b514b776",
     "aiinvite/errors.py": "f961adc2f3ad652a2cce3d6e148475b152a448bb32cfe2552de08c760817df5e",
     "aiinvite/event.py": "df369ac05c3b733d978a86cda53d98bcba9467e7ecd3cd17866f3ec3bb44a34e",
     "aiinvite/host/__init__.py": "f2a40c945161a229f1c0a23cae5b4cdc17988f534712815d9890511c970f602f",
