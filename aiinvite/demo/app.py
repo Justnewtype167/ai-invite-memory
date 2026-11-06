@@ -22,6 +22,7 @@ LABELS = {
     "rule": "记成规则",
     "pin": "钉住这条",
     "backup": "备份记忆",
+    "miss": "没想起来",
     "pinned": "[钉住] ",
     "ruled": "[规则] ",
     "you": "你",
@@ -200,6 +201,23 @@ def build(engine, labels=None):
             append("[error] " + str(error))
 
     tk.Button(bottom, text=labels["backup"], command=do_backup).pack(side="left", padx=4)
+
+    def do_miss():
+        try:
+            from tkinter import simpledialog
+
+            expected = simpledialog.askstring(
+                labels["miss"],
+                "它应该想起什么？（一句话，越具体越好）",
+            )
+            if not expected:
+                return
+            path = engine.record_miss(expected)
+            append("[记录] 已存到 " + str(path))
+        except Exception as error:  # noqa: BLE001
+            append("[error] " + str(error))
+
+    tk.Button(bottom, text=labels["miss"], command=do_miss).pack(side="left", padx=4)
     tk.Button(top, text=labels["switch"], command=do_switch).pack(side="left", padx=8)
     tk.Button(side, text=labels["export"], command=do_export).pack(fill="x", pady=2)
     tk.Button(side, text=labels["import"], command=do_import).pack(fill="x", pady=2)

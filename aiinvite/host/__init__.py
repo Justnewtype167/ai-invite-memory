@@ -65,6 +65,7 @@ class HostSession:
         self._policy = Policy(now=self.now)
         self._rewriter = rewriter
         self._clues = ClueStore(self.store, caller=clue_caller)
+        self.last_recalled = []
         self._view_cache = None
         # One user per process: parsed evidence can stay in memory between turns.
         self._evidence = EvidenceCache()
@@ -220,6 +221,7 @@ class HostSession:
         overhead = sum(estimate_tokens(part) for part in fixed) + estimate_tokens(input_block)
         room = self.budget - overhead
         context = ""
+        self.last_recalled = []
         if view is not None and room >= MIN_CONTEXT:
             try:
                 self._ensure_index()
@@ -230,6 +232,7 @@ class HostSession:
                     clues=self._clues.pairs(),
                 )
                 lines = [item.text for item in assembled.items if getattr(item, "text", "")]
+                self.last_recalled = list(lines)
                 if lines:
                     context = CONTEXT_HEADER + NEWLINE + NEWLINE.join(lines)
             except (RecallError, KernelError, AiInviteError):

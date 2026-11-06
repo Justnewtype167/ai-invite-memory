@@ -21,6 +21,11 @@ DEFAULT_MODELS = ("glm4:9b", "qwen3.5:9b")
 DEFAULT_MODEL = DEFAULT_MODELS[0]
 
 
+def misses_path():
+    """Return the file where recall failures are collected for review."""
+    base = pathlib.Path(os.environ.get("APPDATA", pathlib.Path.home()))
+    return base / "AIInvite" / "misses.jsonl"
+
 def make_rewriter(model, timeout=20):
     """Return a rewriter backed by the local model.
 
@@ -118,6 +123,8 @@ class DemoEngine:
         self._session = None
         self.turns = []
         self.last_user_event = ""
+        self.last_question = ""
+        self.last_recalled = []
         self._rewriter = rewriter if rewriter is not None else make_rewriter(self.model)
         self._clue_caller = clue_caller
 
@@ -140,6 +147,28 @@ class DemoEngine:
         if target.suffix != ".aiem":
             target = target.with_suffix(".aiem")
         snapshot_capsule(self.store, target)
+        return target
+
+    def record_miss(self, expected):
+        """Record a recall failure: what was asked, what it should have recalled.
+
+        This log is the only honest input for improving retrieval: it holds
+        real questions the user actually asked, not invented test cases.
+        """
+        expected = (expected or "").strip()
+        if not expected:
+            raise EngineError("请写一句「它应该想起什么」")
+        entry = {
+            "ts": utc_now(),
+            "question": self.last_question,
+            "expected": expected,
+            "recalled": self.last_recalled[:6],
+            "model": self.model,
+        }
+        target = misses_path()
+        target.parent.mkdir(parents=True, exist_ok=True)
+        with target.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(entry, ensure_ascii=False) + chr(10))
         return target
 
     def pin_last(self):
@@ -181,6 +210,8 @@ class DemoEngine:
         self.last_user_event = event.id
         self.turns.append(Turn(role="user", text=text))
         prompt = session.prompt_for(text)
+        self.last_question = text
+        self.last_recalled = list(getattr(session, "last_recalled", []))
         raw = self._caller(prompt, self.model)
         verdict = session.reply(raw, utc_now())
         turn = Turn(role="assistant", text=raw, refused=not verdict.allowed)
