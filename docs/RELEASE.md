@@ -62,7 +62,7 @@ PyPI 上不可覆盖版本号，发布后只能升版本
 ## 5. 发布前检查清单
 
 ```
-[ ] python -m unittest discover -s tests     358 全绿
+[ ] python -m unittest discover -s tests     470 全绿
 [ ] CI 在 main 上为绿
 [ ] pyproject version == tag
 [ ] twine check dist/*                       PASSED

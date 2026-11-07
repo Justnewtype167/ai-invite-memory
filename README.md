@@ -6,7 +6,7 @@
 
 > 人格不活在权重里，而活在一份可以重算的产物 + 一组可以验证的测试里。
 
-**当前状态**：`v0.26-m21` · 383 个测试全绿 · 30 个 tag · 0 第三方依赖
+**当前状态**：`v0.40-m35` · 470 个测试全绿 · 43 个 tag · 0 第三方依赖
 
 > 顺序：证据层 → 主题与规则 → 检索 → 人格内核 → 行为身份 → 载荷 → 轨迹投影 → 增量编译。（见 `AGENTS.md §1`）
 
@@ -54,7 +54,7 @@ python -m aiinvite.demo.app
 ## 一条命令跑起来
 
 ```bash
-python -m unittest discover -s tests -v     # 383 tests，期望全绿
+python -m unittest discover -s tests -v     # 470 tests，期望全绿
 ```
 
 零第三方依赖，Python 3.11+。核心库不联网、不调模型——网络与模型调用只出现在 `tools/`。
@@ -83,7 +83,7 @@ docs/          规格、验收记录、结果、论文
 | [docs/RESULTS-variance.md](docs/RESULTS-variance.md) | 方差与分辨力：采样下 PCS 测不出差异 |
 | [docs/SPEC-CHECKLIST.md](docs/SPEC-CHECKLIST.md) | 规格自检清单 |
 | [AGENTS.md](AGENTS.md) | 开发约束与里程碑状态 |
-| [CHANGELOG.md](CHANGELOG.md) | 11 个里程碑的来龙去脉 |
+| [CHANGELOG.md](CHANGELOG.md) | 版本变更记录 |
 
 ## 证据一览
 
@@ -92,7 +92,7 @@ docs/          规格、验收记录、结果、论文
 行为身份   PCS = A × min(C)；80 条可执行规则探针；判定器 κ = 0.690（60 条留出集）
 人类基线   191 条真人发言：R1 通过 10%、R5 通过 98% —— 规则是对 AI 的规定，不是人类行为描述
 多轮坍塌   R = 0.389 / 0.556；D = 0.657 / 0.635
-性能       20 万事件建索引 12 s；装配 p50 13 ms
+性能       20 万事件建索引 12 s；装配 p50 13 ms；20k 事件每轮 prompt 约 1.7 s（卡片增量折叠后，见 docs/TASK-24-card-fold.md）
 ```
 
 ## 明确没有的东西

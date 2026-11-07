@@ -27,7 +27,8 @@ from aiinvite.kernel.compiler import compile_kernel
 from aiinvite.kernel.incremental import compile_kernel_incremental
 from aiinvite.kernel.errors import KernelError
 from aiinvite.kernel.kernel import Policy
-from aiinvite.persona import build_persona_view
+from aiinvite.persona import build_persona_view, derive_user_card
+from aiinvite.persona.card_fold import CardState, fold_user_card
 from aiinvite.persona.pins import derive_pins, render_pins
 from aiinvite.recall.clue_store import ClueStore
 from aiinvite.pcs.probes import load_rules_v2
@@ -70,6 +71,8 @@ class HostSession:
         # One user per process: parsed evidence can stay in memory between turns.
         self._evidence = EvidenceCache()
         self._card_cache: dict = {}
+        # The card folds forward from the last turn; see persona/card_fold.
+        self._card_state = CardState()
 
     # -- writes --------------------------------------------------------
     def on_user(self, text, t):
@@ -171,12 +174,14 @@ class HostSession:
             if cached is not None and cached[0] == kernel.head:
                 view = cached[1]
             else:
+                events = self._events()
                 view = build_persona_view(
                     self.store,
                     kernel=kernel,
-                    events=self._events(),
+                    events=events,
                     policy=self._policy,
                     card_cache=self._card_cache,
+                    user_card=self._fold_card(events),
                 )
                 self._view_cache = (kernel.head, view)
         except (KernelError, AiInviteError):
@@ -190,6 +195,21 @@ class HostSession:
         if view.self_md.strip():
             persona = PERSONA_HEADER + NEWLINE + view.self_md.strip()
         return card, persona, view
+
+    def _fold_card(self, events):
+        """Fold the card forward from the last turn, O(delta) instead of O(n).
+
+        A card bug must not kill a conversation, and the full derivation is the
+        path this adapter shipped with, so it stays as the fallback.
+        """
+        try:
+            card, self._card_state = fold_user_card(
+                events, self._card_state, cache=self._card_cache
+            )
+            return card
+        except Exception:  # noqa: BLE001 - fall back to the reference path
+            self._card_state = CardState()
+            return derive_user_card(events, cache=self._card_cache)
 
     def _fit_input(self, text, allowance):
         """Truncate the user input so it costs at most ``allowance`` tokens."""

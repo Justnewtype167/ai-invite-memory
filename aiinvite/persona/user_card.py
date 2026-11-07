@@ -62,16 +62,28 @@ class UserCard:
         }
 
     def text(self) -> str:
-        """Render the card, trimming the lowest-priority tail until <=400."""
+        """Render the card, trimming the lowest-priority tail until <=400.
+
+        The trim order is fixed, and every extra drop only shortens the text,
+        so the smallest fitting trim is found by binary search instead of
+        re-rendering once per dropped entry -- a long history could otherwise
+        turn this into thousands of renders per turn.
+        """
         data = self.to_payload()
         rendered = _render(data)
-        while len(rendered) > CARD_BUDGET:
-            if not _drop_one(data):
-                raise PersonaError(
-                    E_PERSONA_BUDGET, f"用户卡无法压到 {CARD_BUDGET} 字符"
-                )
-            rendered = _render(data)
-        return rendered
+        if len(rendered) <= CARD_BUDGET:
+            return rendered
+        total = _drop_count(data)
+        if len(_render(_truncated(data, total))) > CARD_BUDGET:
+            raise PersonaError(E_PERSONA_BUDGET, f"用户卡无法压到 {CARD_BUDGET} 字符")
+        low, high = 1, total
+        while low < high:
+            middle = (low + high) // 2
+            if len(_render(_truncated(data, middle))) <= CARD_BUDGET:
+                high = middle
+            else:
+                low = middle + 1
+        return _render(_truncated(data, low))
 
 
 def load_rules(path: Path | None = None) -> dict[str, object]:
@@ -474,38 +486,90 @@ def _render(data: dict[str, object]) -> str:
     return "\n".join(lines)
 
 
-def _drop_one(data: dict[str, object]) -> bool:
-    """Drop the last entry of the lowest-priority section that has one."""
-    prefs = data["prefs"]
-    assert isinstance(prefs, dict)
-    for key in ("dislike", "like"):
-        items = prefs[key]
-        assert isinstance(items, list)
-        if items:
-            items.pop()
-            return True
-    for key in ("ongoing", "promises", "people", "taboos"):
-        items = data[key]
-        assert isinstance(items, list)
-        if items:
-            items.pop()
-            return True
+# The trim order, cheapest to keep first: dislikes go before likes, and the
+# name goes last of all.
+DROP_ORDER = (
+    ("prefs", "dislike"),
+    ("prefs", "like"),
+    ("ongoing", None),
+    ("promises", None),
+    ("people", None),
+    ("taboos", None),
+    ("never", None),
+    ("self", None),
+    ("call", None),
+)
+
+
+def _drop_count(data: dict[str, object]) -> int:
+    """How many entries the trim removes before the card is empty."""
+    total = 0
+    for section, key in DROP_ORDER:
+        if section == "prefs":
+            prefs = data["prefs"]
+            assert isinstance(prefs, dict)
+            total += len(prefs[key])
+        elif section == "never":
+            never = data["address"].get("never") or []
+            assert isinstance(never, list)
+            total += len(never)
+        elif section in ("self", "call"):
+            total += 1 if data["address"].get(section) else 0
+        else:
+            items = data[section]
+            assert isinstance(items, list)
+            total += len(items)
+    return total
+
+
+def _take(items: list, drops: int) -> tuple[list, int]:
+    """Drop from the end, as the trim does; return the rest and the leftover."""
+    if drops <= 0:
+        return list(items), 0
+    if drops >= len(items):
+        return [], drops - len(items)
+    return list(items[: len(items) - drops]), 0
+
+
+def _truncated(data: dict[str, object], drops: int) -> dict[str, object]:
+    """Return the card after the first N entries are trimmed.
+
+    The original is left untouched: the caller may probe several depths.
+    """
     address = data["address"]
-    assert isinstance(address, dict)
-    never = address.get("never")
+    prefs = data["prefs"]
+    assert isinstance(address, dict) and isinstance(prefs, dict)
+    out: dict[str, object] = {
+        "address": dict(address),
+        "people": list(data["people"]),
+        "taboos": list(data["taboos"]),
+        "promises": list(data["promises"]),
+        "ongoing": list(data["ongoing"]),
+        "prefs": {"like": list(prefs["like"]), "dislike": list(prefs["dislike"])},
+    }
+    out_prefs = out["prefs"]
+    assert isinstance(out_prefs, dict)
+    rest = drops
+    for key in ("dislike", "like"):
+        out_prefs[key], rest = _take(out_prefs[key], rest)
+    for key in ("ongoing", "promises", "people", "taboos"):
+        items = out[key]
+        assert isinstance(items, list)
+        out[key], rest = _take(items, rest)
+    out_address = out["address"]
+    assert isinstance(out_address, dict)
+    never = out_address.get("never") or []
     assert isinstance(never, list)
-    if never:
-        never.pop()
-        return True
-    if address.get("self"):
-        del address["self"]
-        address.pop("self_evidence", None)
-        return True
-    if address.get("call"):
-        del address["call"]
-        address.pop("call_evidence", None)
-        return True
-    return False
+    out_address["never"], rest = _take(never, rest)
+    if rest and out_address.get("self"):
+        out_address.pop("self", None)
+        out_address.pop("self_evidence", None)
+        rest -= 1
+    if rest and out_address.get("call"):
+        out_address.pop("call", None)
+        out_address.pop("call_evidence", None)
+        rest -= 1
+    return out
 
 
 def pin_user_card(

@@ -12,9 +12,9 @@
 **优先级（宪章 §3）**：先活着的人的路径，再死后的遗产路径。
 → `M15.1 / 协议 V7` 暂缓，设计存档于 `docs/PROTOCOL-V7.md`。
 
-## 1. 当前阶段：M12 已封，M13（动作闸门）未开始
+## 1. 当前阶段：M35 已封（用户卡增量折叠），下一步是索引增量
 
-**已封版**：`v0.1-m1` … `v0.23-m18.1`，共 **26 个 tag、358 个测试**。
+**已封版**：`v0.1-m1` … `v0.40-m35`，共 **43 个 tag、470 个测试**。
 
 ```
 M1-M5    证据层 / 中文规则 / 检索装配 / 人格内核 / 提案即证据
@@ -22,15 +22,18 @@ M6-M9    行为身份 PCS / 多轮坍塌 / 规则可执行化与判定器效度 
 M10      载荷与信封：事件改为「信封 + 内容寻址载荷」
 M11      轨迹与双投影：同一 kid 驱动文字与动作，身份不变
 M12      增量编译 + 对账：增量结果与全量逐字节相同
-M13      动作闸门（refusal 进证据）
-M14      会话级等价装配 + 分块输出
+M13-M14  动作闸门（refusal 进证据）/ 会话级等价装配 + 分块输出
 M14.1    时间触发增量化
 M15      遗赠胶囊（**设计已被 V7 取代，实现待重写**）
-M16      特质词表与风格卡（规格已写，未实现）  ← 当前主线
+M16-M19  特质词表与风格卡 / 宿主接入层 / 命名空间合并与首次 PyPI 发布 / 演示窗口
+M20-M24  桌面构建与打包守卫 / canon 规则与闸门 / 称呼修复与 98× 编译提速 / 段级证据缓存 / 用户卡逐事件 memo
+M25-M30  不可遗忘层（pin）/ 同义词与单字索引 / 查询改写兜底 / 盲重写被实验推翻 / 有依据的线索 / 线索缓存
+M31-M35  桥接普及度闸门 / 线索改固定清单分类 / 活库快照 / 召回失败收集 / 用户卡增量折叠
 M15.1    继承模式 V2（暂缓，见 docs/PROTOCOL-V7.md）
 ```
 
-**下一步是 M13**，规格尚未写。写规格前必读：
+**下一步是索引增量**：追加事件只 patch 新增项，而不是整表重建（20k 时约 1.0 s/轮，是当前最大的一项）。
+现状与分解见 `docs/TASK-24-card-fold.md` §8–§9。动手前必读：
 
 ```
 docs/SPEC-CHECKLIST.md      十问自检
@@ -38,14 +41,12 @@ docs/FOUNDATION-INVARIANCE.md  地基不变量（为什么做 M13）
 docs/AUDIT-01.md            全项目重新验证的结论与已知缺口
 ```
 
-### 1.1 冻结政策（已按 M10–M12 更新）
+### 1.1 冻结政策（M18 重命名后统一为字节基线）
 
 ```
-原始冻结（M1-M5）：aiinvite/、aiinvite.cn/、aiinvite.recall/、aiinvite.kernel/ 不许改
-M10 起：aiinvite/ 是证据层，允许改，改动必须在 ALLOWED_CHANGES 声明
-M11 起：新增 aiinvite.projection/（L2 投影层），不属于内核
-M12 起：aiinvite.kernel/ 允许改（增量与快照），同样必须声明
-aiinvite.cn/、aiinvite.recall/、aiinvite.pcs/ 仍然冻结（M10 只允许三处一行改动）
+范围：aiinvite/** 下每个 .py 的 sha256 都在基线里 —— 新增、删除、改一个字节都会失败
+改动：先在 tests/test_all_regression.py 的 ALLOWED_CHANGES 里逐文件声明原因，再同步基线
+首次发布之后的每一次改动都走过这条闸门；基线按 git index 字节重算（不是工作区字节）
 ```
 
 **闸门是 `tests/test_all_regression.py` 的 `ALLOWED_CHANGES`**：
@@ -89,21 +90,25 @@ D:/projects/Memory/
   AGENTS.md            # 本文件：约束与当前阶段
   README.md            # 中文首页    README-en.md 英文首页
   LICENSE              # Apache-2.0
-  CHANGELOG.md         # 17 个里程碑的来龙去脉
+  CHANGELOG.md         # 版本变更（v0.24.1–v0.40 已回溯补记）
   pyproject.toml
   aiinvite/                # L0 证据层：容器、哈希链、载荷 blob
     canonical.py  errors.py  event.py  chain.py  capsule.py  cli.py
-  aiinvite.cn/             # 中文规则层：称谓、相对时间、梗时效、繁简
-  aiinvite.recall/         # 检索与预算装配：FTS5 + 二元切分 + 4k 上限
-  aiinvite.kernel/         # L1 人格内核：编译、门控、历史、提案、快照与增量
-  aiinvite.pcs/            # 行为身份：PCS、可执行规则、坍塌深度
-  aiinvite.projection/     # L2 投影层：轨迹契约、文本投影器、动作投影器
-  tests/               # 358 个测试（unittest，无第三方依赖）
+    cn/                # 中文规则层：称谓、相对时间、梗时效、繁简
+    recall/            # 检索与预算装配：FTS5 + 二元切分 + 4k 上限
+    kernel/            # L1 人格内核：编译、门控、历史、提案、快照与增量
+    pcs/               # 行为身份：PCS、可执行规则、坍塌深度
+    projection/        # L2 投影层：轨迹契约、文本投影器、动作投影器
+    persona/           # L2 用户卡 / 特质 / 风格卡 / pin（card_fold 为增量折叠）
+    host/              # 宿主接入层：一个类、八个方法（唯一允许组合各层的包）
+    demo/              # 最小可信演示（tkinter，零第三方依赖）
+    succession/        # 遗赠胶囊（V1；V7 设计见 docs/PROTOCOL-V7.md）
+  tests/               # 470 个测试（unittest，无第三方依赖）
   tools/               # 唯一允许联网/调模型的地方
   corpus/              # 合成人格库（不要改）
   experiments/         # 回复集与矩阵结果
   docs/                # 规格 / 验收 / 结果 / 论文 / 审计
-    TASK-01..16-*.md   # 每个里程碑的权威规格
+    TASK-01..24-*.md   # 每个里程碑的权威规格
     ACCEPT-M*.md       # 每个里程碑的验收记录（含独立复核）
     AUDIT-01.md        # 全项目重新验证
     SPEC-CHECKLIST.md  # 写规格前的十问
@@ -136,7 +141,7 @@ D:/projects/Memory/
 python -m unittest discover -s tests -v
 ```
 
-必须满足：**全量 358 个测试全绿，0 skipped，0 errors**（当前基线），且：
+必须满足：**全量 470 个测试全绿，0 skipped，0 errors**（当前基线），且：
 
 - 冻结包的改动必须在 `tests/test_all_regression.py` 的 `ALLOWED_CHANGES` 声明（改了没声明失败，声明了没改也失败）
 - 存在一个 `docs/demo/` 目录，含一次真实的 init→append→seal→verify→export→import 输出记录

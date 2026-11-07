@@ -6,6 +6,7 @@ layer, rendered for assembly, and traceable to event ids.
 
 from __future__ import annotations
 
+from aiinvite.persona.card_fold import CardState, fold_user_card
 from aiinvite.persona.errors import PersonaError
 from aiinvite.persona.model import (
     ActiveTrait,
@@ -41,6 +42,7 @@ from aiinvite.persona.view import PersonaView, build_persona_view
 
 __all__ = [
     "ActiveTrait",
+    "CardState",
     "Conflict",
     "DEFAULT_VOCAB_PATH",
     "EchoResult",
@@ -56,6 +58,7 @@ __all__ = [
     "build_persona_view",
     "derive_user_card",
     "echo_guard",
+    "fold_user_card",
     "load_rules",
     "load_style_card",
     "load_vocabulary",

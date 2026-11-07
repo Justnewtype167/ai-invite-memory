@@ -30,7 +30,7 @@ pip install https://github.com/Justnewtype167/ai-invite-memory/releases/download
 ```bash
 git clone https://github.com/Justnewtype167/ai-invite-memory.git
 cd ai-invite-memory
-python -m unittest discover -s tests -v     # 358 tests
+python -m unittest discover -s tests -v     # 470 tests
 ```
 
 ## 3. 装完能做什么（30 秒验证）
@@ -77,7 +77,7 @@ print(verify_path(store).events) # 证据链校验
 
 | 平台 | 状态 |
 |---|---|
-| Windows | ✅ 本地全量测试通过（358） |
+| Windows | ✅ 本地全量测试通过（470） |
 | Linux | ✅ CI 通过（Python 3.11 / 3.12） |
 | macOS | ⚠️ 未在真机验证（代码无平台分支，预期可用） |
 

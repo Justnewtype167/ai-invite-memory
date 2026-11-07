@@ -217,6 +217,45 @@ class TestHostAdapter(unittest.TestCase):
         doc = inspect.getdoc(HostSession.on_assistant) or ""
         self.assertIn("Never use this for gated output", doc)
 
+    TURNS = (
+        "我叫老周",
+        "别叫我宝贝",
+        "我喜欢喝茶",
+        "我妈叫我回家吃饭",
+        "叫我一声宝贝",
+        "我答应你明天早睡",
+        "我不喜欢烟味",
+        "名字是阿May",
+        "搬家了",
+    )
+
+    def _card_block(self, session) -> str:
+        return session._card_and_persona()[0]
+
+    def test_incremental_card_matches_full_derivation(self) -> None:
+        """P3: the folded card equals derive_user_card after every turn."""
+        from aiinvite.kernel.compiler import read_evidence
+        from aiinvite.persona.user_card import derive_user_card
+
+        session = HostSession(self.store, "qwen3.5:9b", now=NOW)
+        for text in self.TURNS:
+            session.on_user(text, STAMP)
+            session.on_assistant("好的，记下了", STAMP)
+            session.prompt_for(text)
+            expected = derive_user_card(read_evidence(self.store)).text().strip()
+            folded = self._card_block(session).strip()
+            if expected and expected != "- none":
+                self.assertIn(expected, folded, "diverged after: " + text)
+
+    def test_warm_session_matches_a_cold_one(self) -> None:
+        """P3: continuing a folded session must equal starting it cold."""
+        warm = HostSession(self.store, "qwen3.5:9b", now=NOW)
+        for text in self.TURNS:
+            warm.on_user(text, STAMP)
+            warm.prompt_for(text)
+        cold = HostSession(self.store, "qwen3.5:9b", now=NOW)
+        self.assertEqual(cold.prompt_for("你好"), warm.prompt_for("你好"))
+
 
 if __name__ == "__main__":
     unittest.main()
