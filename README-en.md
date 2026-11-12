@@ -47,7 +47,8 @@ content identity   identical kid across processes / devices / kernel rebuild / p
 behavioral identity PCS = A x min(C); 80 executable-rule probes; judge kappa = 0.690 (60-item holdout)
 human baseline     191 real human turns: question-first 10%, echo-first 98%
 multi-turn         collapse rate 0.389 / 0.556; normalized first failure 0.657 / 0.635
-performance        index 200k events in ~12 s; assembly p50 13 ms
+performance        index 200k events in ~12 s; assembly p50 13 ms; per turn (A/B, same machine)
+                   20k 0.15-0.19 s, 200k 0.78-0.87 s (old: 2.4-3.1 s / 12.5-13.2 s; see docs/TASK-25-turn-cost.md)
 ```
 
 ## What this does not do

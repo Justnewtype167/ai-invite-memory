@@ -403,6 +403,64 @@ Section 6.8 shows that treating style as an injectable property damages the two 
 > and that measurement is a human judgement, not another regular expression.
 
 
+### 6.11 What a turn costs, and its floor
+
+The earlier sections measure *does it remember* and *does it sound like him*. This one measures the third question:
+**does a turn get more expensive the longer you talk?**
+
+Setup: `tools/bench_turn_cost.py`, shipped with the repository. A synthetic store with 100 events per segment;
+`cold` is the first `prompt_for`, `warm` appends one turn and then calls `prompt_for` plus one reply, three turns in a row.
+Every phase (evidence read, kernel compile, pins, snapshot read/write, index update, retrieval assembly) is wrapped for time and call count.
+
+**Table 19  Cost per turn** (Windows 11 / 16 GB; old and new code run back to back in the same minute, the machine at 99% CPU throughout)
+
+| Events | Before | After | Cold start |
+|---|---|---|---|
+| 20k | 2.4-3.1 s | **0.15-0.19 s (about 16x)** | 3.6-6.2 s |
+| 200k | 12.5-13.2 s | **0.78-0.87 s (about 16x)** | 30-34 s |
+
+Breakdown of a warm 200k turn after the change (ms): kernel 468-585, pins 106-311, snapshot_write 134-223,
+index_update 31-83, evidence read 28-30, retrieval assembly 38-49.
+The old code at 200k (ms): **full index rebuild 8796-8800**, whole-store evidence re-parse 2045, kernel 1691, pins 857, snapshot_write 306.
+Of the old twelve seconds per turn, nearly nine went into rebuilding an index whose content had barely changed.
+
+Four independent parts, fixed separately: index and evidence
+now resume from a **byte offset** and parse only the appended complete lines; the snapshot keeps the graph beside it
+in `graph.json`, cutting full canonical encodings from four to two; the host reads evidence once per turn.
+
+#### 6.11.1 The remaining O(n) is definitional
+
+At 200k events a turn still costs 0.78-0.87 s, about half of it hashing `kid` and encoding the snapshot (kernel 468-585 ms, including one hash over the whole graph):
+
+```
+kid = hash(self_md, canon_md, state, graph, origin, models)
+```
+
+As long as "the same evidence must yield the same kid" holds, every turn has to canonically encode and hash the **whole** graph.
+That is not an implementation defect, it is how content identity is defined. The three ways out are semantic changes, not optimisations:
+
+1. hash a digest of the graph instead - O(1), but **every kernel identity ever exported changes**;
+2. compute `kid` only on export or verification - saves the per-turn O(n), but the snapshot no longer carries the current kid;
+3. accept the floor.
+
+We take option 3 and state the number plainly: **the "150 ms at 200k" target was not met - it is about 5x away - and further micro-optimisation will not meet it.**
+20k (about two years of daily conversation) sits at 0.15 s. 200k is the decade-long case, where 0.8 s per turn is tolerable in local conversation,
+but that cost is the bill for identity, not for caching.
+
+#### 6.11.2 A methodological note: milliseconds do not reproduce, counters do
+
+On one machine, with one command, the 20k turn cost measured anywhere from **0.15 s to 0.94 s** across sessions (about 6x),
+and 200k from 0.82 s to 10.7 s (about 13x). The variation comes from CPU contention, OS-level file scanning and page cache,
+not from the code under test: the counters in the same batch are identical every time.
+
+That is why we only compare old and new code across **adjacent runs**. Comparing across sessions yields numbers ten times apart,
+and that gap has nothing to do with the design.
+
+So we treat *how many times each phase runs and how many bytes it touches* as the structural metric, and milliseconds as a reference quantity.
+A single flattering millisecond number would not survive a change of machine, and that difference has nothing to do with the design.
+One testable structural claim holds instead: **per prompt, evidence read, kernel compile, pins and index update each happen exactly once**
+(`tests/test_host_adapter.py::test_prompt_reads_evidence_once` guards it), and the bytes parsed equal the bytes appended, not the size of the store.
+
 ---
 
 ## 7. Discussion
@@ -443,9 +501,10 @@ Without these three, behavioral identity produces numbers that look stable and m
 ## 8. Reproducibility
 
 ```
-358 tests, 24 milestone tags, 0 third-party dependencies, Python 3.11+ (as of this draft; see README for the current numbers)
+486 tests, 44 milestone tags, 0 third-party dependencies, Python 3.11+ (as of this draft; see README for the current numbers)
 Two local models (qwen3.5:9b / glm4:9b), fully offline
 python tools/pcs_matrix.py --models qwen3.5:9b glm4:9b
+python tools/bench_turn_cost.py 20000   # the per-turn table of 6.11, about a minute
 ```
 
 Every number in this paper is produced by a script in the repository; the judge and probes are released with the code.
@@ -493,6 +552,7 @@ Every number in this paper is produced by a script in the repository; the judge 
 | v0.10-m8.1 | holdout and new R5 definition | 7 |
 | v0.11-m83 | exact R3 semantics, 80 probes | 5 |
 | v0.12-m9 | consultation rule set and mode-conditional evaluation | 6 |
-| **total** | as of v0.21-m17.1 | **358** |
+| v0.22-v0.41 | M10-M36: incremental index, evidence resume, sidecar snapshot, card folding, pins | 240 |
+| **total** | as of v0.41-m36 | **486** |
 
-The table lists per-milestone increments for M1–M9 only (246 in total); the 112 added after M10 are recorded in the milestone acceptance documents and the README.
+The table lists per-milestone increments for M1–M9 only (246 in total); the 240 added by M10–M36 are itemised in `CHANGELOG.md` and the milestone acceptance documents. 246 + 240 = 486.

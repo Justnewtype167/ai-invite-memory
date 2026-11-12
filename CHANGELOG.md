@@ -2,7 +2,7 @@
 
 ## v0.41-m36 · 2026-11-12
 
-**每轮只处理新增：20k 从 1.7 s 降到 0.67 s。200k 是 3 s，不是 150 ms——原因写清楚了。**
+**每轮只处理新增：同机同分钟 A/B，20k 每轮 2.4–3.1 s → 0.15–0.19 s、200k 12.5–13.2 s → 0.78–0.87 s（都约 16 倍）。150 ms 的目标没到，原因写清楚了。**
 
 - `aiinvite/recall/index.py`：`update_index` 改为按字节偏移续写（`meta.last_seg/last_size`），只解析新增的完整行；
   续写前校验边界行 id，文件变短或边界被改写 → `E_RC_STALE` 让调用方全量重建；半行不索引；**不改 `build_id`**（否则 stream 会误判重建）
@@ -11,9 +11,13 @@
 - `aiinvite/kernel/snapshot.py`：`SNAPSHOT_FORMAT = 2`，graph 旁置为 `graph.json` + 摘要；每轮全量 canonical 编码从 4 次降到 2 次；
   format 1 内联快照继续可读并自动迁移；graph 被手改 → `E_KN_SNAPSHOT`
 - `aiinvite/host/__init__.py`：`_ensure_index` 先增量再回退全量；`prompt_for` 每轮只读一次证据（内核 / 用户卡 / pins 共用）
-- 实测（合成库，同机）：20k 每轮 1.7 s → **0.67 s**，200k 5.4–6.6 s → **3.1–3.5 s**；冷启动 20k 13.2 s / 200k 130 s
+- 实测（合成库，`tools/bench_turn_cost.py`，随仓库发布）：**同机同分钟、99% CPU 饱和下 A/B**——
+  20k 每轮 2.4–3.1 s → **0.15–0.19 s**、200k 12.5–13.2 s → **0.78–0.87 s**（都约 16 倍）；冷启动 20k 3.6–6.2 s、200k 30–34 s（未变，一次性建索引）
+- 旧代码 200k 每轮 12.5 s 里，8.8 s 是索引全量重建、2.0 s 是证据整库重解析——「每轮只处理新增」省的就是这两笔
+- **数字口径的修正**：本机同一命令跨时段会差 3–5 倍（CPU 争用、页缓存、Defender 扫描），
+  所以本条目只认「相邻两次运行」的对比；绝对毫秒写区间、写机器状态。论文 §6.11 与 `docs/TASK-25-turn-cost.md` §6 已同步
 - 测试 470 → **486**（`test_index_increment.py` 7、`test_snapshot_graph.py` 4、`test_evidence_cache.py` +4、`test_host_adapter.py` +1）
-- **如实记录**：200k 剩下的 3 s 是 `kid` 对全量 graph 的哈希（约 2 s）加一次快照编码（约 0.5 s）。只要身份定义是
+- **如实记录**：200k 剩下的 0.78–0.87 s 里，约一半是 `kid` 对全量 graph 的哈希加一次快照编码（kernel 468–585 ms）。只要身份定义是
   「对 graph 全部内容做哈希」，这一次 O(n) 就消不掉；要消掉必须改 kid 语义（对 graph 摘要哈希 / 延迟到导出时算），
   那是产品决策，不是性能优化——见 `docs/TASK-25-turn-cost.md` §7
 
