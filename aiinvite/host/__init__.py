@@ -35,7 +35,7 @@ from aiinvite.pcs.probes import load_rules_v2
 from aiinvite.projection import emit as gate_emit
 from aiinvite.projection.trace import Segment, Trace
 from aiinvite.recall.errors import RecallError
-from aiinvite.recall.index import build_index, index_status
+from aiinvite.recall.index import build_index, index_status, update_index
 from aiinvite.recall.stream import StreamSession
 from aiinvite.recall.tokenizer import estimate_tokens
 
@@ -92,13 +92,17 @@ class HostSession:
 
     # -- read-only -----------------------------------------------------
     def _ensure_index(self):
-        """Build the derived index when it is missing or stale."""
+        """Catch the derived index up; rebuild only when it cannot resume."""
         try:
             stale = index_status(self.store).stale
         except RecallError:
             build_index(self.store)
             return
-        if stale:
+        if not stale:
+            return
+        try:
+            update_index(self.store)
+        except RecallError:
             build_index(self.store)
 
     def _rules(self):
@@ -109,10 +113,10 @@ class HostSession:
         """Return every event, re-parsing only the bytes that changed."""
         return self._evidence.read(self.store)
 
-    def _kernel(self):
+    def _kernel(self, events=None):
         """Return the kernel, reusing the incremental snapshot when possible."""
         return compile_kernel_incremental(
-            self.store, self._policy, events=self._events()
+            self.store, self._policy, events=self._events() if events is None else events
         )
 
     def pin(self, event_id):
@@ -157,24 +161,24 @@ class HostSession:
         )
         return self._clues.learn(ordered, limit=limit)
 
-    def _pinned(self):
+    def _pinned(self, events=None):
         """Return the unforgettable block for this turn, or an empty string."""
         try:
-            pins = derive_pins(self._events())
+            pins = derive_pins(self._events() if events is None else events)
         except Exception:  # noqa: BLE001 - a broken pin must not kill the turn
             return ""
         body = render_pins(pins)
         return PIN_HEADER + NEWLINE + body if body else ""
 
-    def _card_and_persona(self):
+    def _card_and_persona(self, events=None):
         """Return (card_block, persona_block); both empty when nothing is known."""
         try:
-            kernel = self._kernel()
+            events = self._events() if events is None else events
+            kernel = self._kernel(events)
             cached = self._view_cache
             if cached is not None and cached[0] == kernel.head:
                 view = cached[1]
             else:
-                events = self._events()
                 view = build_persona_view(
                     self.store,
                     kernel=kernel,
@@ -227,8 +231,14 @@ class HostSession:
         if estimate_tokens(user_text) > self.budget - INPUT_RESERVE:
             user_text = self._fit_input(user_text, self.budget - INPUT_RESERVE)
         rules = self._rules()
-        card, persona, view = self._card_and_persona()
-        pinned = self._pinned()
+        # One read per turn: the kernel, the card and the pins all want the
+        # same evidence, and on a large store each rebuild is real work.
+        try:
+            events = self._events()
+        except (KernelError, AiInviteError):
+            events = []
+        card, persona, view = self._card_and_persona(events)
+        pinned = self._pinned(events)
         fixed = [rules]
         if card:
             fixed.append(card)

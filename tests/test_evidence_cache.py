@@ -87,6 +87,67 @@ class TestEvidenceCache(unittest.TestCase):
         self.assertEqual(one.user_card.to_payload(), two.user_card.to_payload())
         self.assertEqual([t.name for t in one.traits], [t.name for t in two.traits])
 
+    def test_append_parses_one_event_not_the_segment(self) -> None:
+        """P4: one appended event costs one parsed event, not one segment."""
+        cache = EvidenceCache()
+        cache.read(self.store)
+        before = cache.parsed_events
+        append_event(self.store, "user", "只追加这一条", STAMP)
+        events = cache.read(self.store)
+        self.assertEqual(cache.parsed_events - before, 1)
+        self.assertEqual(len(events), 251)
+        self.assertEqual(events[-1].text, "只追加这一条")
+
+    def test_many_appends_stay_incremental(self) -> None:
+        """P4: a stream of appends never re-parses the parsed prefix."""
+        cache = EvidenceCache()
+        cache.read(self.store)
+        before = cache.parsed_events
+        for index in range(5):
+            append_event(self.store, "user", "追加" + str(index), STAMP)
+            events = cache.read(self.store)
+        self.assertEqual(cache.parsed_events - before, 5)
+        self.assertEqual(len(events), 255)
+        sequences = [int(event.event_id.split("_")[1]) for event in events]
+        self.assertEqual(sequences, sorted(sequences))
+        self.assertEqual(sequences, list(range(1, 256)))
+
+    def test_partial_line_is_not_parsed_until_complete(self) -> None:
+        """P4: a half-written trailing line waits instead of raising."""
+        cache = EvidenceCache()
+        cache.read(self.store)
+        folder = self.store / "evidence"
+        event = append_event(self.store, "user", "半行事件", STAMP)
+        line = event.to_line()
+        last = sorted(folder.glob("seg-*.jsonl"))[-1]
+        start = last.stat().st_size - len(line)
+        cut = len(line) // 2
+        with last.open("r+b") as handle:
+            handle.truncate(start + cut)
+        events = cache.read(self.store)
+        self.assertEqual(len(events), 250)
+        with last.open("ab") as handle:
+            handle.write(line[cut:])
+        events = cache.read(self.store)
+        self.assertEqual(len(events), 251)
+        self.assertEqual(events[-1].text, "半行事件")
+
+    def test_same_size_rewrite_is_reparsed(self) -> None:
+        """P4: editing a sealed line in place invalidates that segment."""
+        cache = EvidenceCache()
+        cache.read(self.store)
+        folder = self.store / "evidence"
+        first = sorted(folder.glob("seg-*.jsonl"))[0]
+        blob = first.read_bytes()
+        marker = "第7条".encode("utf-8")
+        self.assertEqual(blob.count(marker), 1)
+        first.write_bytes(blob.replace(marker, "第9条".encode("utf-8"), 1))
+        before = cache.parsed_events
+        events = cache.read(self.store)
+        self.assertEqual(cache.parsed_events - before, 100)
+        self.assertEqual(len(events), 250)
+        self.assertEqual(events[7].text, "第9条")
+
 
 if __name__ == "__main__":
     unittest.main()

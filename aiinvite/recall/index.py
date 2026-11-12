@@ -155,41 +155,13 @@ def build_index(store: Path) -> IndexStatus:
             rows_data: list[tuple[str, str, int, int]] = []
             rows_time: list[tuple[str, str, str, str, int]] = []
             for event in _iter_stored(path):
-                rows_ev.append(
-                    (event.event_id, event.seg, event.ts, index_terms(event.text))
-                )
-                rows_data.append(
-                    (
-                        event.event_id,
-                        event.text,
-                        estimate_tokens(event.text),
-                        1 if is_promise(event.text) else 0,
-                    )
-                )
-                rows_time.append(
-                    (
-                        event.event_id,
-                        event.seg,
-                        event.ts,
-                        event.ts[5:10],
-                        int(event.ts[:4]),
-                    )
-                )
+                ev_row, data_row, time_row = _index_rows(event)
+                rows_ev.append(ev_row)
+                rows_data.append(data_row)
+                rows_time.append(time_row)
                 count += 1
                 head = event.event_id
-            connection.executemany(
-                "INSERT INTO fts_ev(event_id, seg, ts, bg) VALUES(?, ?, ?, ?)", rows_ev
-            )
-            connection.executemany(
-                "INSERT INTO ev_data(event_id, text, tokens, is_promise) "
-                "VALUES(?, ?, ?, ?)",
-                rows_data,
-            )
-            connection.executemany(
-                "INSERT INTO ev_time(event_id, seg, ts, md, year) "
-                "VALUES(?, ?, ?, ?, ?)",
-                rows_time,
-            )
+            _insert_rows(connection, rows_ev, rows_data, rows_time)
         if count == 0:
             raise RecallError(E_RC_IO, "证据目录为空")
         last_path = evidence_files(store)[-1]
@@ -213,56 +185,75 @@ def build_index(store: Path) -> IndexStatus:
 
 
 def update_index(store: Path) -> IndexStatus:
-    """Index every evidence event after ``meta.head``."""
+    """Index every evidence event after ``meta.head``, reading only new bytes.
+
+    Evidence is append-only, so the indexed size of the last segment is also
+    the byte offset where the next update starts: a turn that appends one
+    event reads one event, not the whole store. A changed boundary (truncated
+    segment, rewritten tail, missing segment) raises ``E_RC_STALE`` so the
+    caller rebuilds instead of indexing history the index never saw.
+    """
     current = index_status(store)
-    tail = evidence_tail(store)
-    head_sequence = _sequence(current.lsn)
-    tail_sequence = _sequence(tail)
-    if tail_sequence < head_sequence:
-        raise RecallError(E_RC_STALE, "证据尾部早于索引 head")
-    if tail_sequence == head_sequence:
+    if not current.stale:
         return IndexStatus(current.events_indexed, current.lsn, False, 0)
+    meta = load_meta(store)
+    last_seg = meta.get("last_seg")
+    last_size = meta.get("last_size")
+    if not last_seg or last_size is None:
+        raise RecallError(E_RC_STALE, "索引缺少段偏移，无法增量更新")
+    offset = int(last_size)
+    paths = evidence_files(store)
+    names = [path.stem for path in paths]
+    if last_seg not in names:
+        raise RecallError(E_RC_STALE, f"索引指向的段已不存在：{last_seg}")
+    start = names.index(last_seg)
+    boundary = paths[start]
+    try:
+        size = boundary.stat().st_size
+    except OSError as exc:
+        raise RecallError(E_RC_IO, f"无法读取证据段：{boundary}") from exc
+    if size < offset:
+        raise RecallError(E_RC_STALE, f"证据段被截断：{boundary.name}")
+    if offset and _last_event_id(boundary, offset) != meta.get("head"):
+        raise RecallError(E_RC_STALE, f"索引 head 与证据末尾不一致：{boundary.name}")
+
+    rows_ev: list[tuple[str, str, str, str]] = []
+    rows_data: list[tuple[str, str, int, int]] = []
+    rows_time: list[tuple[str, str, str, str, int]] = []
+    head = str(meta.get("head", ""))
+    count = int(meta["count"])
+    end_seg = last_seg
+    end_offset = offset
+    for number in range(start, len(paths)):
+        path = paths[number]
+        begin = offset if number == start else 0
+        events, complete = _read_appended(path, begin)
+        if number == start:
+            end_offset = complete
+        for event in events:
+            ev_row, data_row, time_row = _index_rows(event)
+            rows_ev.append(ev_row)
+            rows_data.append(data_row)
+            rows_time.append(time_row)
+            head = event.event_id
+            count += 1
+        if number == len(paths) - 1:
+            end_seg = path.stem
+            end_offset = complete
+    if not rows_ev and end_seg == last_seg and end_offset == offset:
+        # Only an unfinished trailing line arrived; the index is still behind.
+        return IndexStatus(count, head, True, 0)
     connection = _connect(store / INDEX_DIR / INDEX_FILE, readonly=False)
     try:
-        for path in evidence_files(store):
-            for event in _iter_stored(path):
-                if _sequence(event.event_id) <= head_sequence:
-                    continue
-                connection.execute(
-                    "INSERT INTO fts_ev(event_id, seg, ts, bg) VALUES(?, ?, ?, ?)",
-                    (event.event_id, event.seg, event.ts, index_terms(event.text)),
-                )
-                connection.execute(
-                    "INSERT INTO ev_data(event_id, text, tokens, is_promise) "
-                    "VALUES(?, ?, ?, ?)",
-                    (
-                        event.event_id,
-                        event.text,
-                        estimate_tokens(event.text),
-                        1 if is_promise(event.text) else 0,
-                    ),
-                )
-                connection.execute(
-                    "INSERT INTO ev_time(event_id, seg, ts, md, year) "
-                    "VALUES(?, ?, ?, ?, ?)",
-                    (
-                        event.event_id,
-                        event.seg,
-                        event.ts,
-                        event.ts[5:10],
-                        int(event.ts[:4]),
-                    ),
-                )
-        connection.executemany(
-            "UPDATE meta SET value = ? WHERE key = ?",
-            [(tail, "head"), (str(tail_sequence), "count")],
-        )
-        last_path = evidence_files(store)[-1]
+        if rows_ev:
+            _insert_rows(connection, rows_ev, rows_data, rows_time)
         connection.executemany(
             "INSERT OR REPLACE INTO meta(key, value) VALUES(?, ?)",
             [
-                ("last_seg", last_path.stem),
-                ("last_size", str(last_path.stat().st_size)),
+                ("head", head),
+                ("count", str(count)),
+                ("last_seg", end_seg),
+                ("last_size", str(end_offset)),
             ],
         )
         connection.commit()
@@ -270,7 +261,7 @@ def update_index(store: Path) -> IndexStatus:
         raise RecallError(E_RC_IO, f"增量索引失败：{exc}") from exc
     finally:
         connection.close()
-    return IndexStatus(tail_sequence, tail, False, 0)
+    return IndexStatus(count, head, False, 0)
 
 
 def index_status(store: Path, verify_sample: int = 0) -> IndexStatus:
@@ -455,3 +446,96 @@ def _sequence(event_id: str) -> int:
         return int(event_id[3:])
     except ValueError as exc:
         raise RecallError(E_RC_IO, f"非法事件 id：{event_id}") from exc
+
+def _index_rows(event: StoredEvent) -> tuple[
+    tuple[str, str, str, str],
+    tuple[str, str, int, int],
+    tuple[str, str, str, str, int],
+]:
+    """Build the three index rows for one event, shared by build and update."""
+    ev_row = (event.event_id, event.seg, event.ts, index_terms(event.text))
+    data_row = (
+        event.event_id,
+        event.text,
+        estimate_tokens(event.text),
+        1 if is_promise(event.text) else 0,
+    )
+    time_row = (
+        event.event_id,
+        event.seg,
+        event.ts,
+        event.ts[5:10],
+        int(event.ts[:4]),
+    )
+    return ev_row, data_row, time_row
+
+
+def _insert_rows(
+    connection: sqlite3.Connection,
+    rows_ev: list[tuple[str, str, str, str]],
+    rows_data: list[tuple[str, str, int, int]],
+    rows_time: list[tuple[str, str, str, str, int]],
+) -> None:
+    connection.executemany(
+        "INSERT INTO fts_ev(event_id, seg, ts, bg) VALUES(?, ?, ?, ?)",
+        rows_ev,
+    )
+    connection.executemany(
+        "INSERT INTO ev_data(event_id, text, tokens, is_promise) "
+        "VALUES(?, ?, ?, ?)",
+        rows_data,
+    )
+    connection.executemany(
+        "INSERT INTO ev_time(event_id, seg, ts, md, year) VALUES(?, ?, ?, ?, ?)",
+        rows_time,
+    )
+
+
+def _read_appended(path: Path, offset: int) -> tuple[list[StoredEvent], int]:
+    """Parse complete lines at offset; ignore a trailing partial line."""
+    try:
+        with path.open("rb") as handle:
+            handle.seek(offset)
+            data = handle.read()
+    except OSError as exc:
+        raise RecallError(E_RC_IO, f"无法读取证据段：{path}") from exc
+    cut = data.rfind(b"\n")
+    if cut < 0:
+        return [], offset
+    body = data[: cut + 1]
+    try:
+        text = body.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise RecallError(E_RC_IO, f"证据不是 UTF-8：{path}") from exc
+    events = [_parse_stored(line, path) for line in text.split("\n") if line]
+    return events, offset + len(body)
+
+
+def _last_event_id(path: Path, offset: int) -> str | None:
+    """Return the id of the complete line that ends at offset."""
+    window = 4096
+    while True:
+        start = max(0, offset - window)
+        try:
+            with path.open("rb") as handle:
+                handle.seek(start)
+                chunk = handle.read(offset - start)
+        except OSError as exc:
+            raise RecallError(E_RC_IO, f"无法读取证据段：{path}") from exc
+        if not chunk.endswith(b"\n"):
+            return None
+        body = chunk[:-1]
+        cut = body.rfind(b"\n")
+        if cut < 0:
+            if start > 0:
+                window *= 4
+                continue
+            line = body
+        else:
+            line = body[cut + 1:]
+        try:
+            data = json.loads(line.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            return None
+        event_id = data.get("id")
+        return event_id if isinstance(event_id, str) else None

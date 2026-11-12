@@ -28,7 +28,10 @@ from aiinvite.kernel.kernel import (
 )
 
 SNAPSHOT_FILE = "snapshot.json"
-SNAPSHOT_FORMAT = 1
+GRAPH_FILE = "graph.json"
+# 2: the graph lives in its own file, so its bytes are encoded once per turn
+# and hashed without re-encoding. Format 1 (inline graph) still loads.
+SNAPSHOT_FORMAT = 2
 STATE_KEYS = ("intimacy", "stability", "trust")
 DIGEST_PREFIX = "sha256:"
 
@@ -99,17 +102,32 @@ def policy_digest(policy: Policy) -> str:
 
 
 def write_snapshot(store: Path, snapshot: Snapshot) -> None:
-    """Write the snapshot atomically under ``store/kernel/snapshot.json``."""
-    payload = snapshot_payload(snapshot)
+    """Write the snapshot and its graph atomically under ``store/kernel``.
+
+    The graph is the only large artifact here, and a turn has to encode it
+    once to hash it. Keeping it in its own file means that encoding is the
+    only one: the snapshot payload holds just its digest, so the payload
+    digest can be computed without touching the graph again.
+    """
+    graph_raw = dumps(dict(snapshot.graph))
+    graph_digest = DIGEST_PREFIX + hashlib.sha256(graph_raw).hexdigest()
+    payload = snapshot_payload(snapshot, graph_digest)
     payload["digest"] = digest_of(payload)
-    path = store / KERNEL_DIR / SNAPSHOT_FILE
+    folder = store / KERNEL_DIR
+    try:
+        folder.mkdir(parents=True, exist_ok=True)
+        _replace(folder / GRAPH_FILE, graph_raw)
+        _replace(folder / SNAPSHOT_FILE, dumps(payload))
+    except OSError as exc:
+        raise KernelError(E_KN_IO, f"写入快照失败：{folder}") from exc
+
+
+def _replace(path: Path, raw: bytes) -> None:
+    """Write one artifact through a temporary file in the same folder."""
     staging = path.parent / (path.name + ".tmp")
     try:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        staging.write_bytes(dumps(payload))
+        staging.write_bytes(raw)
         os.replace(staging, path)
-    except OSError as exc:
-        raise KernelError(E_KN_IO, f"写入快照失败：{path}") from exc
     finally:
         if staging.exists():
             staging.unlink()
@@ -136,27 +154,52 @@ def load_snapshot(store: Path) -> Snapshot | None:
     body = {key: value for key, value in data.items() if key != "digest"}
     if digest_of(body) != digest:
         raise KernelError(E_KN_SNAPSHOT, "快照 digest 不符，已被手改")
-    if data.get("format") != SNAPSHOT_FORMAT:
-        raise KernelError(E_KN_SNAPSHOT, f"快照 format 非法：{data.get('format')}")
+    version = data.get("format")
+    if version == 1:
+        graph = _graph(data.get("graph"))
+    elif version == SNAPSHOT_FORMAT:
+        graph = _load_graph(store, data.get("graph_digest"))
+    else:
+        raise KernelError(E_KN_SNAPSHOT, f"快照 format 非法：{version}")
     return Snapshot(
         head=_text(data, "head"),
         kid=_text(data, "kid"),
         policy_digest=_text(data, "policy_digest"),
         state=_state(data.get("state")),
-        graph=_graph(data.get("graph")),
+        graph=graph,
         self_md=_text(data, "self_md"),
         canon_md=_text(data, "canon_md"),
         context=_context(data.get("context")),
     )
 
 
-def snapshot_payload(snapshot: Snapshot) -> dict[str, object]:
+def _load_graph(store: Path, digest: object) -> dict[str, object]:
+    """Read the graph sidecar and verify it against the snapshot digest."""
+    if not isinstance(digest, str):
+        raise KernelError(E_KN_SNAPSHOT, "快照缺少 graph_digest")
+    path = store / KERNEL_DIR / GRAPH_FILE
+    try:
+        raw = path.read_bytes()
+    except OSError as exc:
+        raise KernelError(E_KN_SNAPSHOT, f"无法读取 graph.json：{path}") from exc
+    if DIGEST_PREFIX + hashlib.sha256(raw).hexdigest() != digest:
+        raise KernelError(E_KN_SNAPSHOT, "graph.json digest 不符，已被手改")
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise KernelError(E_KN_SNAPSHOT, f"graph.json 不是合法 JSON：{path}") from exc
+    return _graph(data)
+
+
+def snapshot_payload(
+    snapshot: Snapshot, graph_digest: str = ""
+) -> dict[str, object]:
     """Return the canonical payload without its own digest."""
     return {
         "canon_md": snapshot.canon_md,
         "context": context_payload(snapshot.context),
         "format": SNAPSHOT_FORMAT,
-        "graph": dict(snapshot.graph),
+        "graph_digest": graph_digest,
         "head": snapshot.head,
         "kid": snapshot.kid,
         "policy_digest": snapshot.policy_digest,

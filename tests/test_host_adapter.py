@@ -95,6 +95,25 @@ class TestHostAdapter(unittest.TestCase):
         self.assertEqual(first, second)
         self.assertEqual(events, verify_path(self.store).events)
 
+    def test_prompt_reads_evidence_once(self) -> None:
+        """H5: one prompt parses the evidence once, not once per consumer.
+
+        The kernel, the user card and the pins all want the same events. Each
+        read is cheap when the cache is warm but not free on a large store, so
+        the adapter passes one list down instead of asking three times.
+        """
+        session = self._session()
+        reads: list[int] = []
+        original = session._evidence.read
+
+        def counted(store):
+            reads.append(1)
+            return original(store)
+
+        session._evidence.read = counted
+        session.prompt_for("你好")
+        self.assertEqual(len(reads), 1)
+
     def test_refusal_is_recorded(self) -> None:
         """H4: a forbidden reply is recorded as a refusal, not as a turn."""
         append_event(self.store, text="别叫我宝贝", t=STAMP,
