@@ -21,7 +21,7 @@
 ## Run it
 
 ```bash
-python -m unittest discover -s tests -v     # 486 tests
+python -m unittest discover -s tests -v     # 497 tests
 ```
 
 Zero third-party dependencies, Python 3.11+. The core libraries never touch the network and never call a model; network and model calls live only in `tools/`.
@@ -35,6 +35,7 @@ aiinvite.recall/      retrieval and budgeted assembly: FTS5 + bigrams + 4k cap
 aiinvite.kernel/      persona kernel: deterministic compile, gates, history, proposals
 aiinvite.pcs/         behavioral identity: PCS, executable rules, collapse depth
 aiinvite.projection/  projection layer: trace contract and per-form projectors (M11+)
+aiinvite.host/        host integration: one class, eight methods
 tools/            external adapters (the only place with network): proposer, reply capture, matrix runs
 experiments/      reply sets and matrix results
 docs/             specs, acceptance records, results, papers

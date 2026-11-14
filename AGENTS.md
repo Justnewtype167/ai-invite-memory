@@ -14,7 +14,7 @@
 
 ## 1. 当前阶段：M36 已封（每轮只处理新增），下一步是接爱邀阶段一
 
-**已封版**：`v0.1-m1` … `v0.41-m36`，共 **44 个 tag、486 个测试**。
+**已封版**：`v0.1-m1` … `v0.42-m37`，共 **45 个 tag、497 个测试**。
 
 ```
 M1-M5    证据层 / 中文规则 / 检索装配 / 人格内核 / 提案即证据
@@ -93,7 +93,7 @@ D:/projects/Memory/
   AGENTS.md            # 本文件：约束与当前阶段
   README.md            # 中文首页    README-en.md 英文首页
   LICENSE              # Apache-2.0
-  CHANGELOG.md         # 版本变更（v0.24.1–v0.40 已回溯补记）
+  CHANGELOG.md         # 版本变更（v0.24.1–v0.42 已回溯补记）
   pyproject.toml
   aiinvite/                # L0 证据层：容器、哈希链、载荷 blob
     canonical.py  errors.py  event.py  chain.py  capsule.py  cli.py
@@ -104,9 +104,10 @@ D:/projects/Memory/
     projection/        # L2 投影层：轨迹契约、文本投影器、动作投影器
     persona/           # L2 用户卡 / 特质 / 风格卡 / pin（card_fold 为增量折叠）
     host/              # 宿主接入层：一个类、八个方法（唯一允许组合各层的包）
+    serve/             # 服务层：多用户热会话、每 key 锁、GM 只读视图（进程内）
     demo/              # 最小可信演示（tkinter，零第三方依赖）
     succession/        # 遗赠胶囊（V1；V7 设计见 docs/PROTOCOL-V7.md）
-  tests/               # 486 个测试（unittest，无第三方依赖）
+  tests/               # 497 个测试（unittest，无第三方依赖）
   tools/               # 唯一允许联网/调模型的地方
   corpus/              # 合成人格库（不要改）
   experiments/         # 回复集与矩阵结果
@@ -115,6 +116,7 @@ D:/projects/Memory/
     ACCEPT-M*.md       # 每个里程碑的验收记录（含独立复核）
     AUDIT-01.md        # 全项目重新验证
     SPEC-CHECKLIST.md  # 写规格前的十问
+    DEPLOY-TENCENT.md  # 腾讯云轻量部署：安装、接线、GM 字段、容量、验收
     PAPER.md / PAPER-en.md
 ```
 
@@ -144,7 +146,7 @@ D:/projects/Memory/
 python -m unittest discover -s tests -v
 ```
 
-必须满足：**全量 486 个测试全绿，0 skipped，0 errors**（当前基线），且：
+必须满足：**全量 497 个测试全绿，0 skipped，0 errors**（当前基线），且：
 
 - 冻结包的改动必须在 `tests/test_all_regression.py` 的 `ALLOWED_CHANGES` 声明（改了没声明失败，声明了没改也失败）
 - 存在一个 `docs/demo/` 目录，含一次真实的 init→append→seal→verify→export→import 输出记录

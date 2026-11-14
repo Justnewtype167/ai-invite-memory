@@ -501,7 +501,7 @@ Without these three, behavioral identity produces numbers that look stable and m
 ## 8. Reproducibility
 
 ```
-486 tests, 44 milestone tags, 0 third-party dependencies, Python 3.11+ (as of this draft; see README for the current numbers)
+497 tests, 45 milestone tags, 0 third-party dependencies, Python 3.11+ (as of this draft; see README for the current numbers)
 Two local models (qwen3.5:9b / glm4:9b), fully offline
 python tools/pcs_matrix.py --models qwen3.5:9b glm4:9b
 python tools/bench_turn_cost.py 20000   # the per-turn table of 6.11, about a minute
@@ -553,6 +553,7 @@ Every number in this paper is produced by a script in the repository; the judge 
 | v0.11-m83 | exact R3 semantics, 80 probes | 5 |
 | v0.12-m9 | consultation rule set and mode-conditional evaluation | 6 |
 | v0.22-v0.41 | M10-M36: incremental index, evidence resume, sidecar snapshot, card folding, pins | 240 |
-| **total** | as of v0.41-m36 | **486** |
+| v0.42-m37 | service layer: multi-user hot sessions, per-key locks, read-only GM view (`aiinvite/serve`) | 11 |
+| **total** | as of v0.42-m37 | **497** |
 
-The table lists per-milestone increments for M1–M9 only (246 in total); the 240 added by M10–M36 are itemised in `CHANGELOG.md` and the milestone acceptance documents. 246 + 240 = 486.
+The table lists per-milestone increments for M1–M9 only (246 in total); the 240 added by M10–M36 and the 11 by M37 are itemised in `CHANGELOG.md` and the milestone acceptance documents. 246 + 240 + 11 = 497.

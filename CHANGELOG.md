@@ -1,5 +1,24 @@
 # CHANGELOG
 
+## v0.42-m37 · 2026-11-14
+
+**服务层：一个进程内承载多用户热会话，GM 后台直接读派生结果；顺带修掉一个一直会抛 TypeError 的 pin 错误。**
+
+- 新增 `aiinvite/serve/`（子包，不是顶层模块——顶层模块不许 import 内核）：`MemoryService` 按用户 key 管一个
+  `HostSession`，提供 `turn/reply/remember/pin/unpin/view/stats`；每 key 一把 `RLock`（同 key 严格串行），
+  `max_sessions` 做 LRU 淘汰（默认 32，冷启动在 registry 锁外做）
+- `check_key` 把用户 key 限制为 `[A-Za-z0-9][A-Za-z0-9_.-]{0,127}`，拒绝 `..`、路径分隔符、Windows 设备名（`CON` 等）
+  与结尾点——key 直接落成目录名，这是路径穿越的唯一入口
+- `view()` 给 GM 后台：`kid/head/model/events/card/canon/persona/pins/rules/store`；GM 只能通过 `remember()`
+  （写成 `directive/lock` 证据）与 `pin/unpin` 改状态，直接改用户卡或手改 `.snapshots/` 会让 kid 与 sha256 对不上
+- 修复 `aiinvite/host/__init__.py` 的 pin 空 id 分支：`AiInviteError("...")` 缺 code 参数，一直抛 `TypeError` 而不是 `E_ARG`
+- 新增 `docs/DEPLOY-TENCENT.md`：Ubuntu 24.04（22.04 的 Python 3.10 装不上 wheel）、venv 安装、`/var/lib/aiinvite/users`
+  与 0700、FastAPI 接线（`def` 不用 `async def`）、GM 字段表、并发（`--workers 1` / 按 key 分片）、
+  容量（20k 11.8 MB / 46 MB RSS、200k 118.9 MB / 165 MB）、四条验收命令、备份恢复与 HTTPS 要求、已知缺口
+- 测试 486 → **497**（`tests/test_serve.py` 11：隔离、跨实例 kid、pin/unpin、8 线程串行、非法 key、LRU 淘汰、
+  空库降级、闸门拒绝不落库）
+- **如实记录**：两个新用户对话内容不同、人格状态相同时 kid 完全相同——kid 是人格身份指纹，不是内容指纹，
+  服务层不能拿它区分用户
 ## v0.41-m36 · 2026-11-12
 
 **每轮只处理新增：同机同分钟 A/B，20k 每轮 2.4–3.1 s → 0.15–0.19 s、200k 12.5–13.2 s → 0.78–0.87 s（都约 16 倍）。150 ms 的目标没到，原因写清楚了。**

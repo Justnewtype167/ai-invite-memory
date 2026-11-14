@@ -21,7 +21,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from aiinvite.capsule import append_event, init_store, utc_now, verify_path
-from aiinvite.errors import AiInviteError
+from aiinvite.errors import E_ARG, AiInviteError
 from aiinvite.kernel.cache import EvidenceCache
 from aiinvite.kernel.compiler import compile_kernel
 from aiinvite.kernel.incremental import compile_kernel_incremental
@@ -133,7 +133,7 @@ class HostSession:
         target = getattr(target, "event_id", target)
         target = (target or "").strip()
         if not target:
-            raise AiInviteError("pin 需要一个事件 id")
+            raise AiInviteError(E_ARG, "pin 需要一个事件 id")
         append_event(
             self.store,
             text=target,
