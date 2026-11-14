@@ -17,6 +17,8 @@
 - **数字口径的修正**：本机同一命令跨时段会差 3–5 倍（CPU 争用、页缓存、Defender 扫描），
   所以本条目只认「相邻两次运行」的对比；绝对毫秒写区间、写机器状态。论文 §6.11 与 `docs/TASK-25-turn-cost.md` §6 已同步
 - 测试 470 → **486**（`test_index_increment.py` 7、`test_snapshot_graph.py` 4、`test_evidence_cache.py` +4、`test_host_adapter.py` +1）
+- 发布：PyPI `ai-invite-memory` **0.41.0 已上传**（whl 221,243 B、tar.gz 296,049 B），干净 venv 里装得上、数据文件齐、kid 可复现；
+  0.40.0 当时没传成功，版本序列是 0.39 → 0.41
 - **如实记录**：200k 剩下的 0.78–0.87 s 里，约一半是 `kid` 对全量 graph 的哈希加一次快照编码（kernel 468–585 ms）。只要身份定义是
   「对 graph 全部内容做哈希」，这一次 O(n) 就消不掉；要消掉必须改 kid 语义（对 graph 摘要哈希 / 延迟到导出时算），
   那是产品决策，不是性能优化——见 `docs/TASK-25-turn-cost.md` §7
