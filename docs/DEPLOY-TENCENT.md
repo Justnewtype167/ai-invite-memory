@@ -449,6 +449,79 @@ bash diagnose_backend.sh
 
 容器的 env 只打印**键名**不打印值（里面有数据库密码、模型 key）。
 
+### 12.3 后端是 Supabase 时：爱邀作为 sidecar 服务
+
+现场实测（2026-11-16，一台腾讯云 CVM）就是这种情况：宿主机没有业务 Python，
+`docker ps` 里是 Supabase 自托管全家桶（auth / rest / db / studio / imgproxy /
+realtime / edge-runtime / storage / envoy），nginx 的
+`/etc/nginx/sites-available/api-*` 里 `proxy_pass http://127.0.0.1:8000` 指向
+envoy。业务逻辑在 **Edge Function（Deno/TS）** 里，没有可以 `import aiinvite`
+的 Python 后端。
+
+所以接法是 **sidecar**：爱邀起成一个独立容器，只说 JSON；Edge Function 每轮
+调它三次（`turn` → 自己的模型 → `reply`）。
+
+```yaml
+# 和 supabase-* 同一个 compose 文件、同一个 network
+  aiinvite-memory:
+    image: ghcr.io/<org>/ai-invite-memory:0.44.0   # 或 build: ./aiinvite
+    container_name: aiinvite-memory
+    restart: unless-stopped
+    command: ["python", "-m", "aiinvite.serve.http",
+              "--root", "/data/users", "--model", "glm4:9b",
+              "--host", "0.0.0.0", "--port", "8080", "--max-sessions", "64"]
+    environment:
+      AIINVITE_TOKEN: ${AIINVITE_TOKEN:?在 .env 里设一个 32 位随机串}
+    volumes:
+      - /opt/aiinvite/users:/data/users    # 记忆在宿主机，容器随时可重建
+    # 不写 ports: —— 只有同网络的 Edge Function 能访问
+```
+
+三个不能省的细节：
+
+1. **不要写 `ports:`。** 一旦 publish 到宿主机，nginx 之外的任何东西都能
+   POST `/v1/turn` 并通过返回的 prompt 读回用户记忆。要走公网请走 nginx +
+   额外鉴权，不要直开端口。
+2. **`AIINVITE_TOKEN` 必须有值。** 监听非本机地址而没设 token 时服务直接拒绝
+   启动（`E_ARG`），不会先开端口再等人发现。
+3. **store 必须挂到宿主机。** 用 volume 或 bind mount 都行，但必须在镜像外；
+   `docker compose down` 之后记忆还在，这是"永久记忆"的最低要求。
+
+Edge Function 里一轮的样子（Deno）：
+
+```ts
+const BASE = "http://aiinvite-memory:8080";
+const auth = { Authorization: `Bearer ${Deno.env.get("AIINVITE_TOKEN")}`,
+               "Content-Type": "application/json" };
+const key = `${user.id}-${character}`;        // 一个角色一个 key
+
+const turn = await (await fetch(`${BASE}/v1/turn`, {
+  method: "POST", headers: auth, body: JSON.stringify({ key, text: message }),
+})).json();
+
+const answer = await callModel(turn.prompt);       // 你的模型调用不变
+
+const gate = await (await fetch(`${BASE}/v1/reply`, {
+  method: "POST", headers: auth, body: JSON.stringify({ key, text: answer }),
+})).json();
+if (!gate.allowed) return fallbackLine(gate.rule); // 闸门拒了就换成安全回复
+return answer;
+```
+
+- `turn.prompt` 就是这一轮该发给模型的完整提示词（规则 + 用户卡 + 长期设定 +
+  永不遗忘 + 召回 + 本次输入）。20k 证据实测 **160–210 ms**，跨进程一次 HTTP
+  往返可忽略；Edge Function 的超时设到 3 s 以上，别设在 1 s。
+- `gate.allowed === false` 表示这句话违反了内核设定，**不要**发出去；被拒的回复
+  只留一条 `refusal` 事件，不留正文。
+- 管理后台读 `GET /v1/view?key=...`（同样要 token）；`/health` 不需要 token，
+  只回 `{ok, model, sessions, keys}`。
+
+**Postgres 不能当记忆主库。** Supabase 的 `supabase-db` 很适合放用户、订单、
+会话索引，但引擎要的是 POSIX 语义：字节偏移追加（证据续读）、纳秒 mtime
+（判断段有没有变）、`flock` 单写者。这三条在 Postgres 里都不存在，换后端不是
+配置问题而是重写（目前**没有** Postgres 后端）。所以：Postgres 存用户，
+`/data/users/<key>/` 存记忆，`key` 用 `user_id` 或 `user_id-character_id` 对齐。
+
 ## 13. 数据放哪里：云盘本地可以，对象存储只能当备份
 
 引擎对存储的要求比"能读能写"多三条：**字节偏移追加**（证据续读）、**纳秒 mtime**（判断段有没有变）、

@@ -1,5 +1,25 @@
 # CHANGELOG
 
+## v0.44-m39 · 2026-11-16
+
+**服务化：引擎原来只能被 Python `import`，而真实后端是 Docker 里的 Supabase（Edge Function 跑 Deno）——中间隔着一层 HTTP。现在补上了，且只有 120 行标准库。**
+
+- 新增 `aiinvite/serve/http.py`：`MemoryService` 的 JSON 接口，`ThreadingHTTPServer`，零第三方依赖
+  - `POST /v1/turn` `{key,text}` → `{prompt,recalled,event_id,model}`；`POST /v1/reply` → `{allowed,rule,detail}`；
+    `remember/pin/unpin` 原样透出；`GET /v1/view?key=` 给管理后台；`GET /health` 不需要 token
+  - 非本机监听而没设 token → **开端口之前**就 `E_ARG` 拒绝：能 POST `/v1/turn` 的人可以靠返回的 prompt 把用户记忆读回去
+  - token 用 `hmac.compare_digest` 常量时间比较；`key` 只从 body 取，不从路径取（路径还要过一层 URL 解码，差一个解码器就是穿越）
+  - 覆盖 `log_message`：默认日志行带 query string，`/v1/view?key=u1` 会把用户 id 永久写进 `docker logs`
+  - 错误一律 `{error:{code,message}}`，`E_ARG`→400、`E_LOCK`→409、其余→500，不回 traceback
+  - `python -m aiinvite.serve.http --root /data/users --model glm4:9b --host 0.0.0.0 --port 8080`，token 走 `--token-env`（默认 `AIINVITE_TOKEN`）
+- 测试 524 → **533**（`test_serve_http.py` 9）：全部走真 socket，不起假 handler
+  - H7 用真 `make_server(host="0.0.0.0")` 验拒绝；H9 直接调 `log_message` 断言 query string 没进日志
+  - H3 是后端一轮的真实序列：`turn` → 模型 → `reply` → `view`，卡上出现"老周"、事件数 2
+- `docs/DEPLOY-TENCENT.md` 新增 §12.3：现场就是 Supabase 自托管（auth/rest/db/studio/imgproxy/realtime/edge-runtime/storage/envoy，nginx `proxy_pass` 到 8000 的 envoy）
+  - 给出 compose 片段（不 publish 端口、token 必填、store 挂宿主机）、Edge Function 的一轮代码、以及 `gate.allowed=false` 时**不要**发出去
+  - 明写 Postgres 不能当记忆主库：引擎要字节偏移追加、纳秒 mtime、`flock`，三条 Postgres 都没有；目前没有 Postgres 后端，Postgres 只存用户表
+- `examples/diagnose_backend.sh`：先前的假设错了——它只查宿主机，而真实后端在容器里。现在会打印容器、挂载、env **键名**（不打印值）、容器内框架行、nginx `proxy_pass`
+
 ## v0.43-m38 · 2026-11-15
 
 **部署前的三处硬伤：崩溃后的撕裂尾巴会被继续写、跨进程写没有锁、设定进了内核却进不了 prompt。「坏了能发现、不能自愈、还接着写」现在是「坏了就写不进去」。**

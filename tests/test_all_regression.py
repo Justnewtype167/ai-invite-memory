@@ -123,6 +123,7 @@ FROZEN_DIGESTS = {
     "aiinvite/recall/tokenizer.py": "3d922ac3763058b0fa798e05c431561546e8c6ff649d33bc936b134f54c17c92",
     "aiinvite/recall/trigger.py": "35dcfde0c924d2b54ebea87a89dbaa87e778ce45fb15b53effd2409cbe43c6ad",
     "aiinvite/serve/__init__.py": "1a0447b65a25e17682fd5557886ac36b617c37828e6160cc70383b33d493c245",
+    "aiinvite/serve/http.py": "665fe3079e037f63bf36337f7db81a0ecc21c523e6709d0f9f10ce5e5a782ac5",
     "aiinvite/serve/locks.py": "16ac4731b7d3bdb6a6bd1586c53037c0bde86779e9e088924cf4927a7ad58c7c",
     "aiinvite/succession/__init__.py": "89378f8f13c6cd52fc3f50a518353da4b789c2ae08ac778fce91dae9a1af4b74",
     "aiinvite/succession/archive.py": "1c9f90627ea9279f840da67426d366ba1381bd7aec1a09f1173dfc4281c7636e",
