@@ -13,10 +13,29 @@ to do when one of them errors. Copy this file, adjust three constants, done.
 Key mapping. One key is one memory (one evidence chain, one persona):
 
     one companion per user          key = user_id
-    several characters per user     key = f"{user_id}-{character_id}"
+    several characters per user     key = key_for(user_id, character_id)
+
+If 爱邀 lets a user switch between characters, use the second form. Switching
+a character must switch the key: canon, traits, pins and the kid all belong to
+one persona, and mixing two characters in one store would let character A's
+rules bind character B.
+
+What that costs, stated plainly: a name the user gives to one character does
+not reach the others, because the card is derived from that store's evidence.
+Two honest options, in order:
+
+    1. GM fan-out. The console stores the fact once in 爱邀's own user table,
+       then calls fan_out_rule() over that user's characters. N appends, each
+       one auditable in its own chain; the fact then shows in every character's
+       standing rules.
+    2. A shared profile layer inside the engine (not implemented). It would
+       need a cross-store merge and a decision about what the kid covers.
+
+Start with 1: it is one loop, and it does not touch the evidence model.
 
 Keys become directory names, so they must match [A-Za-z0-9][A-Za-z0-9_.-]*
-(an error, never a silent sanitisation).
+(an error, never a silent sanitisation). key_for() validates, it does not
+rewrite: a user id with ':' or '/' is a bug in the caller, not a name to fix.
 
 Two different layers, on purpose:
 
@@ -52,12 +71,46 @@ import time
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
-from aiinvite.errors import E_LOCK, AiInviteError
-from aiinvite.serve import MemoryService
+from aiinvite.errors import E_ARG, E_LOCK, AiInviteError
+from aiinvite.serve import MemoryService, check_key
 
 DEFAULT_ROOT = "/var/lib/aiinvite/stores"
 DEFAULT_MODEL = "deepseek-v3"
 RETRIES = 3
+
+
+def key_for(user_id, character_id=None):
+    """Return the store key for one user, optionally one of their characters.
+
+    The two forms are deliberately different strings: a product that used
+    bare user ids and later adds characters must not silently reuse the
+    old store as the first character's memory (that would give character B
+    the old single-companion history).
+    """
+    user = str(user_id or "").strip()
+    if not user:
+        raise AiInviteError(E_ARG, "user_id 不能为空")
+    if character_id is None or str(character_id).strip() == "":
+        return check_key(user)
+    return check_key("%s-%s" % (user, str(character_id).strip()))
+
+
+def fan_out_rule(mem, user_id, character_ids, text):
+    """Write one user-level fact into every character's store.
+
+    This is the 爱邀 answer to 'the user introduced themselves to 小雨 and
+    小满 does not know their name': the GM table keeps the fact once, and
+    this loop appends it to each character as a directive so every chain
+    records where it came from. Returns {character_id: view}; a failing
+    character does not stop the others -- collect the errors and retry.
+    """
+    written, failed = {}, {}
+    for character_id in character_ids:
+        try:
+            written[character_id] = mem.rule(key_for(user_id, character_id), text)
+        except AiInviteError as exc:
+            failed[character_id] = exc.code
+    return {"written": written, "failed": failed}
 
 
 class AiyaoMemory:
@@ -146,6 +199,21 @@ def _selftest(root, model):
 
         view = mem.view("u1")
         print("8 identity         kid=%s events=%d" % (view["kid"][:12], view["events"]))
+
+        # Two characters of one user are two memories. Character B must not
+        # inherit A's card, and a rule fanned out reaches both.
+        first = key_for("u1", "xiaoyu")
+        second = key_for("u1", "xiaoman")
+        mem.turn(first, "我叫老周")
+        print("9 keys             %s / %s" % (first, second))
+        print("10 A card          称呼=%s" % ((mem.view(first)["card"].get("address") or {}).get("call") or "-"))
+        print("11 B card          称呼=%s events=%d" % (
+            (mem.view(second)["card"].get("address") or {}).get("call") or "-",
+            mem.view(second)["events"],
+        ))
+        fan = fan_out_rule(mem, "u1", ["xiaoyu", "xiaoman"], "用户希望被称呼为老周")
+        print("12 fan-out          written=%s failed=%s" % (sorted(fan["written"]), fan["failed"] or "-"))
+        print("13 B standing      %s" % (mem.view(second)["standing"],))
     finally:
         mem.close()
 

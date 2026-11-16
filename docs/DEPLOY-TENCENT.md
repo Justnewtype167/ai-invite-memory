@@ -358,9 +358,10 @@ find /var/lib/aiinvite/users -mindepth 2 -maxdepth 2 \( -name .index -o -name .s
 ```
 
 回滚就是 `pip install ai-invite-memory==0.43.0` 加同样的派生数据清理；证据链不用回滚。
+
 ## 12. 后端接线：一个文件，五个调用
 
-仓库里的 `examples/aiyao_bridge.py` 就是接线本身（约 170 行，无第三方依赖）。
+仓库里的 `examples/aiyao_bridge.py` 就是接线本身（约 210 行，无第三方依赖）。
 把它复制进爱邀后端，改两行常量，聊天与 GM 后台各自接上即可；不需要新建服务、端口或表。
 
 聊天链路，三步，顺序不能换：
@@ -398,10 +399,73 @@ MEM.rule(key, "回复控制在两句以内")   # 唯一合法的写：directive/
 错误处理：`E_LOCK` 表示另一个进程正持这个 key，退避重试即可（示例里做了 3 次、共 300 ms）；
 `E_CHAIN_*` / `E_TAMPER` 表示store坏了，**不要重试**，按第 6.1 节处置。
 
-上服务器先跑自检，它会在临时目录里走一遍完整链路并打印 8 行：
+上服务器先跑自检，它会在临时目录里走一遍完整链路并打印 13 行：
 
 ```bash
 $PY/python examples/aiyao_bridge.py --selftest /tmp/aiyao-smoke
 ```
 
-预期：称呼=老周、忌称=宝贝；第 4 行闸门放行（还没立规则）、第 6 行拒绝（`rule=禁称呼`）。
+预期：称呼=老周、忌称=宝贝；第 4 行闸门放行（还没立规则）、第 6 行拒绝（`rule=禁称呼`）；
+第 9–13 行走一遍双角色：`u1-xiaoyu` 与 `u1-xiaoman` 是两个库，B 的卡不继承 A，扇出后两边都有规则。
+
+### 12.1 一个用户多个角色：key 必须带角色
+
+爱邀允许切角色，所以 key 是 `key_for(user_id, character_id)` → `"<user>-<character>"`。
+不能只按 user 分库：canon、特质、pins、kid 都属于**一个人格**，两个角色混在一个库里，
+A 的规则会约束 B。
+
+代价要说清楚：用户卡从本库证据派生，所以用户在 A 那里说的「我叫老周」，B 不知道。
+两条路，按顺序选：
+
+1. **GM 扇出**（先做）：爱邀自己的用户表存一次，然后 `fan_out_rule(MEM, "u1", chars, text)`
+   把同一条 directive 写进该用户的每个角色库。N 次 append，每笔都在自己的链里可审计，
+   写完每个角色的 standing rules 都有它。
+2. 引擎内共享档案层（**未实现**）：要设计跨库合并和 kid 的归属，不要在灰度期做。
+
+切换角色时必须切 key，会话对象不要跨角色复用——`AiyaoMemory` 按 key 缓存服务实例，
+传错 key 就是串库。
+
+### 12.2 先确认爱邀后端是什么
+
+如果是 Python，`examples/diagnose_backend.sh` 只读地打印：哪个 Python、systemd 里的 Python
+服务、进程 cmdline 与 cwd、监听端口、每个 venv 的 fastapi/flask/django 行、入口文件。
+
+```bash
+bash diagnose_backend.sh
+```
+
+看结果：有一条 Python 服务 + venv 里有 fastapi/flask → 库内嵌（本节做法）；没有 Python
+框架 → 先用 `MemoryService` 单独起一个进程，通过 JSON 调用，再考虑内嵌。
+## 13. 数据放哪里：云盘本地可以，对象存储只能当备份
+
+引擎对存储的要求比"能读能写"多三条：**字节偏移追加**（证据续读）、**纳秒 mtime**（判断段有没有变）、
+**跨进程 flock**（`.locks/` 单写者）。它假定的是本地文件系统。
+
+| 放法 | 能不能当主存储 | 原因 |
+| --- | --- | --- |
+| CVM/CBS 云硬盘（ext4/xfs） | 可以 | 语义齐全，`os.replace` 原子，`flock` 有效 |
+| NAS / NFS / SMB 挂载 | **不行** | `flock` 语义不可靠、mtime 常是秒级 → 增量判定失效、锁形同虚设 |
+| COS 挂载（cosfs/goofys） | **不行** | 无 flock、mtime 与 rename 语义不符、每次读走网络 |
+| Windows 共享盘 | **不行** | 同上，跨平台锁不互通 |
+
+硬挂上去会怎样（不是猜，是按代码路径推的）：
+
+- 锁失效 → 两个进程同时写同一段，链断（`E_CHAIN_MISSING`），`verify` 能发现但不能自愈；
+- mtime 粒度粗 → 索引与证据缓存每轮都判 stale → 退化成全量重建（200k 实测每轮 8.8 s，见 6.11）；
+- `os.replace` 非原子 → 快照或 `chain.json` 可能半写，启动对账会拦下，但用户看到的是 `E_CHAIN_*`。
+
+推荐形态：**主存储放云盘本地**（`/var/lib/aiinvite/users`），**云端只存备份**。
+
+```bash
+/opt/aiinvite/venv/bin/aiinvite snapshot --dir /var/lib/aiinvite/users/u1-xiaoyu --out /var/backups/aiinvite
+# 然后 coscmd upload -r /var/backups/aiinvite /aiinvite-backup/   （桶设为私有）
+```
+
+容量：20k 事件约 12 MB、200k 约 119 MB（含索引），1 GB 约等于 100 个 20k 用户或 8 个 200k 用户。
+备份保留 14 天见第 9 节。
+
+如果"放云端"的意思是**要能扛住整台机器没了**，那是备份与跨可用区的问题，不是把主库搬上对象存储：
+每日 snapshot 上传 COS + 换机时 `aiinvite import` 即可，`kid` 不变。
+
+加密边界（第 9 节已提，这里重申）：生成回复需要明文，所以服务端一定有明文；
+能做的是云盘加密、桶私有、GM 访问审计、目录 0700。端到端加密与 GM 后台直接冲突，要先定产品承诺。
