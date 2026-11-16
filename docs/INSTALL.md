@@ -30,7 +30,7 @@ pip install https://github.com/Justnewtype167/ai-invite-memory/releases/download
 ```bash
 git clone https://github.com/Justnewtype167/ai-invite-memory.git
 cd ai-invite-memory
-python -m unittest discover -s tests -v     # 497 tests
+python -m unittest discover -s tests -v     # 524 tests
 ```
 
 ## 3. 装完能做什么（30 秒验证）
@@ -53,31 +53,32 @@ print(view.user_card.text())     # 认得的称呼与忌讳
 print(verify_path(store).events) # 证据链校验
 ```
 
-## 4. 给普通用户的应用产物：还没有
+## 4. 仓库里有什么、没有什么
 
-**这个仓库是内核，不是成品应用。** 它没有界面、不调模型、不打包成 exe。
+**这个仓库的主体是内核，不是成品应用。** 分三块看：
 
-| 谁能直接用 | 怎么用 |
-|---|---|
-| 开发者 | `pip install`，五个方法接进自己的聊天前端（见 `HOST-INTEGRATION.md`） |
-| 普通用户 | **需要上层应用**（如爱邀本体）；本仓库提供的是它脚下的地基 |
+| 部分 | 是什么 | 依赖 |
+|---|---|---|
+| `aiinvite/`（除 `demo/`） | 内核与接入层：证据链、内核、检索、人格、闸门、`host`、`serve` | 零第三方、零网络 |
+| `aiinvite/demo/` | 可选的桌面演示（tkinter 窗口 + 本地 Ollama），用来眼见为实 | 只用标准库；要 Ollama 才出回复 |
+| `docs/` | 论文、任务书、验收记录、部署与宿主接入说明 | — |
 
-要变成「用户双击就能用」的产物，需要在它之上加一层：
+谁会用到什么：
 
-```
-① 本地聊天界面（桌面或网页）
-② 一个可选的本地模型接入（Ollama）
-③ PyInstaller 单文件打包
-```
+- **开发者接入自己的聊天产品**：`pip install ai-invite-memory`，用 `HostSession`（单用户）或
+  `MemoryService`（多用户，0.42 起）——见 `HOST-INTEGRATION.md` 与 `DEPLOY-TENCENT.md`。
+- **想先看一眼**：`docs/DESKTOP.md` 用 PyInstaller 打单文件 exe（演示目录不在内核依赖里，
+  `pip install` 的用户完全不碰它）。
+- **普通用户**：需要上层应用（如爱邀本体）；本仓库提供的是它脚下的地基。
 
-这三件事都**不属于本仓库的范围**，因为它们会引入第三方依赖、界面代码与模型调用，
-而内核的底线是「零依赖、零网络、只做确定性派生」。
+仓库里**没有**：模型本身、账号与鉴权、多用户 HTTP 服务、运营后台。这些属于上层产品，
+内核只保证「记忆与人格是可验证、可携带、可重算的」。
 
 ## 5. 平台支持
 
 | 平台 | 状态 |
 |---|---|
-| Windows | ✅ 本地全量测试通过（470） |
+| Windows | ✅ 本地全量测试通过（524） |
 | Linux | ✅ CI 通过（Python 3.11 / 3.12） |
 | macOS | ⚠️ 未在真机验证（代码无平台分支，预期可用） |
 

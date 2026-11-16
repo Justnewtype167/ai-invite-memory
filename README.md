@@ -6,7 +6,7 @@
 
 > 人格不活在权重里，而活在一份可以重算的产物 + 一组可以验证的测试里。
 
-**当前状态**：`v0.42-m37` · 497 个测试全绿 · 45 个 tag · 0 第三方依赖
+**当前状态**：`v0.43-m38` · 524 个测试全绿 · 47 个 tag · 0 第三方依赖
 
 > 顺序：证据层 → 主题与规则 → 检索 → 人格内核 → 行为身份 → 载荷 → 轨迹投影 → 增量编译。（见 `AGENTS.md §1`）
 
@@ -54,7 +54,7 @@ python -m aiinvite.demo.app
 ## 一条命令跑起来
 
 ```bash
-python -m unittest discover -s tests -v     # 497 tests，期望全绿
+python -m unittest discover -s tests -v     # 524 tests，期望全绿
 ```
 
 零第三方依赖，Python 3.11+。核心库不联网、不调模型——网络与模型调用只出现在 `tools/`。

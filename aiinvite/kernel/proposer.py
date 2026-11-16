@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -211,11 +212,12 @@ class SubprocessProposer:
         try:
             completed = subprocess.run(
                 self._command,
-                input=request,
+                input=request,  # canonical dumps: UTF-8 bytes already
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 timeout=self._timeout,
                 check=False,
+                env=_child_env(),
             )
         except subprocess.TimeoutExpired as exc:
             raise KernelError(
@@ -237,6 +239,22 @@ class SubprocessProposer:
             )
         payload = _load_reply(lines[-1], completed.stderr)
         return _live_from_payload(payload, target, prompt_sha)
+
+
+def _child_env() -> dict[str, str]:
+    """The child speaks UTF-8 regardless of the console codepage.
+
+    subprocess.run with text=False decodes stdout as UTF-8 here, but a child
+    Python process writes with its locale encoding (cp936 on a Chinese
+    Windows). The mismatch used to turn every Chinese proposal into U+FFFD on
+    such machines and was invisible on UTF-8 machines. Pinning both
+    PYTHONUTF8 and PYTHONIOENCODING fixes the children we can control;
+    non-Python children write UTF-8 by default anyway and ignore both.
+    """
+    env = {key: value for key, value in os.environ.items()}
+    env["PYTHONUTF8"] = "1"
+    env["PYTHONIOENCODING"] = "utf-8"
+    return env
 
 
 def _load_reply(line: str, stderr: bytes) -> dict[str, object]:

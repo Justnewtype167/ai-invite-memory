@@ -18,11 +18,16 @@ One key is one memory. A product where each user has one companion uses
 per character (``f"{user_id}-{character_id}"``), because the kernel is one
 persona over one evidence chain. Keys must be filesystem-safe.
 
-A backend must not run two processes over one store directory: appends are
-serialised per process only. Shard by key across processes, or keep one.
+Two processes must still not write one store: every operation takes an
+exclusive lock on ``<root>/.locks/<key>.lock`` (see ``serve/locks.py``) for as
+long as it touches the store, so a concurrent writer gets ``E_LOCK`` instead
+of a broken chain. The lock is per key and per operation, not per process:
+reading a store another process happens to serve is still allowed, and
+sharding keys across processes works. Two writers over one key do not.
 """
 from __future__ import annotations
 
+import contextlib
 import pathlib
 import re
 import threading
@@ -34,6 +39,8 @@ from aiinvite.host import HostSession
 from aiinvite.kernel.errors import KernelError
 from aiinvite.pcs.probes import load_rules_v2
 from aiinvite.persona.pins import derive_pins
+from aiinvite.persona.standing import standing_rules
+from aiinvite.serve.locks import LOCK_DIR, LOCK_SUFFIX, StoreLock
 
 KEY_LIMIT = 128
 WINDOWS_RESERVED = frozenset(
@@ -94,12 +101,36 @@ class MemoryService:
         # session is replaced, and two locks for one key would break the only
         # guarantee this layer gives. They cost a few bytes per key seen.
         self._locks: dict[str, threading.RLock] = {}
+        # Cross-process: one lock file per key, held for the length of one
+        # operation. Kept after release so a busy key does not reopen a file.
+        self._file_locks: dict[str, StoreLock] = {}
         self._registry = threading.Lock()
 
     # -- internals -----------------------------------------------------
     def store_for(self, key: str) -> pathlib.Path:
         """Return the store directory for a key, creating nothing."""
         return self.root / check_key(key)
+
+    @contextlib.contextmanager
+    def _writer(self, key: str):
+        """Hold the cross-process lock for one operation on one store.
+
+        One operation, not one session: a console reading a user that another
+        process serves must stay possible. The lock file is opened once per key
+        and reused, so a warm key costs a flock and nothing else.
+        """
+        text = check_key(key)
+        with self._registry:
+            lock = self._file_locks.get(text)
+            if lock is None:
+                lock = self._file_locks[text] = StoreLock(
+                    self.root / LOCK_DIR / (text + LOCK_SUFFIX)
+                )
+        lock.acquire()
+        try:
+            yield lock
+        finally:
+            lock.release()
 
     def _lock(self, key: str) -> threading.RLock:
         text = check_key(key)
@@ -117,7 +148,8 @@ class MemoryService:
                 self._sessions.move_to_end(key)
                 return session
         # Cold start happens outside the registry lock: on a 200k store it is
-        # tens of seconds, and no other user should wait behind it.
+        # tens of seconds, and no other user should wait behind it. The caller
+        # holds the writer lock, so the tail check cannot race a live append.
         session = HostSession(
             self.store_for(key), self.model, budget=self.budget, now=self.now
         )
@@ -144,7 +176,7 @@ class MemoryService:
         body = (text or "").strip()
         if not body:
             raise AiInviteError(E_ARG, "text 不能为空")
-        with self._lock(key):
+        with self._lock(key), self._writer(key):
             session = self._session(check_key(key))
             event = session.on_user(body, t or utc_now())
             prompt = session.prompt_for(body)
@@ -166,7 +198,7 @@ class MemoryService:
         body = (text or "").strip()
         if not body:
             raise AiInviteError(E_ARG, "text 不能为空")
-        with self._lock(key):
+        with self._lock(key), self._writer(key):
             session = self._session(check_key(key))
             append_event(
                 session.store,
@@ -176,21 +208,21 @@ class MemoryService:
                 kind="lock",
             )
             session._view_cache = None
-            return self.view(key)
+        return self.view(key)
 
     def pin(self, key: str, event_id: str, t: str | None = None) -> dict:
         """Force one memory into every later prompt; returns the view."""
-        with self._lock(key):
+        with self._lock(key), self._writer(key):
             session = self._session(check_key(key))
             session._write_pin((event_id or "").strip(), "pin")
-            return self.view(key)
+        return self.view(key)
 
     def unpin(self, key: str, event_id: str, t: str | None = None) -> dict:
         """Stop forcing one memory; returns the view."""
-        with self._lock(key):
+        with self._lock(key), self._writer(key):
             session = self._session(check_key(key))
             session._write_pin((event_id or "").strip(), "unpin")
-            return self.view(key)
+        return self.view(key)
 
     def reply(self, key: str, text: str, t: str | None = None) -> dict:
         """Gate the model reply before it enters evidence; return the verdict.
@@ -202,7 +234,7 @@ class MemoryService:
         body = (text or "").strip()
         if not body:
             raise AiInviteError(E_ARG, "text 不能为空")
-        with self._lock(key):
+        with self._lock(key), self._writer(key):
             session = self._session(check_key(key))
             verdict = session.reply(body, t or utc_now())
             return {
@@ -214,7 +246,7 @@ class MemoryService:
     # -- reads ---------------------------------------------------------
     def view(self, key: str) -> dict:
         """Return the console view: identity, card, rules, pins, counters."""
-        with self._lock(check_key(key)):
+        with self._lock(check_key(key)), self._writer(check_key(key)):
             session = self._session(check_key(key))
             events = self._events(session)
             kid = ""
@@ -228,7 +260,7 @@ class MemoryService:
             card: dict = {}
             self_md = ""
             try:
-                _, _, persona_view = session._card_and_persona(events)
+                _, _, _, persona_view = session._prompt_blocks(events)
             except (KernelError, AiInviteError):
                 persona_view = None
             if persona_view is not None and persona_view.user_card is not None:
@@ -246,6 +278,7 @@ class MemoryService:
                 "events": len(events),
                 "card": card,
                 "canon": [entry.text for entry in kernel.canon] if kernel else [],
+                "standing": list(standing_rules(kernel.canon)) if kernel else [],
                 "persona": self_md,
                 "pins": pins,
                 "rules": [rule.text for rule in load_rules_v2()],
@@ -261,6 +294,9 @@ class MemoryService:
         """Drop every warm session. Data stays on disk; the next turn rebuilds."""
         with self._registry:
             self._sessions.clear()
+            held = list(self._file_locks.values())
+        for lock in held:
+            lock.release()
 
 
 __all__ = ["MemoryService", "check_key"]

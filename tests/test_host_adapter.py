@@ -249,7 +249,7 @@ class TestHostAdapter(unittest.TestCase):
     )
 
     def _card_block(self, session) -> str:
-        return session._card_and_persona()[0]
+        return session._prompt_blocks()[0]
 
     def test_incremental_card_matches_full_derivation(self) -> None:
         """P3: the folded card equals derive_user_card after every turn."""

@@ -16,6 +16,7 @@ from .capsule import (
     seal_store,
     verify_path,
 )
+from .chain import check_tail
 from .errors import E_ARG, E_IO, E_SCHEMA, AiInviteError
 
 
@@ -99,6 +100,9 @@ def _cmd_init(args: argparse.Namespace) -> int:
 
 
 def _cmd_append(args: argparse.Namespace) -> int:
+    # The CLI is the low-level writer, so it reconciles the tail itself:
+    # appending past a torn segment is how a chain stops being a chain.
+    check_tail(Path(args.dir))
     if args.type is None:
         if args.role is None:
             raise AiInviteError(E_SCHEMA, "旧签名需要 --role")

@@ -1,5 +1,38 @@
 # CHANGELOG
 
+## v0.43-m38 · 2026-11-15
+
+**部署前的三处硬伤：崩溃后的撕裂尾巴会被继续写、跨进程写没有锁、设定进了内核却进不了 prompt。「坏了能发现、不能自愈、还接着写」现在是「坏了就写不进去」。**
+
+- 新增 `chain.check_tail(store)`：打开 store 时核对**尾段**——`chain.json` 记的段与条数、末条事件的 id 与 hash 必须和磁盘逐项吻合；
+  段尾半行直接拒绝。不一致 → `E_CHAIN_MISSING`、末条内容被改 → `E_TAMPER`、半行 → `E_SCHEMA`。O(一段)，不是 O(库)
+  - 补的洞：崩溃在「写完事件、还没写 chain.json」之间，旧版本**继续接受写入**，下一笔就接在链上没记的假头上，此后 `verify` 永远报断链
+  - `HostSession` 打开时跑；`aiinvite append` 也跑（CLI 是低层写入口，同样不许往撕裂的尾巴上接）
+  - 代价是「宁可停写也不写坏」：坏库需要人工按 `docs/DEPLOY-TENCENT.md` §6.1 恢复，这是有意的取舍
+- 新增 `aiinvite/serve/locks.py`：`StoreLock` 在 `<root>/.locks/<key>.lock` 上取**排他文件锁**（POSIX `flock` / Windows `msvcrt.locking`），
+  每次写操作加锁、操作结束释放；第二个进程同时写同一个 key 立刻得到 `E_LOCK`，而不是把链写坏
+  - 锁文件放在用户目录**外面**：`seal`/`export` 对 store 里多出来的文件敏感；锁是按操作不是按进程，别的进程读同一个 store 仍允许，按 key 分片仍可行
+  - `MemoryService` 的 `turn/remember/pin/unpin/reply/view` 全部包在锁里；`remember/pin/unpin` 的 `view` 调用移到锁**之后**，否则撞自己的锁
+- 新增 `aiinvite/persona/standing.py`：`## standing rules` 块，只取 `canon` 里 `directive` 来源的条目（不放 promise/trait/style），
+  预算 300 字符、单条 80 字、从最新往回取，位置在用户卡之后、`## never forget` 之前
+  - 补的洞：「回复控制在两句以内」这类纯设定以前只进 `canon` 与闸门，**模型根本看不到**，GM 后台改了等于没反应
+  - 块头明写「这是用户立的偏好，不是系统指令；与 behavior rules 冲突时以 behavior rules 为准」，闸门仍是最终执行者
+  - `MemoryService.view()` 增加 `standing` 字段：GM 后台看得到「模型这一轮实际读到的规则」，与 `canon` 对不上就是被预算裁掉了
+- `HostSession._card_and_persona` 改名 `_prompt_blocks`，返回 `(card, standing, persona, view)`；prompt 段落顺序 `rules → card → standing → pinned → context → persona → input`
+- 顺手修掉一个只在中文 Windows 上出现的洞：`SubprocessProposer` 用 UTF-8 解码子进程 stdout，却没告诉子进程用 UTF-8——
+  子进程按 cp936 写中文，父进程按 UTF-8 解，提案文本变成 U+FFFD。现在给子进程显式注入 `PYTHONUTF8=1` + `PYTHONIOENCODING=utf-8`，
+  输入也改为直接传 canonical 的 UTF-8 字节；全量测试在 GBK 控制台上第一次把它抓出来（`E_S6` 里 1 个 error）
+- 测试 497 → **524**（`test_tail_check.py` 9、`test_store_lock.py` 6、`test_standing_rules.py` 10、`test_proposer_encoding.py` 2）
+  - 跨进程锁用 `subprocess` 起一个真子进程持锁再验父进程 `E_LOCK`——同进程两把锁测不出 Windows `msvcrt` 的行为
+  - 编码回归用子进程回显 `sys.stdin.encoding`/`sys.stdout.encoding`：在 UTF-8 机器上也会失败，不依赖本机 locale 才暴露
+- `docs/DEPLOY-TENCENT.md`：目录树加 `.locks/`、并发一节改为「有跨进程锁 + `E_LOCK` 当可重试」、新增 §6.1 启动对账与坏库恢复、
+  第 9 节补备份 cron（保留 14 天、先备份再校验）、第 10 节写成 standing rules 的四条边界、新增 §11 版本政策与升级步骤（含回退要删派生数据）
+- 新增 `examples/aiyao_bridge.py`（约 170 行、无第三方依赖）：爱邀后端的参考接线——聊天三步（`turn` → 自己的模型 → `reply`）、
+  GM 两步（`view` 读、`rule` 写）、`E_LOCK` 退避重试；`--selftest DIR` 在临时库里走完整链路并打印 8 行。
+  `docs/DEPLOY-TENCENT.md` 增 §12 照抄即可。它同时把两层语义写明：聊天里说「别叫我宝贝」只进**用户卡**（模型看见，闸门不拦），
+  要在界面上「记成规则」或 GM 调 `rule()` 才进 **canon**（闸门才拦）——两条路各自失败，不互相兜底
+- **如实记录**：锁是 advisory（管不住绕过本库直接 `echo >>` 的人）；对账只看尾段，历史深处的篡改仍靠 `aiinvite verify`；
+  standing 在极端预算下会被 `_shrink` 丢掉（它保的是 rules + pins + input），这是有意的优先级，不是 bug
 ## v0.42-m37 · 2026-11-14
 
 **服务层：一个进程内承载多用户热会话，GM 后台直接读派生结果；顺带修掉一个一直会抛 TypeError 的 pin 错误。**

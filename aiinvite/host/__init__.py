@@ -21,6 +21,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from aiinvite.capsule import append_event, init_store, utc_now, verify_path
+from aiinvite.chain import check_tail
 from aiinvite.errors import E_ARG, AiInviteError
 from aiinvite.kernel.cache import EvidenceCache
 from aiinvite.kernel.compiler import compile_kernel
@@ -30,6 +31,7 @@ from aiinvite.kernel.kernel import Policy
 from aiinvite.persona import build_persona_view, derive_user_card
 from aiinvite.persona.card_fold import CardState, fold_user_card
 from aiinvite.persona.pins import derive_pins, render_pins
+from aiinvite.persona.standing import render_standing
 from aiinvite.recall.clue_store import ClueStore
 from aiinvite.pcs.probes import load_rules_v2
 from aiinvite.projection import emit as gate_emit
@@ -62,6 +64,9 @@ class HostSession:
         self.now = now or utc_now()
         if not (self.store / "evidence").is_dir():
             init_store(self.store)
+        # A torn tail must stop the next write, not corrupt the chain behind
+        # a message that looked fine. O(one segment), so it runs on every open.
+        check_tail(self.store)
         self._counter = {"turns": 0, "refused": 0, "prompts": 0}
         self._policy = Policy(now=self.now)
         self._rewriter = rewriter
@@ -170,8 +175,13 @@ class HostSession:
         body = render_pins(pins)
         return PIN_HEADER + NEWLINE + body if body else ""
 
-    def _card_and_persona(self, events=None):
-        """Return (card_block, persona_block); both empty when nothing is known."""
+    def _prompt_blocks(self, events=None):
+        """Return (card, standing, persona, view); empty strings when unknown.
+
+        The user card says who they are, the standing rules say what they asked
+        for, the persona is what the companion has become. They come out of one
+        kernel compile, which is why this is one method and not three.
+        """
         try:
             events = self._events() if events is None else events
             kernel = self._kernel(events)
@@ -189,16 +199,17 @@ class HostSession:
                 )
                 self._view_cache = (kernel.head, view)
         except (KernelError, AiInviteError):
-            return "", "", None
+            return "", "", "", None
         card = ""
         if view.user_card is not None:
             body = view.user_card.text().strip()
             if body and body != "- none":
                 card = CARD_HEADER + NEWLINE + body
+        standing = render_standing(kernel.canon)
         persona = ""
         if view.self_md.strip():
             persona = PERSONA_HEADER + NEWLINE + view.self_md.strip()
-        return card, persona, view
+        return card, standing, persona, view
 
     def _fold_card(self, events):
         """Fold the card forward from the last turn, O(delta) instead of O(n).
@@ -237,11 +248,13 @@ class HostSession:
             events = self._events()
         except (KernelError, AiInviteError):
             events = []
-        card, persona, view = self._card_and_persona(events)
+        card, standing, persona, view = self._prompt_blocks(events)
         pinned = self._pinned(events)
         fixed = [rules]
         if card:
             fixed.append(card)
+        if standing:
+            fixed.append(standing)
         if pinned:
             # Pinned memories take their seat before retrieval competes.
             fixed.append(pinned)
@@ -270,6 +283,8 @@ class HostSession:
         pieces = [rules]
         if card:
             pieces.append(card)
+        if standing:
+            pieces.append(standing)
         if pinned:
             pieces.append(pinned)
         if context:

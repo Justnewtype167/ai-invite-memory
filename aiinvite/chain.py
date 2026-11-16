@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -27,6 +28,7 @@ from .event import (
     Event,
     event_digest,
     format_id,
+    parse_line,
 )
 
 _SEG_NAME_RE = re.compile(r"^seg-([0-9]{4})$")
@@ -173,6 +175,88 @@ def verify_evidence(evidence: Sequence[tuple[str, Sequence[Event]]]) -> tuple[in
             expected_seq += 1
         expected_index += 1
     return expected_seq - 1, expected_prev
+
+
+_CHAIN_FILE = "chain.json"
+_EVIDENCE_DIR = "evidence"
+
+
+def check_tail(store: Path) -> None:
+    """Refuse to keep writing when the tail of the store is torn.
+
+    ``append_event`` writes the event line first and ``chain.json`` second. A
+    crash between the two leaves a store that still reads (the extra line is
+    simply not in the chain yet) and, before M38, still accepted writes: the
+    next event was chained onto a head the chain never recorded, and every
+    later verification reported a broken chain. A half-written line at the end
+    of a segment had the same shape -- the next append produced a file no
+    parser could read.
+
+    This is the cheap check: it reads the last segment and nothing else, so it
+    costs O(segment) and can run on every open. ``verify_path`` is O(store) and
+    belongs in the backup job, not here.
+
+    Raises ``E_CHAIN_MISSING`` when the chain and the files disagree and
+    ``E_SCHEMA`` for a torn final line.
+    """
+    chain_path = store / _CHAIN_FILE
+    if not chain_path.is_file():
+        raise AiInviteError(E_CHAIN_MISSING, "缺少 chain.json")
+    try:
+        chain = parse_chain(json.loads(chain_path.read_text(encoding="utf-8")))
+    except json.JSONDecodeError as error:
+        raise AiInviteError(E_SCHEMA, f"chain.json 不是合法 JSON：{error}") from error
+    folder = store / _EVIDENCE_DIR
+    names = sorted(
+        item.name
+        for item in (os.scandir(folder) if folder.is_dir() else ())
+        if item.name.endswith(".jsonl") and _SEG_NAME_RE.match(item.name[:-6])
+    )
+    rows = chain["segments"]
+    if not rows:
+        if names:
+            raise AiInviteError(
+                E_CHAIN_MISSING, f"chain.json 没有段，但 {_EVIDENCE_DIR}/ 里有 {names[0]}"
+            )
+        return
+    last = rows[-1]
+    segment = str(last["seg"])
+    expected = segment + ".jsonl"
+    if expected not in names:
+        raise AiInviteError(E_CHAIN_MISSING, f"chain.json 指向的 {expected} 不存在")
+    extra = [name for name in names if name > expected]
+    if extra:
+        raise AiInviteError(
+            E_CHAIN_MISSING, f"{_EVIDENCE_DIR}/{extra[0]} 没有记进 chain.json"
+        )
+    data = (folder / expected).read_bytes()
+    if data and not data.endswith(b"\n"):
+        raise AiInviteError(
+            E_SCHEMA,
+            f"{expected} 末尾是半行：上次写入被中断，先跑 aiinvite verify 或恢复备份",
+        )
+    lines = data.split(b"\n")[:-1] if data else []
+    count = int(last["count"])
+    if len(lines) != count:
+        raise AiInviteError(
+            E_CHAIN_MISSING,
+            f"chain.json 记 {expected} 有 {count} 条，文件里是 {len(lines)} 条："
+            "上次写入被中断，先跑 aiinvite verify 或恢复备份",
+        )
+    try:
+        tail = parse_line(lines[-1].decode("utf-8"))
+    except (UnicodeDecodeError, AiInviteError) as error:
+        raise AiInviteError(E_SCHEMA, f"{expected} 最后一行读不出来：{error}") from error
+    sequence = sum(int(row["count"]) for row in rows)
+    if tail.ep != segment or tail.id != format_id(sequence) or tail.hash != last["last"]:
+        raise AiInviteError(
+            E_CHAIN_MISSING,
+            f"{expected} 的末条事件与 chain.json 不符：先跑 aiinvite verify 或恢复备份",
+        )
+    if event_digest(tail) != tail.hash:
+        raise AiInviteError(
+            E_TAMPER, f"{expected} 的末条事件内容与 hash 不符", tail.id
+        )
 
 
 def chain_document(sealed_at: str | None, segments: Sequence[Segment],

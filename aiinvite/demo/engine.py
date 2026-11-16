@@ -255,7 +255,7 @@ class DemoEngine:
             kernel = session._kernel()
             kid = kernel.kid
             canon = [entry.text for entry in kernel.canon]
-            view = session._card_and_persona()[2]
+            view = session._prompt_blocks()[3]
         except Exception:
             view = None
         try:

@@ -28,7 +28,7 @@ apt-get update && apt-get install -y python3-venv
 install -d -m 0755 /opt/aiinvite
 python3 -m venv /opt/aiinvite/venv
 /opt/aiinvite/venv/bin/pip install --upgrade pip
-/opt/aiinvite/venv/bin/pip install ai-invite-memory==0.42.0
+/opt/aiinvite/venv/bin/pip install ai-invite-memory==0.43.0
 # 国内机器可用镜像：-i https://mirrors.cloud.tencent.com/pypi/simple
 
 /opt/aiinvite/venv/bin/python -c "import aiinvite, aiinvite.serve; print(aiinvite.__version__)"
@@ -37,7 +37,7 @@ python3 -m venv /opt/aiinvite/venv
 还没发到 PyPI 的版本可以按 tag 装：
 
 ```bash
-/opt/aiinvite/venv/bin/pip install "git+https://github.com/Justnewtype167/ai-invite-memory.git@v0.42-m37"
+/opt/aiinvite/venv/bin/pip install "git+https://github.com/Justnewtype167/ai-invite-memory.git@v0.43-m38"
 ```
 
 ## 3. 数据目录
@@ -53,6 +53,7 @@ install -d -m 0700 -o aiinvite -g aiinvite /var/lib/aiinvite/users
 
 ```text
 /var/lib/aiinvite/users/
+  .locks/            # u_1001.lock 等，跨进程写锁
   u_1001/            # key = 用户 id（一个用户一个角色时）
     chain.json       # 哈希链
     evidence/seg-0001.jsonl
@@ -62,6 +63,9 @@ install -d -m 0700 -o aiinvite -g aiinvite /var/lib/aiinvite/users
 ```
 
 `.index/` 和 `.snapshots/` 是派生数据，删了会自动重建；`chain.json` + `evidence/` 是唯一真相。
+
+`.locks/` 放在用户目录**外面**（不在 `u_1001/` 里），因为 `seal`/`export` 会把
+多出来的文件当成污染。锁文件是空的，删了没影响，进程重启会再建。
 
 ## 4. 后端接线
 
@@ -106,7 +110,11 @@ FastAPI 里用 `def` 而不是 `async def`：`turn`/`reply` 是同步阻塞（20
 | `head` | 证据链头事件 id | 排障 |
 | `events` | 证据条数 | 用户资料页显示活跃度 |
 | `card` | 用户卡：`address.call`（称呼）、`address.never`（忌称）、`people`、`taboos`、`promises`、`ongoing`、`prefs` | 用户资料页 |
-| `canon` | 长期规则/设定（`directive/lock` 的文本） | AI 角色设定页 |
+| `canon` | 长期规则/设定（`directive/lock` 的文本，全量） | AI 角色设定页 |
+| `standing` | 每轮真正进 prompt 的规则（`standing_rules` 裁剪后，≤300 字符、单条 ≤80 字） | 让 GM 看到"模型实际读到什么"，与 `canon` 对不上就是被预算裁掉了 |
+
+> `canon` 是全部设定，`standing` 是**这一轮模型会看到的那几条**。两者用 `canon` 做编辑、
+> 用 `standing` 做排查：规则写了却没进 prompt，就看它是不是排在 300 字符预算之外。
 | `persona` | 自性描述（特质） | AI 角色资料页 |
 | `pins` | 永不遗忘的记忆列表 | 编辑置顶 |
 | `rules` | 六条行为规则（规格方维护，只读） | 只展示，不给改 |
@@ -124,16 +132,54 @@ FastAPI 里用 `def` 而不是 `async def`：`turn`/`reply` 是同步阻塞（20
 下一次派生会把它覆盖回去；手改快照会被 sha256 校验拒绝（`E_KN_SNAPSHOT`）。
 
 `remember` 改称呼是可以的，因为称呼本身也参与卡片派生；改纯设定（例如
-"回复控制在两句以内"）会进 `canon` 与闸门，但**目前不会出现在 prompt 里**——
-见第 9 节。
+"回复控制在两句以内"）会进 `canon`、进闸门、并且（0.43 起）以 `## standing rules`
+块**进入每轮 prompt**，模型看得到——见第 10 节。
 
 ## 6. 并发与进程模型
 
 - 同一个 key 的写操作由 `MemoryService` 的**每 key 锁**串行化，进程内安全。
-- **跨进程没有文件锁。** 同一个用户目录只能有一个进程写。所以：`uvicorn --workers 1`、
-  `gunicorn -w 1`，不要开多 worker。
+- **跨进程有一把文件锁**（0.43 起）：每次写操作在 `<root>/.locks/<key>.lock` 上取
+  排他锁，操作结束就释放。第二个进程同时写同一个 key 会立刻拿到
+  `E_LOCK`（"另一个进程正在写这个 store"），而不是把链写坏。
+- 锁是**按操作**、不是按进程：别的进程读同一个 store 仍然可以，两个进程先后服务
+  同一个 key 也可以。所以"进程存在"不影响，"同时写"才报错。
+- 后端把 `E_LOCK` 当**可重试**错误处理（等 50–200 ms 重试一次），不要当 500。
+- 仍建议 `uvicorn --workers 1`、`gunicorn -w 1`：不是为了正确性，而是为了常驻会话
+  与索引缓存不被复制成 N 份（每份 46–165 MB）。
 - 要横向扩，就按 key 分片：一个进程负责一段 key（例如 `hash(user_id) % N`），
-  前端按同一个分片规则路由。不同 key 之间没有共享状态。
+  前端按同一个分片规则路由。不同 key 之间没有共享状态。分片后每个 key 仍只有一个写者，
+  文件锁是双保险（例如运维不小心起了两个实例）。
+
+### 6.1 启动对账
+
+`HostSession` / `MemoryService` 每次打开 store 都会核对**尾段**：`chain.json` 记录的
+段与条数、末条事件的 id 与 hash，必须和磁盘上的最后一段逐项吻合；段尾半行直接拒绝。
+
+- 不一致 → `E_CHAIN_MISSING`（"…与 chain.json 不符：先跑 aiinvite verify 或恢复备份"）
+- 末条内容被改 → `E_TAMPER`
+- 段尾是半行 → `E_SCHEMA`（"末尾是半行"）
+
+这是 0.43 之前最危险的一个洞：崩溃在"写完事件、还没写 chain.json"之间，库里会多出一条
+链上没记的事件，旧版本**继续接受写入**，下一次 append 就把新事件接在这个假头上，之后
+`verify` 永远报断链。现在这种库在打开时就被挡住，写不进去。
+
+代价是 O(一段)——100 行的尾段，20k 与 200k 都是 1 ms 级，不是 O(库)。
+
+坏了的库怎么救：
+
+```bash
+# 1. 先看坏在哪（O(库)，只读）
+/opt/aiinvite/venv/bin/aiinvite verify /var/lib/aiinvite/users/u_1001
+
+# 2. 有备份就从备份恢复（最稳）
+/opt/aiinvite/venv/bin/aiinvite import /var/backups/u_1001.aiem /var/lib/aiinvite/users/u_1001.recovered
+
+# 3. 只有"多出最后一条、chain.json 没记"这一种，可以只补 chain.json：
+#    把末段的 count 改成文件实际行数、last 改成该行 id 与 hash，再 verify 确认 state=open。
+#    多行以上或内容被改，不要手补，走备份。
+```
+
+同一个尾段核对也在 `aiinvite append` 里跑：CLI 是低层写入口，同样不许往撕裂的尾巴上接。
 - 多角色产品（一个用户多个 AI 角色）用 `key = f"{user_id}-{character_id}"`，
   每个角色一条独立证据链、一个独立 kid。别把多个角色塞进一个 key。
 
@@ -155,7 +201,7 @@ max_sessions ≈ min(64, 可用内存 GB × 1024 / 300)   # 300 MB 一个 200k �
 
 2C2G 的轻量：`max_sessions=4`；4C8G：`max_sessions=16`。
 
-## 8. 验收：四条命令
+## 8. 验收：五条命令
 
 装完先跑这四条，全过再接线：
 
@@ -192,6 +238,20 @@ PY
 # 4. 备份一份（快照不封存线上库）
 /opt/aiinvite/venv/bin/aiinvite snapshot /var/lib/aiinvite/users/u_1001 /var/backups/u_1001.aiem
 /opt/aiinvite/venv/bin/aiinvite verify /var/backups/u_1001.aiem
+
+# 5. 尾段对账会拒绝撕裂的库（复制一份，故意多写一行再打开）
+cp -a /var/lib/aiinvite/users/u_1001 /tmp/torn
+echo '{}' >> /tmp/torn/evidence/seg-0001.jsonl
+/opt/aiinvite/venv/bin/python - <<'PY'
+from aiinvite.host import HostSession
+from aiinvite.errors import AiInviteError
+try:
+    HostSession('/tmp/torn', 'glm4:9b')
+    print('UNEXPECTED accepted')
+except AiInviteError as exc:
+    print('OK refused', exc.code)
+PY
+rm -rf /tmp/torn
 ```
 
 ## 9. 备份、恢复、安全
@@ -200,6 +260,38 @@ PY
 每天对 `users/*` 各做一份，`aiinvite verify` 过一遍，再传对象存储。
 恢复用 `aiinvite import <capsule> <dir>`，导入后 `kid` 与原来一致即可确认没换人。
 
+一条够用的 cron（03:20 跑，保留 14 天，先备份再校验，失败会在日志里留 `FAIL`）：
+
+```bash
+# /etc/cron.d/aiinvite-backup
+20 3 * * * aiinvite /opt/aiinvite/backup.sh >> /var/log/aiinvite-backup.log 2>&1
+```
+
+```bash
+#!/bin/bash
+# /opt/aiinvite/backup.sh
+set -u
+PY=/opt/aiinvite/venv/bin
+USERS=/var/lib/aiinvite/users
+OUT=/var/backups/aiinvite
+DAY=$(date +%F)
+mkdir -p "$OUT/$DAY"
+chmod 0700 "$OUT"
+for store in "$USERS"/*/; do
+  key=$(basename "$store")
+  [ -f "$store/chain.json" ] || continue
+  file="$OUT/$DAY/$key.aiem"
+  if "$PY/python" -m aiinvite snapshot "$store" "$file" && "$PY/python" -m aiinvite verify "$file"; then
+    echo "OK $DAY $key"
+  else
+    echo "FAIL $DAY $key"            # 让日志和监控抓到
+  fi
+done
+find "$OUT" -mindepth 1 -maxdepth 1 -type d -mtime +14 -exec rm -rf {} +
+```
+
+备份目录不要放在 `users/` 下面（会被当作用户目录扫到），也不要和 store 同一块盘。
+
 **安全**：库里是对话原文。
 
 - 后端 API 必须走 HTTPS（轻量控制台可以一键申请证书，或前置 nginx/caddy）。
@@ -207,20 +299,109 @@ PY
 - `/var/lib/aiinvite` 权限 0700，只给 `aiinvite` 用户。
 - GM 后台的 `view` 接口不要暴露到公网（它含用户原话派生的卡片）。
 
-## 10. 已知缺口：设定进了内核，没进 prompt
+## 10. 设定怎么生效（0.43 起：进 prompt 了）
 
-`remember()` 写的 `directive/lock` 现在有三个作用：进 `canon`（`kid` 变）、
-按关键词启用闸门规则、以及被称呼/偏好类派生带进用户卡。
+`remember()` 写的 `directive/lock` 现在有四个作用：
 
-但**纯设定类文本（"回复两句以内""别主动联系"）不会出现在 prompt 里**，
-模型看不到，只能靠闸门事后拦截。对 GM 后台来说，这意味着"改设定"只是改了身份
-与闸门，不是"告诉模型该怎么做"。
+1. 进 `canon`（`kid` 变，身份指纹跟着走）；
+2. 按关键词启用闸门规则（"别叫我宝贝"→ 禁称呼）；
+3. 被称呼/偏好类派生带进用户卡；
+4. **以 `## standing rules` 块进每轮 prompt**，位置在用户卡之后、`## never forget` 之前。
 
-补法有两种，需产品拍板：
+第 4 条是 0.43 补的洞：在此之前"回复两句以内"这类纯设定模型根本看不到，只能靠闸门
+事后拦截，对 GM 后台来说等于"改了没反应"。
 
-1. prompt 增加 `## standing rules` 块，只放 `canon` 里 `directive` 来源的条目
-   （不放 promise，避免和上下文重复），排在用户卡之后、永不遗忘之前；
-2. 或者 GM 的"设定"改写成行为规则文件（规格方维护），不进每轮 prompt。
+四条边界，GM 侧要知道：
 
-选 1 更符合"设定立刻生效"的直觉，代价是每轮 prompt 多几十个 token，且要重跑
-全部提示词相关测试。
+- **只取 `directive`**，不取 promise（会和上下文重复）也不取 trait/style。
+- **预算 300 字符、单条 80 字**，按时间从最新往回取：规则写太多时，**旧的先被裁掉**。
+  想确认某条规则此刻是否真的送到了，看 `view()["standing"]`，不要看 `canon`。
+- **不是系统指令**：块里明写"这是用户立的偏好，与 behavior rules 冲突时以 behavior rules 为准"，
+  防止用户用自己的规则覆盖产品规则。
+- **闸门仍然是最终执行者**：规则进 prompt 只是让模型知道，拦不拦由闸门和 `canon` 决定。
+  所以"写了规则"和"规则生效"是两件事，两条路径都要过。
+
+产品级/全局设定（所有用户都要遵守的人设与口径）**不要**写进每个用户的库：那会把同一段
+文案复制十万份，还会让无关文字搅动每个 `kid`。全局设定留在后端自己的 system prompt 里。
+
+## 11. 版本政策与升级
+
+**装指定版本，不要装 latest。** `requirements.txt` 里写死：
+
+```text
+ai-invite-memory==0.43.0
+```
+
+升级是一次有意识的动作：先备份、再升、再用第 8 节五条命令验收，然后放流量。
+
+存储格式的承诺：
+
+- **事件格式只增不改语义。** 新增字段一律可选；读旧库不需要迁移脚本。
+- **正向升级安全**：0.43 能直接打开 0.42 及更早写的库（快照格式 2 与 1 都读，读不出就全量重建）。
+- **反向回退要重建派生数据**：回退到旧版本前删掉 `users/<key>/.snapshots/` 与 `.index/`，
+  它们会按旧版本格式重建；`chain.json` 与 `evidence/` 不动，`kid` 不变。
+- **需要迁移时**会给 `aiinvite migrate` 命令和一篇专门的升级说明，不会让旧库"打开就坏"。
+
+升级步骤（照抄）：
+
+```bash
+set -e
+PY=/opt/aiinvite/venv/bin
+# 1. 先备份全部用户（复用第 9 节的脚本）
+/opt/aiinvite/backup.sh
+# 2. 停写（systemctl stop aiyiao）
+# 3. 升级
+$PY/pip install --upgrade ai-invite-memory==0.44.0
+# 4. 删派生数据，让新版本按自己的格式重建
+find /var/lib/aiinvite/users -mindepth 2 -maxdepth 2 \( -name .index -o -name .snapshots \) -exec rm -rf {} +
+# 5. 第 8 节五条命令验收后开写
+```
+
+回滚就是 `pip install ai-invite-memory==0.43.0` 加同样的派生数据清理；证据链不用回滚。
+## 12. 后端接线：一个文件，五个调用
+
+仓库里的 `examples/aiyao_bridge.py` 就是接线本身（约 170 行，无第三方依赖）。
+把它复制进爱邀后端，改两行常量，聊天与 GM 后台各自接上即可；不需要新建服务、端口或表。
+
+聊天链路，三步，顺序不能换：
+
+```python
+from aiyao_bridge import AiyaoMemory
+
+MEM = AiyaoMemory()          # 进程内一个实例，模块级单例
+
+prompt = MEM.turn(key, user_text)["prompt"]   # 1. 记用户这轮，拿 prompt
+reply  = your_model(prompt, history)          # 2. 你自己的模型调用
+verdict = MEM.reply(key, reply)               # 3. 过闸门，allowed 才回给用户
+if not verdict["allowed"]:
+    reply = your_fallback_line(verdict["rule"])
+```
+
+第 3 步不能省：被拒的回复会记成 `refusal` 事件（不带原文），只有通过的才进证据。
+跳过它等于关掉actuation gate，而日志里看不出来。
+
+GM 后台，读与写各一个：
+
+```python
+profile = MEM.view(key)          # card / standing / canon / pins / kid / events
+MEM.rule(key, "回复控制在两句以内")   # 唯一合法的写：directive/lock
+```
+
+`view()` 的字段在第 5 节；**卡片是派生数据，不要直接改文件**——下一次派生会把改动冲掉。
+
+一层容易误解的语义（写进接入文档，不要靠猜）：
+
+- 用户说「别叫我宝贝」→ 进 **用户卡**（`card.address.never`），模型看得见，闸门**不会**因此拦；
+- 用户在界面上按「记成规则」或 GM 调 `rule()` → 进 **canon**，闸门才拦（`禁称呼`）。
+- 两条路各走各的，都失败也互相不救；想两端一致就两件都做。
+
+错误处理：`E_LOCK` 表示另一个进程正持这个 key，退避重试即可（示例里做了 3 次、共 300 ms）；
+`E_CHAIN_*` / `E_TAMPER` 表示store坏了，**不要重试**，按第 6.1 节处置。
+
+上服务器先跑自检，它会在临时目录里走一遍完整链路并打印 8 行：
+
+```bash
+$PY/python examples/aiyao_bridge.py --selftest /tmp/aiyao-smoke
+```
+
+预期：称呼=老周、忌称=宝贝；第 4 行闸门放行（还没立规则）、第 6 行拒绝（`rule=禁称呼`）。

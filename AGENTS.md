@@ -12,9 +12,9 @@
 **优先级（宪章 §3）**：先活着的人的路径，再死后的遗产路径。
 → `M15.1 / 协议 V7` 暂缓，设计存档于 `docs/PROTOCOL-V7.md`。
 
-## 1. 当前阶段：M36 已封（每轮只处理新增），下一步是接爱邀阶段一
+## 1. 当前阶段：M38 已封（部署前的三处硬伤），下一步是接爱邀阶段一
 
-**已封版**：`v0.1-m1` … `v0.42-m37`，共 **45 个 tag、497 个测试**。
+**已封版**：`v0.1-m1` … `v0.43-m38`，共 **47 个 tag、524 个测试**。
 
 ```
 M1-M5    证据层 / 中文规则 / 检索装配 / 人格内核 / 提案即证据
@@ -30,6 +30,8 @@ M20-M24  桌面构建与打包守卫 / canon 规则与闸门 / 称呼修复与 9
 M25-M30  不可遗忘层（pin）/ 同义词与单字索引 / 查询改写兜底 / 盲重写被实验推翻 / 有依据的线索 / 线索缓存
 M31-M35  桥接普及度闸门 / 线索改固定清单分类 / 活库快照 / 召回失败收集 / 用户卡增量折叠
 M36      每轮只处理新增：索引与证据按字节偏移续读、快照 graph 旁置、一次 prompt 一次读取
+M37      服务层：一个进程多用户热会话、每 key 串行、GM 读的 view、部署文档
+M38      部署前硬伤：启动对账（撕裂尾拒写）、跨进程单写者锁、standing rules 进 prompt
 M15.1    继承模式 V2（暂缓，见 docs/PROTOCOL-V7.md）
 ```
 
@@ -93,7 +95,7 @@ D:/projects/Memory/
   AGENTS.md            # 本文件：约束与当前阶段
   README.md            # 中文首页    README-en.md 英文首页
   LICENSE              # Apache-2.0
-  CHANGELOG.md         # 版本变更（v0.24.1–v0.42 已回溯补记）
+  CHANGELOG.md         # 版本变更（v0.24.1–v0.43 已回溯补记）
   pyproject.toml
   aiinvite/                # L0 证据层：容器、哈希链、载荷 blob
     canonical.py  errors.py  event.py  chain.py  capsule.py  cli.py
@@ -107,7 +109,7 @@ D:/projects/Memory/
     serve/             # 服务层：多用户热会话、每 key 锁、GM 只读视图（进程内）
     demo/              # 最小可信演示（tkinter，零第三方依赖）
     succession/        # 遗赠胶囊（V1；V7 设计见 docs/PROTOCOL-V7.md）
-  tests/               # 497 个测试（unittest，无第三方依赖）
+  tests/               # 524 个测试（unittest，无第三方依赖）
   tools/               # 唯一允许联网/调模型的地方
   corpus/              # 合成人格库（不要改）
   experiments/         # 回复集与矩阵结果
@@ -146,7 +148,7 @@ D:/projects/Memory/
 python -m unittest discover -s tests -v
 ```
 
-必须满足：**全量 497 个测试全绿，0 skipped，0 errors**（当前基线），且：
+必须满足：**全量 524 个测试全绿，0 skipped，0 errors**（当前基线），且：
 
 - 冻结包的改动必须在 `tests/test_all_regression.py` 的 `ALLOWED_CHANGES` 声明（改了没声明失败，声明了没改也失败）
 - 存在一个 `docs/demo/` 目录，含一次真实的 init→append→seal→verify→export→import 输出记录
