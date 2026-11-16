@@ -84,6 +84,7 @@ docs/          规格、验收记录、结果、论文
 | [docs/RESULTS-variance.md](docs/RESULTS-variance.md) | 方差与分辨力：采样下 PCS 测不出差异 |
 | [docs/SPEC-CHECKLIST.md](docs/SPEC-CHECKLIST.md) | 规格自检清单 |
 | [docs/DEPLOY-TENCENT.md](docs/DEPLOY-TENCENT.md) | 腾讯云轻量部署：安装、接线、GM 字段、容量、验收 |
+| [examples/aiyao_bridge.py](examples/aiyao_bridge.py) | 后端接线的参考实现（聊天三步、GM 两步、`--selftest`） |
 | [AGENTS.md](AGENTS.md) | 开发约束与里程碑状态 |
 | [CHANGELOG.md](CHANGELOG.md) | 版本变更记录 |
 

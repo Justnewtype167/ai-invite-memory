@@ -33,6 +33,8 @@
   要在界面上「记成规则」或 GM 调 `rule()` 才进 **canon**（闸门才拦）——两条路各自失败，不互相兜底
 - **如实记录**：锁是 advisory（管不住绕过本库直接 `echo >>` 的人）；对账只看尾段，历史深处的篡改仍靠 `aiinvite verify`；
   standing 在极端预算下会被 `_shrink` 丢掉（它保的是 rules + pins + input），这是有意的优先级，不是 bug
+- 发布：PyPI `ai-invite-memory` **0.43.0 已上传**（whl 230,911 B、tar.gz 310,917 B），tag `v0.43-m38`；
+  桌面 exe 重建（13,465,475 B），已复制到 `apps/` 与 `%LOCALAPPDATA%\AIInvite\`
 ## v0.42-m37 · 2026-11-14
 
 **服务层：一个进程内承载多用户热会话，GM 后台直接读派生结果；顺带修掉一个一直会抛 TypeError 的 pin 错误。**
