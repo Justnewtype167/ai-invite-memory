@@ -427,15 +427,28 @@ A 的规则会约束 B。
 
 ### 12.2 先确认爱邀后端是什么
 
-如果是 Python，`examples/diagnose_backend.sh` 只读地打印：哪个 Python、systemd 里的 Python
-服务、进程 cmdline 与 cwd、监听端口、每个 venv 的 fastapi/flask/django 行、入口文件。
+`examples/diagnose_backend.sh` 只读地打印：哪个 Python、systemd 里的 Python 服务、进程
+cmdline 与 cwd、监听端口、每个 venv 的 fastapi/flask/django 行、**运行中的容器及其挂载与环境
+变量名**、nginx 的 `proxy_pass`、入口文件。
 
 ```bash
 bash diagnose_backend.sh
 ```
 
-看结果：有一条 Python 服务 + venv 里有 fastapi/flask → 库内嵌（本节做法）；没有 Python
-框架 → 先用 `MemoryService` 单独起一个进程，通过 JSON 调用，再考虑内嵌。
+三种结果对应三种接法：
+
+- **宿主机上有 Python 服务，venv 里有 fastapi/flask** → 库内嵌（本节做法）。
+- **80/443 是 nginx，业务端口后面是 `docker-proxy`** → 应用在容器里。这时框架要在容器内看
+  （`docker exec <id> pip list | grep -Ei 'fastapi|flask|django'`），并且：
+  1. `ai-invite-memory` 要加进**镜像的**依赖里再重建镜像——宿主机 venv 装它对容器没用；
+  2. 记忆目录必须 **bind mount 到宿主机**（`-v /var/lib/aiinvite/users:/data/users`），
+     容器重建、镜像升级都不能碰它，否则记忆随容器一起没了；
+  3. 多副本时每个 (user, character) 只能落在一个实例上（第 6 节的分片规则不因容器而变）。
+- **没有 Python 框架（Node/Java/PHP/Go）** → 先用 `MemoryService` 单独起一个 Python 进程，
+  通过 JSON 调用，再考虑内嵌；这时上面两条挂载/依赖要求同样适用。
+
+容器的 env 只打印**键名**不打印值（里面有数据库密码、模型 key）。
+
 ## 13. 数据放哪里：云盘本地可以，对象存储只能当备份
 
 引擎对存储的要求比"能读能写"多三条：**字节偏移追加**（证据续读）、**纳秒 mtime**（判断段有没有变）、

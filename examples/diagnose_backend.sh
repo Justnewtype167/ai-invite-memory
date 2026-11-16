@@ -60,6 +60,27 @@ for dir in /opt /srv /root /home/*; do
     -not -path "*/site-packages/*" -not -path "*/node_modules/*" 2>/dev/null | head -10
 done
 
+say "containers (the chat app may live here, not on the host)"
+if have docker; then
+  docker ps --format 'table {{.ID}}\t{{.Names}}\t{{.Image}}\t{{.Ports}}' 2>/dev/null \
+    || echo "   (docker present but not usable as this user; try sudo)"
+  docker ps -q 2>/dev/null | while read -r cid; do
+    [ -n "$cid" ] || continue
+    echo "-- container $cid image=$(docker inspect -f '{{.Config.Image}}' "$cid" 2>/dev/null)"
+    echo "   mounts (host -> container):"
+    docker inspect -f '{{range .Mounts}}     {{.Source}} -> {{.Destination}}{{println}}{{end}}' "$cid" 2>/dev/null
+    echo "   env keys: $(docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' "$cid" 2>/dev/null | cut -d= -f1 | tr '\n' ' ')"
+    docker exec "$cid" sh -c 'python3 -V 2>/dev/null; python -V 2>/dev/null; pip list 2>/dev/null | grep -Ei "^(fastapi|flask|django|starlette|uvicorn|gunicorn)=="; node -v 2>/dev/null; java -version 2>&1 | head -1' 2>/dev/null \
+      || echo "   (no shell in the image, or exec denied)"
+  done
+else
+  echo "   (docker not installed)"
+fi
+
+say "nginx upstream"
+if [ -d /etc/nginx ]; then
+  grep -rn "proxy_pass" /etc/nginx/ 2>/dev/null | head -10 || echo "   (no proxy_pass found)"
+fi
 say "databases and caches"
 ps -eo args= 2>/dev/null | grep -E "mysqld|postgres|mongod|redis-server" | grep -v grep | head -5 || true
 if have ss; then ss -ltn 2>/dev/null | grep -E ":(3306|5432|27017|6379) " || echo "   (none of 3306/5432/27017/6379 listening here)"; fi
@@ -74,6 +95,9 @@ say "what this means"
 cat <<'EOF'
   * One py process per port + pip freeze shows fastapi/flask  -> library embed:
       import AiyaoMemory in that app (docs/DEPLOY-TENCENT.md §12).
+  * Port 80/443 on nginx and an app port behind it on docker-proxy -> the app is a
+      container: check the framework INSIDE it (this script does), and bind-mount the
+      store from the host so a container rebuild does not wipe memory.
   * No framework in the venv, or the chat path is not Python     -> start with the
       bridge as a separate worker process and call it over JSON.
   * One store dir per (user, character) -> AIINVITE_ROOT must live on the local
