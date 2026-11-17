@@ -8,11 +8,18 @@ Every rule lives in ``data/gate_rules.json``; the code only knows how to
 interpret the fields. A rule is enabled only when one of its
 ``canon_keywords`` appears in the kernel's canon, which keeps "the kernel
 has no such constraint" distinct from "the constraint was violated".
+
+A forbidden word can be *used* or merely *mentioned*. "说了别叫宝贝" and
+"我才不叫你宝贝" are exactly the behaviour a ban asks for, so a raw substring
+match would punish the reply that obeys. :func:`_uses_word` therefore treats a
+word as a mention when it sits inside quotes, right after a refusal cue
+("别叫…", "不叫…"), or right before an explicit "这个词" gloss.
 """
 
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
@@ -190,7 +197,7 @@ def _first_violation(rule: GateRule, trace: Trace) -> tuple[int, str] | None:
             continue
         if segment.kind == "text" and check_text:
             for word in rule.forbid_text:
-                if word in segment.value:
+                if _uses_word(segment.value, word):
                     return index, f"text contains forbidden word {word}"
             text_total += len(segment.value)
             if rule.max_text_chars is not None and text_total > rule.max_text_chars:
@@ -201,3 +208,53 @@ def _first_violation(rule: GateRule, trace: Trace) -> tuple[int, str] | None:
             if segment.value in rule.forbid_action:
                 return index, f"action {segment.value} is forbidden"
     return None
+
+
+# -- mention vs use ---------------------------------------------------------
+# A forbidden word can be *used* or merely *mentioned*. 「说了别叫宝贝，老周」
+# and 「我才不叫你宝贝」 are exactly what a ban asks for, so a raw substring
+# match would refuse the reply that obeys the rule. A word counts as a
+# mention when it sits inside quotes, right after a refusal cue plus an
+# address verb (「别叫…」「不叫…」), or right before an explicit gloss
+# (「宝贝这个词」). Everything else is a use.
+MENTION_WINDOW = 10
+MENTION_CUES = ("不要", "不许", "不准", "不能", "不会", "不再", "别", "不", "没", "勿", "甭", "拒绝")
+MENTION_VERBS = ("叫", "喊", "称", "提", "说", "用", "写", "带")
+MENTION_PREFIX = re.compile(
+    "(?:%s)(?:再|要)?(?:%s)?[^，。！？；,.!?;\n]{0,4}$"
+    % ("|".join(MENTION_CUES), "|".join(MENTION_VERBS))
+)
+MENTION_SUFFIX = re.compile(r"^(?:这个词|这词|两个字|这种词|这种称呼|这称呼|之类)")
+QUOTE_PAIRS = (("「", "」"), ("『", "』"), ("“", "”"), ("《", "》"))
+
+
+def _inside_quotes(text: str, index: int) -> bool:
+    """Return whether ``text[index]`` sits inside a quoted span."""
+    head = text[:index]
+    if head.count('"') % 2 == 1 or head.count("'") % 2 == 1:
+        return True
+    return any(head.count(open_) > head.count(close) for open_, close in QUOTE_PAIRS)
+
+
+def _is_mention(text: str, index: int, width: int) -> bool:
+    """Return whether the word at ``index`` is talked about, not used."""
+    left = text[max(0, index - MENTION_WINDOW):index]
+    if MENTION_PREFIX.search(left):
+        return True
+    right = text[index + width:index + width + 6]
+    if MENTION_SUFFIX.match(right):
+        return True
+    return _inside_quotes(text, index)
+
+
+def _uses_word(text: str, word: str) -> bool:
+    """Return True only when ``word`` is used, not merely mentioned."""
+    start = 0
+    while True:
+        index = text.find(word, start)
+        if index < 0:
+            return False
+        if not _is_mention(text, index, len(word)):
+            return True
+        start = index + len(word)
+

@@ -23,6 +23,7 @@ from aiinvite.kernel.kernel import CanonEntry, Policy
 
 import aiinvite.projection.gate as gate_module
 from aiinvite.projection import (
+    Segment,
     Trace,
     Verdict,
     check,
@@ -284,6 +285,55 @@ class TestGateDecision(unittest.TestCase):
             append_refusal(self.store, "text", "禁称呼", "sha256:ABC", t=STAMP)
         self.assertEqual(caught.exception.code, E_SCHEMA)
 
+
+class TestGateMentionVsUse(unittest.TestCase):
+    """V7: naming a forbidden word in a refusal is not using it.
+
+    A word list cannot tell 「说了别叫宝贝」 (the reply obeying the rule) from
+    「好的宝贝」 (the reply breaking it). The first must pass, the second must
+    not, and both are checked here through the same real Trace shape that
+    HostSession.reply builds.
+    """
+
+    def _trace(self, text: str) -> Trace:
+        """Return the speech trace a real reply would be judged as."""
+        kernel = _fake_kernel((DIRECTIVE,))
+        return Trace(
+            kid=kernel.kid,
+            projector="text_v1",
+            segments=(Segment(kind="text", value=text, dur_ms=None),),
+        )
+
+    def test_negated_mention_is_allowed(self) -> None:
+        """V7: the reply that declines is not punished for naming the word."""
+        kernel = _fake_kernel((DIRECTIVE,))
+        texts = (
+            "说了别叫宝贝，老周。你这又是闹哪出？",
+            "我才不叫你宝贝",
+            "不要叫你宝贝这事我记住了",
+        )
+        for text in texts:
+            self.assertTrue(check(self._trace(text), kernel).allowed, text)
+        print(f"V7 negated_allowed={len(texts)}/{len(texts)}")
+
+    def test_quoted_or_glossed_mention_is_allowed(self) -> None:
+        """V7: quotes and an explicit gloss mark the word as a mention."""
+        kernel = _fake_kernel((DIRECTIVE,))
+        texts = ("「宝贝」这个词我不叫", "你说的“宝贝”我记住了", "宝贝这个词不行")
+        for text in texts:
+            self.assertTrue(check(self._trace(text), kernel).allowed, text)
+        print(f"V7 quoted_allowed={len(texts)}/{len(texts)}")
+
+    def test_real_use_is_still_refused(self) -> None:
+        """V7: a genuine address still trips 禁称呼 with the word in detail."""
+        kernel = _fake_kernel((DIRECTIVE,))
+        texts = ("好的宝贝，我在", "别闹了，宝贝", "叫我一声宝贝好不好")
+        for text in texts:
+            verdict = check(self._trace(text), kernel)
+            self.assertFalse(verdict.allowed, text)
+            self.assertEqual(verdict.rule, "禁称呼")
+            self.assertIn("宝贝", verdict.detail)
+        print(f"V7 uses_refused={len(texts)}/{len(texts)}")
 
 if __name__ == "__main__":
     unittest.main()

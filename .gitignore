@@ -14,3 +14,4 @@ docs/demo/e2e/
 runs/apps/
 build/
 *.spec
+*.log

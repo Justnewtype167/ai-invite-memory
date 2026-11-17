@@ -106,7 +106,7 @@ FROZEN_DIGESTS = {
     "aiinvite/projection/action.py": "abe2b87f0b2822a7ef512c4cf335b98085e15141656f5b433a2e009e375cd1d8",
     "aiinvite/projection/emit.py": "7d095396a0ecf3ddce3ad028f5d563e69114f26944091551133aa3dfae7f194b",
     "aiinvite/projection/errors.py": "8583d64c34087bdaf6d3cee5f241b7a7e5320823971be3dda9cb2623cf7b6e63",
-    "aiinvite/projection/gate.py": "ea9dea2c39f257c51e029a12c2b13515c3e552c3a442b0ca74f946670c3a6424",
+    "aiinvite/projection/gate.py": "5d49de3df94a856b70f7434e77e74f4c5e6e25e3eaf3587078a2ccdeae9d31b5",
     "aiinvite/projection/text.py": "6f019b97f13a3114ed4e351a6566b0136303cf97c38fc4af44eca57585745660",
     "aiinvite/projection/trace.py": "f8d4049ca39827bc09b1a0b28513a6df40678a43f9fa6620490d744893b3832c",
     "aiinvite/recall/__init__.py": "eedfa2f6fa0bd7e12bdd760a6f6ae86770c44709c94a1e6f7919cf8d58350e51",
