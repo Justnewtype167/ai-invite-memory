@@ -522,6 +522,56 @@ return answer;
 配置问题而是重写（目前**没有** Postgres 后端）。所以：Postgres 存用户，
 `/data/users/<key>/` 存记忆，`key` 用 `user_id` 或 `user_id-character_id` 对齐。
 
+### 12.4 侧车 token 怎么轮换
+
+token 是唯一凭证：拿到它就能读任何一个 `key` 的记忆。一旦进过截图、日志、
+聊天记录或别人的屏幕，就当它已泄露，轮换比解释便宜。
+
+轮换必须**三处同时换**，少一处就是记忆静默失效（turn 返回 401，而业务侧把
+记忆当"可降级"，不会报错，用户看到的是"她突然不记得我了"）：
+
+| 位置 | 改什么 |
+|---|---|
+| 侧车容器 | `AIINVITE_TOKEN` 环境变量（`docker run -e`） |
+| Edge Function | 它把 token 写成了常量（见 12.3），同一个字符串 |
+| 宿主机 `/opt/aiinvite/.env` | 只给运维脚本用，别和容器里的不一致 |
+
+顺序很关键：**先改函数里的常量，再换容器**。反过来，中间那几秒函数拿着新
+token 打旧容器，全部 401。
+
+```bash
+cd /opt/aiinvite
+NEW=$(openssl rand -hex 24); echo "length=${#NEW}"   # 不要把这个值贴到任何地方
+
+# 1) 先改函数的常量（此时旧容器仍用旧 token，业务不受影响）
+sed -i -E 's/token: "[0-9a-f]{32,}"/token: "'"$NEW"'"/' \
+  /opt/supabase/volumes/functions/_shared/memory.ts
+grep -c "$NEW" /opt/supabase/volumes/functions/_shared/memory.ts   # 必须是 1
+
+# 2) 再换容器（有几秒 401 窗口，函数重载前会走降级分支）
+docker rm -f aiinvite-memory
+docker run -d --name aiinvite-memory --restart unless-stopped \
+  --network supabase_default -e AIINVITE_TOKEN="$NEW" \
+  -v /opt/aiinvite/users:/data/users ai-invite-memory:0.45.0 \
+  --root /data/users --model deepseek-chat --host 0.0.0.0 --port 8080
+
+# 3) 让 isolate 重新加载 memory.ts，落盘一份给运维
+docker restart supabase-edge-functions
+printf 'AIINVITE_TOKEN=%s\n' "$NEW" > /opt/aiinvite/.env && chmod 600 /opt/aiinvite/.env
+```
+
+验证不是看命令回显，是看两处日志：
+
+```bash
+docker logs --tail 5 supabase-edge-functions   # 出现 aiinvite: sidecar 已就绪
+docker logs --tail 5 aiinvite-memory           # 聊天后出现 POST /v1/turn
+```
+
+写常量这条本身是临时办法：edge-runtime 把 `Deno.readTextFileSync` 列进黑名单，
+函数读不到挂载的文件，只能走 `Deno.env`；这套 Supabase 不是 compose 起的
+（`/opt/supabase/docker` 不存在），改不了容器环境变量。等哪天能改 env，
+把常量删掉、让 `config()` 只从环境变量读，token 也就不再落在代码文件里。
+
 ## 13. 数据放哪里：云盘本地可以，对象存储只能当备份
 
 引擎对存储的要求比"能读能写"多三条：**字节偏移追加**（证据续读）、**纳秒 mtime**（判断段有没有变）、
