@@ -100,7 +100,7 @@ FROZEN_DIGESTS = {
     "aiinvite/persona/standing.py": "bb0fcfcb126260cbf095c4f9e84a2719cef0ddd6c9824ff8e915adeb00367aaf",
     "aiinvite/persona/style_card.py": "934b314f8a2fd81ebfc89cf31c2cf62753966f08b94c6c54603f1de5a1e2d1f6",
     "aiinvite/persona/traits.py": "980c7774d04a104bb4f65ecfa8b37525850e16ada1b58ecad4c3195c049920ac",
-    "aiinvite/persona/user_card.py": "63db09a1db3512f8c0026123e9fd06e94068253686fb175c1d437021ad34ed07",
+    "aiinvite/persona/user_card.py": "57d0e0794435c97dc8de66b84ef0b903eb31a16f9385846191b9661bc0c5f950",
     "aiinvite/persona/view.py": "7a3e9d500eff649010282a26d051c633ed25515fb89defe6ca9cf4ed72062f94",
     "aiinvite/projection/__init__.py": "e8da557758624df10ff1f930479b4d6e7244293d22c75d45775942478af1dfad",
     "aiinvite/projection/action.py": "abe2b87f0b2822a7ef512c4cf335b98085e15141656f5b433a2e009e375cd1d8",

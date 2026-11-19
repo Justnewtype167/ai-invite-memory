@@ -35,6 +35,26 @@ PINNED_ID = "user_card"
 PINNED_SLOT = "pinned"
 CLAUSE_SPLIT = re.compile(r"[，。！？,.!?；;]")
 
+# "叫我X" reads two ways: X is how you address me, or X is what you want me to
+# do ("叫我早起" = wake me early). A command must never become a name. Three
+# signals, none of them a name dictionary: a closed list of the everyday
+# wake/eat/sleep/commute commands, a morning/evening adverb prefix, and a
+# frequency or reminder cue right before the verb.
+COMMAND_ACTIONS = (
+    "\u65e9\u8d77", "\u8d77\u5e8a", "\u8d77\u6765", "\u5403\u996d",
+    "\u7761\u89c9", "\u56de\u5bb6", "\u51fa\u95e8", "\u4e0a\u73ed",
+    "\u4e0b\u73ed", "\u4e0a\u5b66", "\u653e\u5b66", "\u559d\u6c34",
+    "\u5403\u836f", "\u4f11\u606f", "\u52a0\u6cb9", "\u8fc7\u6765",
+    "\u522b\u8fdf\u5230", "\u65e9\u70b9\u7761",
+)  # 早起 起床 起来 吃饭 睡觉 回家 出门 上班 下班 上学 放学 喝水 吃药 休息 加油 过来 别迟到 早点睡
+TIME_PREFIXES = ("\u65e9", "\u665a", "\u5feb", "\u6162", "\u591a", "\u5c11")  # 早 晚 快 慢 多 少
+COMMAND_CUES = (
+    "\u6bcf\u5929", "\u5929\u5929", "\u8bb0\u5f97", "\u522b\u5fd8\u4e86",
+    "\u522b\u5fd8\u8bb0", "\u6309\u65f6", "\u51c6\u65f6", "\u5fc5\u987b",
+    "\u4e00\u4f1a\u513f", "\u7b49\u4e0b", "\u73b0\u5728",
+)  # 每天 天天 记得 别忘了 别忘记 按时 准时 必须 一会儿 等下 现在
+NAME_FRAMES = ("\u5c31\u597d", "\u5c31\u884c", "\u597d\u4e86", "\u4e5f\u53ef\u4ee5")  # 就好 就行 好了 也可以
+
 
 @dataclass(frozen=True)
 class UserCard:
@@ -190,7 +210,9 @@ def _derive_call(
     "我叫X", "名字是X" and "名字：X" are rewritten into the "叫我X" surface
     form, so group(1) stays the pronoun and group(2) stays the name. A clause
     with no negation can only set the call when "叫我X" is not preceded by a
-    kinship term; "我妈叫我回家" is someone else calling, not an address.
+    kinship term; "我妈叫我回家" is someone else calling, not an address. A
+    clause that asks to be woken, fed or reminded ("叫我早起") is an
+    instruction, not a name, and is skipped by _is_command.
     Trailing tails such as "就好" are removed before the name is compared.
     After scanning, a call that equals a taboo is dropped.
     """
@@ -262,6 +284,10 @@ def _scan_address(
                 not pronoun or _has_kinship_prefix(normalized[: match.start()])
             ):
                 continue
+            before = normalized[: match.start()]
+            after = (match.group(2).strip() + normalized[match.end():])[:8]
+            if _is_command(name, before, after):
+                continue
             found.append((name, negative))
     if ready:
         cache[event.text] = found
@@ -288,6 +314,24 @@ INTERROGATIVES = ("\u4ec0\u4e48", "\u8c01", "\u5565", "\u54ea", "\u600e\u4e48") 
 QUESTION_TAILS = ("\u5417", "\u5462", "\u4e48")  # 吗 呢 么
 QUANTIFIER_PREFIXES = ("\u4e00\u58f0", "\u4e00\u53e5", "\u4e00\u4e2a", "\u4e00\u4e0b",
                        "\u4e00\u56de", "\u4e00\u904d", "\u51e0\u58f0")  # 一声 一句 一个 一下 一回 一遍 几声
+
+
+def _is_command(name: str, before: str, after: str) -> bool:
+    """Return whether "叫我X" is an instruction rather than a form of address.
+
+    "叫我早起" asks to be woken early; it is not a nickname. The cues are
+    positional: a frequency or reminder word sits right before the verb, or the
+    verb starts with a morning/evening adverb, or it is one of the everyday
+    commands people actually say. A naming tail ("叫我早起就好") overrides the
+    frequency cue, because that tail only makes sense as a name.
+    """
+    if name in COMMAND_ACTIONS:
+        return True
+    if len(name) <= 3 and name[:1] in TIME_PREFIXES:
+        return True
+    if any(cue in before[-6:] for cue in COMMAND_CUES):
+        return not any(frame in after for frame in NAME_FRAMES)
+    return False
 
 
 def _trim_quantifiers(name: str) -> str:
