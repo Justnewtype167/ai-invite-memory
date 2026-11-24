@@ -54,14 +54,17 @@ INPUT_RESERVE = 64
 
 
 class HostSession:
-    """One conversation over one store, with a fixed reference time."""
+    """One conversation over one store; the kernel clock is evidence, not wall time."""
 
     def __init__(self, store, model, budget=4096, now=None, rewriter=None,
                  clue_caller=None):
         self.store = pathlib.Path(store)
         self.model = model
         self.budget = budget
-        self.now = now or utc_now()
+        # ``now`` stays None unless a caller pins it. The kernel clock falls back
+        # to the newest evidence stamp, so the identity (kid) never moves with the
+        # wall clock: a store restored on another day keeps the same kid.
+        self.now = now
         if not (self.store / "evidence").is_dir():
             init_store(self.store)
         # A torn tail must stop the next write, not corrupt the chain behind
@@ -268,7 +271,7 @@ class HostSession:
         if view is not None and room >= MIN_CONTEXT:
             try:
                 self._ensure_index()
-                session = StreamSession(self.store, room, now=self.now)
+                session = StreamSession(self.store, room, now=self.now or utc_now())
                 assembled = session.context(
                     user_text,
                     rewriter=self._rewriter,

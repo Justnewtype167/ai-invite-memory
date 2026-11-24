@@ -55,6 +55,12 @@ class TestAddressCommands(unittest.TestCase):
         self.assertEqual(address["call"], "老周")
         self.assertEqual([item["text"] for item in address["never"]], [])
 
+    def test_sentence_tail_is_not_a_taboo(self) -> None:
+        """"这样叫了啊不许反悔" must not become 忌称 了啊不许反悔."""
+        address = self._address(["那以后就这样叫了啊不许反悔，总之确实有你的功劳"])
+        self.assertEqual(address["call"], "")
+        self.assertEqual([item["text"] for item in address["never"]], [])
+
     def test_taboo_still_works(self) -> None:
         address = self._address(["我叫老周，别叫我宝贝"])
         self.assertEqual(address["call"], "老周")

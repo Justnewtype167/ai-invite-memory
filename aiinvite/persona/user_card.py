@@ -288,6 +288,8 @@ def _scan_address(
             after = (match.group(2).strip() + normalized[match.end():])[:8]
             if _is_command(name, before, after):
                 continue
+            if not _is_addressable(name):
+                continue
             found.append((name, negative))
     if ready:
         cache[event.text] = found
@@ -315,6 +317,22 @@ QUESTION_TAILS = ("\u5417", "\u5462", "\u4e48")  # 吗 呢 么
 QUANTIFIER_PREFIXES = ("\u4e00\u58f0", "\u4e00\u53e5", "\u4e00\u4e2a", "\u4e00\u4e0b",
                        "\u4e00\u56de", "\u4e00\u904d", "\u51e0\u58f0")  # 一声 一句 一个 一下 一回 一遍 几声
 
+
+
+ADDRESS_MAX_CHARS = 4
+ADDRESS_STOP_PREFIXES = ("\u4e86", "\u7684", "\u5427", "\u554a", "\u5462", "\u5417", "\u561b", "\u5440", "\u54e6", "\u54c8")  # 了 的 吧 啊 呢 吗 嘛 呀 哦 哈
+
+
+def _is_addressable(name: str) -> bool:
+    """Return whether the capture can be a form of address at all.
+
+    "那以后就这样叫了啊不许反悔" matched 叫(我)? as "了啊不许反悔": the capture
+    starts with the particle 了 and runs six characters, so it is the tail of a
+    sentence, not a name. A name is short and does not start with a particle.
+    """
+    if not name or len(name) > ADDRESS_MAX_CHARS:
+        return False
+    return not name.startswith(ADDRESS_STOP_PREFIXES)
 
 def _is_command(name: str, before: str, after: str) -> bool:
     """Return whether "叫我X" is an instruction rather than a form of address.
